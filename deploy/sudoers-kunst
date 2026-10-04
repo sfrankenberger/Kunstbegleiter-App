@@ -1,0 +1,4 @@
+# /etc/sudoers.d/kunst (als root anlegen, Rechte 0440): Deploy darf den Queue-Worker neu starten,
+# die App darf das Sicherungs-Skript rufen (Seite Datensicherungen).
+tourtool ALL=(root) NOPASSWD: /usr/bin/systemctl restart kunst-queue, /usr/bin/systemctl restart kunst-staging-queue
+tourtool ALL=(root) NOPASSWD: /usr/local/bin/app-restore
