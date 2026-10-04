@@ -1,0 +1,49 @@
+# Kunstbegleiter - Arbeitsanweisungen für Claude
+
+Kunstbegleiter (Arbeitstitel, art.tourtool.app) erzeugt im Museum aus 1 bis 3 Fotos einen persönlichen deutschen Audioguide für Wiener Austria Guides. Nutzer: Sebastian und Martha. Eigene App, eigenes Repo, gleicher Betriebsstandard wie Tourtool und die Coaching-App.
+
+## Vor jeder Arbeit lesen
+
+1. `docs/grundgeruest.md` - fachliches Grundgerüst (Ziel, Datenmodell, Pipeline, Dramaturgie, Etappen)
+2. `docs/plan-etappe-1.md` - Plan und Entscheidungen für das Fundament
+3. `docs/konzept.md` - Entscheidungen und Projektstand (wird ab Etappe 1 geführt)
+4. `docs/funktionen.md` - Funktionsinventar (vor jeder Arbeit prüfen, nach jeder Arbeit ergänzen)
+
+Wenn eine Entscheidung fällt: `docs/konzept.md` im selben Commit aktualisieren.
+
+## Auftraggeber und Arbeitsweise
+
+- Sebastian Frankenberger, kommuniziert auf Deutsch. Antworten und UI-Texte auf Deutsch (österreichisch), Code, Bezeichner und Commit-Messages auf Englisch.
+- **Niemals den langen Gedankenstrich (Em-Dash) verwenden**, weder in Texten, UI, Doku noch Antworten.
+- Erst prüfen, dann vorschlagen, dann bauen. Etappen (Grundgerüst, Abschnitt Etappen) erst nach Sebastians OK bauen.
+- Alles über das Repo, am Server nichts von Hand ändern. Erst `staging`, dann `main`.
+- Pest-Tests für alles Neue. KI- und TTS-Aufrufe in Tests immer mit Fakes (`Http::fake()`), nie echte Kosten.
+- Alle Prompts in `resources/prompts/`, alle Modellnamen und Limits in `config/museumguide.php`.
+- KI-Antworten als JSON mit Schema anfordern und validieren, kaputte Antworten einmal neu anfragen.
+- Oberfläche deutsch, mobil zuerst (390 px), auf dem iPhone in Safari testen.
+- Am Ende jeder Etappe: kurze Zusammenfassung (gebaut, offen) und diese Datei aktualisieren.
+
+## Stack
+
+- Laravel 13, PHP 8.5, MariaDB (Tests mit SQLite: Indexnamen höchstens 64 Zeichen, verschlüsselte Casts nie auf JSON-Spalten)
+- Filament 5 für `/admin`, Livewire + Alpine für die Handy-Oberfläche als PWA
+- Tailwind über die Standalone-CLI (`bin/build-css`), gebautes CSS wird committed, kein Node am Server
+- Redis (Instanz 6380, eigene DB und Präfix) für Cache, Session und Queue; Queue-Worker als systemd-Dienst
+- Geldbeträge als Integer in Cent, Zeitzone Europe/Vienna
+
+## Standards (wie Tourtool, docs/plan-etappe-1.md)
+
+- Papierkorb: jedes Geschäftsdaten-Modell mit `SoftDeletes`, Eltern mit `CascadesSoftDeletes`; Resources mit `Trash::filter()`, `Trash::recordActions()`, `Trash::bulkActions()`
+- Änderungsprotokoll: `LogsChanges` an jedem Geschäftsdaten-Modell, `ActivitiesRelationManager` an jeder Bearbeiten-Seite, Aufbewahrung 2 Jahre
+- Datensicherungen: Seite Admin > Datensicherungen über `App\Support\Backup\BackupRestoreService`, nur mit `BACKUP_APP` in der `.env`
+
+## Server und Deployment
+
+- Plesk-Server srv.iksf.de, Abo tourtool.app, Sites art.tourtool.app (`main`) und art-staging.tourtool.app (`staging`, Basic-Auth)
+- PHP-Binary `/opt/plesk/php/8.5/bin/php`, Composer `/opt/psa/var/modules/composer/composer.phar`
+- `deploy.sh` per Cron jede Minute; `.env` nur am Server, nie committen
+- Details in `docs/betrieb.md` (ab Etappe 1)
+
+## Commits
+
+- Aussagekräftige englische Commit-Messages, kleine thematische Commits.
