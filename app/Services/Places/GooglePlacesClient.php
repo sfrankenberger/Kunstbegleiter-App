@@ -3,6 +3,7 @@
 namespace App\Services\Places;
 
 use App\Contracts\PlacesClient;
+use App\Support\Secrets;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -16,10 +17,10 @@ class GooglePlacesClient implements PlacesClient
 
     public function nearbyMuseums(float $lat, float $lng, int $radiusMeters): array
     {
-        $key = (string) config('museumguide.places.key');
+        $key = (string) Secrets::get('google_places_key');
 
         if ($key === '') {
-            throw new RuntimeException('GOOGLE_PLACES_KEY fehlt in der .env.');
+            throw new RuntimeException('Kein Google-Places-Schlüssel: unter Admin > Einstellungen > Zugänge eintragen (oder GOOGLE_PLACES_KEY in der .env).');
         }
 
         $response = Http::withHeaders([

@@ -61,9 +61,17 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Aufnahme:** `CaptureService::create` legt Capture (Status hochgeladen) und Fotos an, erstes Foto Typ Werk, weitere Werktext (die automatische Erkennung kommt in Etappe 3), und verlängert den Besuch. Seite `/aufnahme/{capture}`: Fotos, Typ je Foto korrigierbar, Löschen in den Papierkorb (Fotos gehen mit).
 - `Visit::remainingMinutes()` rundet auf (30 Sekunden vor Ablauf zeigt noch 1 Minute).
 
+## 9. Zugänge im Admin (05.10.2026)
+
+- Sebastian wollte Schlüssel und Token selbst pflegen, statt die `.env` am Server zu bearbeiten. Seite Admin > Einstellungen > Zugänge (`App\Filament\Pages\Zugaenge`, nur Admin): Anthropic, Google Places, ElevenLabs, OpenAI.
+- Ablage in der Tabelle `settings` (`key`, `value` verschlüsselt als `text`, `updated_by_id`), Zugriff nur über `App\Support\Secrets` (`get`, `has`, `source`, `set`, `hint`). Reihenfolge: Admin vor `.env`; die `.env`-Werte in `config/museumguide.php` bleiben als Rückfall. Cache je Schlüssel, beim Speichern geleert.
+- Die Seite zeigt nie den ganzen Schlüssel, nur Herkunft (Admin, .env, fehlt) und die letzten vier Zeichen. Leer lassen behält den Wert, "Löschen" entfernt ihn. Kein Änderungsprotokoll für `settings` (Geheimnisse), nur `updated_by_id`.
+- "Anthropic prüfen" (GET /v1/models) und "Google Places prüfen" (Nearby Search um das KHM) melden, ob der Schlüssel gültig ist.
+- Anbieterwahl `auto` (Standard in `.env.example`): Google Places, sobald ein Schlüssel da ist, sonst Fake; TTS bis Etappe 3 immer Fake. `MUSEUMGUIDE_PLACES=fake` erzwingt den Fake.
+
 ## 8. Offen nach Etappe 2 (Stand 05.10.2026)
 
-- Google-Places-Schlüssel anlegen und in die `.env` (bis dahin Fake-Museen, nur Wien).
+- Google-Places-Schlüssel anlegen und unter Admin > Einstellungen > Zugänge eintragen (bis dahin Fake-Museen, nur Wien).
 - Etappe 3: Pipeline (Erkennung mit Typ-Erkennung der Fotos, Recherche, Skript, Faktencheck, Fact Sheet, Audio mit einer Stimme), Prompts in `resources/prompts/`, Preise in `museumguide.pricing`.
 - Museums-Recherche im Hintergrund beim Start eines Besuchs (Grundgerüst, "Beim Öffnen der App" Punkt 3) kommt mit der Pipeline.
 

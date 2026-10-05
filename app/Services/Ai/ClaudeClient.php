@@ -6,6 +6,7 @@ use App\Enums\AiPurpose;
 use App\Models\AiCall;
 use App\Models\Capture;
 use App\Models\User;
+use App\Support\Secrets;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use JsonException;
@@ -97,10 +98,10 @@ class ClaudeClient
      */
     protected function send(AiPurpose $purpose, array $messages, array $options, ?User $user, ?Capture $capture): array
     {
-        $key = (string) config('museumguide.anthropic.key');
+        $key = (string) Secrets::get('anthropic_key');
 
         if ($key === '') {
-            throw new RuntimeException('ANTHROPIC_API_KEY fehlt in der .env.');
+            throw new RuntimeException('Kein Anthropic-Schlüssel: unter Admin > Einstellungen > Zugänge eintragen (oder ANTHROPIC_API_KEY in der .env).');
         }
 
         $model = (string) ($options['model'] ?? $purpose->model());

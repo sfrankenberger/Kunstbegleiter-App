@@ -8,6 +8,7 @@ use App\Models\Passkey;
 use App\Services\Places\FakePlacesClient;
 use App\Services\Places\GooglePlacesClient;
 use App\Services\Tts\FakeTtsProvider;
+use App\Support\Secrets;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\ServiceProvider;
@@ -19,13 +20,18 @@ class AppServiceProvider extends ServiceProvider
     {
         // Anbieter hinter Schnittstellen (config/museumguide.php): in der Bauphase die Fakes, Etappe 2 und 3 bringen
         // Google Places und einen echten TTS-Anbieter.
-        $this->app->bind(TtsProvider::class, fn (): TtsProvider => match ((string) config('museumguide.tts.provider')) {
-            default => new FakeTtsProvider,
-        });
+        // Stimmen: bis Etappe 3 immer der Fake (ElevenLabs und OpenAI folgen)
+        $this->app->bind(TtsProvider::class, fn (): TtsProvider => new FakeTtsProvider);
 
-        $this->app->bind(PlacesClient::class, fn (): PlacesClient => match ((string) config('museumguide.places.provider')) {
-            'google' => new GooglePlacesClient,
-            default => new FakePlacesClient,
+        // Ort: "auto" nimmt Google, sobald ein Schluessel gesetzt ist (Admin > Zugaenge oder .env)
+        $this->app->bind(PlacesClient::class, function (): PlacesClient {
+            $provider = (string) config('museumguide.places.provider', 'auto');
+
+            if ($provider === 'google' || ($provider === 'auto' && Secrets::has('google_places_key'))) {
+                return new GooglePlacesClient;
+            }
+
+            return new FakePlacesClient;
         });
     }
 

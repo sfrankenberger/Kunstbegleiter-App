@@ -72,6 +72,7 @@ test('pricing uses the configured rates', function () {
 });
 
 test('the fake providers are bound by default', function () {
+    config()->set('museumguide.places.key', '');
     expect(app(TtsProvider::class))->toBeInstanceOf(FakeTtsProvider::class)
         ->and(app(PlacesClient::class))->toBeInstanceOf(FakePlacesClient::class);
 

@@ -35,14 +35,18 @@ return [
         'max_tokens' => (int) env('ANTHROPIC_MAX_TOKENS', 4096),
     ],
 
-    // Stimmen: Anbieter hinter App\Contracts\TtsProvider (fake, elevenlabs, openai). Etappe 3.
+    // Stimmen: Anbieter hinter App\Contracts\TtsProvider (auto, fake, elevenlabs, openai). Etappe 3.
+    // auto: elevenlabs, wenn ein Schluessel da ist (Admin > Zugaenge oder .env), sonst openai, sonst fake.
     'tts' => [
-        'provider' => env('MUSEUMGUIDE_TTS', 'fake'),
+        'provider' => env('MUSEUMGUIDE_TTS', 'auto'),
+        'elevenlabs_key' => env('ELEVENLABS_API_KEY'),
+        'openai_key' => env('OPENAI_API_KEY'),
     ],
 
-    // Ort: Google Places hinter App\Contracts\PlacesClient (fake, google). Etappe 2.
+    // Ort: Google Places hinter App\Contracts\PlacesClient (auto, fake, google). Etappe 2.
+    // auto: google, wenn ein Schluessel da ist (Admin > Zugaenge oder .env), sonst fake.
     'places' => [
-        'provider' => env('MUSEUMGUIDE_PLACES', 'fake'),
+        'provider' => env('MUSEUMGUIDE_PLACES', 'auto'),
         'key' => env('GOOGLE_PLACES_KEY'),
         'radius_m' => (int) env('MUSEUMGUIDE_PLACES_RADIUS', 300),
     ],
