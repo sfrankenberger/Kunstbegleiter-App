@@ -27,14 +27,19 @@ if [ "$remote" = "$(git rev-parse HEAD)" ] && [ "${1:-}" != "--force" ]; then
 fi
 
 echo "=== $(date '+%F %T') Deploy $BRANCH $remote nach $APP_DIR ==="
-$PHP artisan down --retry=15 || true
-trap '$PHP artisan up || true' EXIT
 
 git fetch -q origin "$BRANCH"
 git reset -q --hard "origin/$BRANCH"
 
 $PHP $COMPOSER install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-progress
-$PHP artisan migrate --force
+
+# Wartungsseite (503) nur, wenn Migrationen anstehen. Sonst laeuft die App beim Deploy durch, damit ein Tipp auf
+# "Erneut versuchen" nicht in die Wartungssekunden faellt (Sebastian, 05.10.2026).
+if $PHP artisan migrate:status 2>/dev/null | grep -q 'Pending'; then
+  $PHP artisan down --retry=15 || true
+  trap '$PHP artisan up || true' EXIT
+  $PHP artisan migrate --force
+fi
 # Stammdaten (Epochen) bei jedem Deploy nachziehen, mehrfach aufrufbar
 $PHP artisan db:seed --force
 $PHP artisan optimize:clear

@@ -86,7 +86,7 @@ Nach `.env`-Änderungen: `/opt/plesk/php/8.5/bin/php artisan optimize:clear && .
 **Bauphase (Sebastian, 05.10.2026):** direkt auf `main`, kein PR, kein Staging. Die App ist nur für Sebastian.
 
 1. Lokal Pint und die Tests der geänderten Bereiche, bei Oberflächen ein Screenshot je Seite bei 390 px.
-2. Auf `main` pushen. Der Server holt den Stand innerhalb einer Minute (`deploy.sh`), kurze Wartungsseite während `composer install` und `migrate`. Auf dem iPhone in Safari prüfen.
+2. Auf `main` pushen. Der Server holt den Stand innerhalb einer Minute (`deploy.sh`). Die Wartungsseite (503, etwa 10 Sekunden) gibt es nur noch, wenn Migrationen anstehen; sonst läuft die App beim Deploy durch. Auf dem iPhone in Safari prüfen.
 3. Nach jedem Push das Deploy-Log auf FAIL prüfen, bei Zweifel `php artisan migrate:status` am Server. Meldet CI Rot: sofort nachbessern.
 4. Migrationen, die bestehende Daten verändern oder löschen, vorher ankündigen.
 
