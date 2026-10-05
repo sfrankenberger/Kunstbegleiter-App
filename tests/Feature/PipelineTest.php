@@ -504,7 +504,7 @@ test('images for artist, artwork and related works come from wikidata and common
     Http::fake([
         'www.wikidata.org/w/api.php*' => function ($request) {
             if ($request['action'] === 'wbsearchentities') {
-                return Http::response(['search' => [['id' => str_contains($request['search'], 'Klimt') && ! str_contains($request['search'], 'Kuss') ? 'Q34661' : 'Q698487', 'label' => $request['search'], 'description' => 'x']]]);
+                return Http::response(['search' => [['id' => $request['search'] === 'Gustav Klimt' ? 'Q34661' : 'Q698487', 'label' => $request['search'], 'description' => 'Gemälde von Gustav Klimt']]]);
             }
 
             return Http::response(['claims' => ['P18' => [['mainsnak' => ['datavalue' => ['value' => $request['entity'] === 'Q34661' ? 'Klimt Portrait.jpg' : 'Der Kuss.jpg']]]]]]);

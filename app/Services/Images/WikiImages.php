@@ -18,7 +18,8 @@ class WikiImages
     public const COMMONS = 'https://commons.wikimedia.org/w/api.php';
 
     /**
-     * Portraet oder Abbildung: ['url' => ..., 'credit' => ..., 'wikidata_id' => ...] oder null.
+     * Portraet oder Abbildung: ['url' => ..., 'credit' => ..., 'wikidata_id' => ...] oder null. Bei Werken wird nur
+     * der Titel gesucht und $mustContain (Nachname des Kuenstlers) muss in Label oder Beschreibung stehen.
      *
      * @return array{url: string, credit: ?string, wikidata_id: string}|null
      */
