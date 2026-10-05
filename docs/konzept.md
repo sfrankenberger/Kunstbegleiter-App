@@ -114,6 +114,13 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - Safari bekommt die Siri-Stimmen nicht (Apple gibt sie Web-Apps nicht frei), nur die Stimmen aus Bedienungshilfen > Gesprochene Inhalte. Deshalb spricht jetzt auch die Schnellstufe mit ElevenLabs (`App\Services\Pipeline\Voice`, gemeinsam mit `SynthesizeAudio`), synchron nach dem Kurztext (etwa 4 Sekunden, 10 bis 15 Cent). Ohne Schlüssel oder bei Ausfall liest weiter das Handy vor (Stimmenwahl mit Kompakt, Erweitert, Premium).
 - Stimme: männlich, warm, Dokumentarsprecher. Aus der ElevenLabs-Bibliothek in Sebastians Konto übernommen: narrator "Christian - Warm and Captivating" (`NBqeXKdZHweef6y0B67V`), second und quote "Alexander - Deep TV Narrator" (`kkJxCnlRCckmfFvzDW5Q`). IDs in `config/museumguide.php` und als `ELEVENLABS_VOICE_*` in der `.env` am Server.
 
+## 16. Zwei Sprecher und Musikbett im ausführlichen Guide (Sebastian, 05.10.2026: "ja passt umsetzen")
+
+- **Zwei Sprecher:** Jedes Segment wird mit der Stimme seiner Rolle eingesprochen (narrator "Christian", second und quote "Alexander"), alle Segmente gleichzeitig (`ElevenLabsTtsProvider::synthesizeMany` über `Http::pool`), darum nicht langsamer als eine Stimme. Kosten gleich, ElevenLabs rechnet nach Zeichen. Die Schnellstufe bleibt bei einer Stimme am Stück (ein Aufruf, schneller).
+- **Zusammensetzen und Musik:** `App\Services\Pipeline\AudioMixer` (ffmpeg, am Server `/usr/bin/ffmpeg`): Segmente mit 0,5 s Pause verketten, Musikbett zwei Sekunden vorweg, dann bei 12 % Lautstärke unter der Stimme, am Ende drei Sekunden ausgeblendet. Ohne ffmpeg oder bei Fehler nur verkettet, ohne Musik. Etwa 1 bis 2 Sekunden Rechenzeit, keine laufenden Kosten.
+- **Musik je Epoche:** `App\Services\Pipeline\MusicBed` sucht `storage/app/music/{epoche-slug}.mp3`, dann die Zuordnung `museumguide.music.epochs` (Rokoko zu Barock, Biedermeier zu Romantik usw.), dann `default.mp3`. Die Dateien liegen nur am Server (nicht im Repo, `bin/fetch-music` lädt sie): gemeinfreie Aufnahmen der United States Air Force Band von Wikimedia Commons (Werke von US-Bundesbediensteten, Public Domain): Bach Air (Barock), Pachelbel Canon (Standard, Renaissance), Allegro in C (Klassik), Strauss-Walzer (Romantik), Debussy Clair de Lune (Impressionismus, Symbolismus, Jugendstil), Debussy La mer (Moderne). Austausch jederzeit durch eigene Dateien mit gleichem Namen.
+- Abschaltbar mit `MUSEUMGUIDE_MUSIC=false`.
+
 ## 8. Offen nach Etappe 3 (Stand 05.10.2026)
 
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.

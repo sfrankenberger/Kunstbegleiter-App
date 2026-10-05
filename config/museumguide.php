@@ -86,6 +86,25 @@ return [
         ],
     ],
 
+    // Musikbett und zwei Sprecher im ausfuehrlichen Guide (docs/konzept.md Abschnitt 16). Dateien unter
+    // storage/app/music/{epoche-slug}.mp3 oder default.mp3; verwandte Epochen hier auf eine Datei abbilden.
+    'music' => [
+        'enabled' => (bool) env('MUSEUMGUIDE_MUSIC', true),
+        'ffmpeg' => env('FFMPEG_BINARY', 'ffmpeg'),
+        'dir' => storage_path('app/music'),
+        'volume' => 0.12,
+        'intro_seconds' => 2,
+        'outro_seconds' => 3,
+        'gap_seconds' => 0.5,
+        'epochs' => [
+            'antike' => 'barock', 'mittelalter' => 'barock', 'gotik' => 'barock', 'renaissance' => 'barock', 'manierismus' => 'barock',
+            'rokoko' => 'barock', 'klassizismus' => 'klassik', 'biedermeier' => 'romantik', 'realismus' => 'romantik',
+            'historismus' => 'romantik', 'impressionismus' => 'impressionismus', 'symbolismus' => 'impressionismus',
+            'jugendstil' => 'impressionismus', 'expressionismus' => 'moderne', 'klassische-moderne' => 'moderne',
+            'nachkriegsmoderne' => 'moderne',
+        ],
+    ],
+
     // Ort: Google Places hinter App\Contracts\PlacesClient (auto, fake, google). Etappe 2.
     // auto: google, wenn ein Schluessel da ist (Admin > Zugaenge oder .env), sonst fake.
     'places' => [

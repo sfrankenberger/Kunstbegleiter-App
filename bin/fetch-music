@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Musikbett fuer den ausfuehrlichen Guide (docs/konzept.md Abschnitt 16): gemeinfreie Aufnahmen der United States
+# Air Force Band von Wikimedia Commons (Public Domain, Werke von US-Bundesbediensteten) nach storage/app/music/
+# laden, auf einheitliche Lautstaerke bringen (loudnorm) und als 96 kbit MP3 ablegen. Einmal am Server ausfuehren:
+#   bin/fetch-music            (braucht curl und ffmpeg)
+# Eigene Stuecke: Datei mit gleichem Namen ersetzen. Dateinamen = Epochen-Slug oder default (MusicBed).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+dir="storage/app/music"
+mkdir -p "$dir"
+ua="Kunstbegleiter/1.0 (mail@sfrankenberger.com)"
+base="https://upload.wikimedia.org/wikipedia/commons"
+
+fetch() {
+    local name="$1" url="$2" tmp="$dir/$1.download"
+    if [ -s "$dir/$name.mp3" ]; then echo "$name.mp3 ist schon da"; return; fi
+    echo "lade $name ..."
+    curl -fsSL -A "$ua" -o "$tmp" "$url"
+    ffmpeg -nostdin -hide_banner -loglevel error -y -i "$tmp" -af "loudnorm=I=-20:TP=-2:LRA=11" -ar 44100 -codec:a libmp3lame -b:a 96k "$dir/$name.mp3"
+    rm -f "$tmp"
+    echo "$name.mp3 fertig"
+}
+
+fetch barock          "$base/e/ec/Air_-_Air_Force_Strings_-_United_States_Air_Force_Band.mp3"                                        # Bach, Air
+fetch default         "$base/1/12/Canon_%282004%29_-_Strolling_Strings_-_United_States_Air_Force_Band.mp3"                            # Pachelbel, Canon
+fetch klassik         "$base/c/cd/Allegro_in_C_Major_-_Air_Force_Strings_-_United_States_Air_Force_Band.mp3"                          # Allegro in C
+fetch romantik        "$base/4/48/USAF_Band_Strauss_Waltz_Medley.ogg"                                                                 # Strauss, Walzer
+fetch impressionismus "$base/6/63/Clair_de_Lune_-_Wright_Brass_-_United_States_Air_Force_Band_of_Flight.mp3"                          # Debussy, Clair de Lune
+fetch moderne         "$base/5/51/La_mer_-_I._De_l%27aube_%C3%A0_midi_sur_la_mer_-_Concert_Band_-_United_States_Air_Force_Band.mp3"   # Debussy, La mer
+
+cat > "$dir/QUELLEN.md" <<'TXT'
+Gemeinfreie Aufnahmen der United States Air Force Band (Public Domain, Wikimedia Commons), geladen mit bin/fetch-music:
+barock = Bach, Air (Air Force Strings); default = Pachelbel, Canon (Strolling Strings); klassik = Allegro in C Major (Air Force Strings);
+romantik = Strauss Waltz Medley (USAF Band); impressionismus = Debussy, Clair de Lune (Wright Brass); moderne = Debussy, La mer I (Concert Band).
+TXT
+echo "Musik liegt in $dir"

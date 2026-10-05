@@ -22,7 +22,7 @@ class SynthesizeAudio extends PipelineJob
         }
 
         $capture->forceFill(['step' => PipelineStep::Speaking])->save();
-        $error = app(Voice::class)->synthesize($capture, $guide);
+        $error = app(Voice::class)->synthesize($capture, $guide, rich: true);
 
         $capture->forceFill([
             'status' => CaptureStatus::Done,

@@ -16,6 +16,14 @@ interface TtsProvider
     public function synthesize(string $text, string $voice): TtsResult;
 
     /**
+     * Mehrere Segmente auf einmal (zwei Sprecher), moeglichst parallel. Reihenfolge wie die Eingabe.
+     *
+     * @param  list<array{text: string, voice: string}>  $segments
+     * @return list<TtsResult>
+     */
+    public function synthesizeMany(array $segments): array;
+
+    /**
      * Verfuegbare Stimmen: Kennung => Anzeigename.
      *
      * @return array<string, string>

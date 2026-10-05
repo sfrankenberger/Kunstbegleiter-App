@@ -22,6 +22,11 @@ class FakeTtsProvider implements TtsProvider
         );
     }
 
+    public function synthesizeMany(array $segments): array
+    {
+        return array_map(fn (array $s): TtsResult => $this->synthesize($s['text'], $s['voice']), $segments);
+    }
+
     public function voices(): array
     {
         return [

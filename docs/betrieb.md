@@ -79,6 +79,8 @@ Nach `.env`-Änderungen: `/opt/plesk/php/8.5/bin/php artisan optimize:clear && .
 
 **Pipeline (Etappe 3):** Schnellstufe und Erkennung laufen synchron in der Anfrage. Recherche plus Skript, Stimme und Lernen der ausführlichen Stufe laufen als Queue-Jobs; `App\Support\QueueKick` startet den Worker sofort (`KUNST_PHP=/opt/plesk/php/8.5/bin/php` in der `.env`), der Cron bleibt als Netz. Ziel: schnell 10 Sekunden, ausführlich 45 Sekunden bis zur Stimme. Die Schlüssel kommen aus Admin > Einstellungen > Zugänge; `ANTHROPIC_API_KEY` und `ELEVENLABS_API_KEY` in der `.env` sind nur der Rückfall. Fehlgeschlagene Jobs stehen in `failed_jobs` (`php artisan queue:failed`), die Aufnahme zeigt die Meldung und "Erneut versuchen".
 
+**Musikbett:** `bin/fetch-music` einmal am Server ausführen (lädt die gemeinfreien Aufnahmen nach `storage/app/music/`, braucht curl und ffmpeg). Eigene Stücke: gleiche Dateinamen ersetzen.
+
 ## 4. Ablauf einer Änderung
 
 **Bauphase (Sebastian, 05.10.2026):** direkt auf `main`, kein PR, kein Staging. Die App ist nur für Sebastian.

@@ -12,6 +12,7 @@ use App\Livewire\Pages\Profil;
 use App\Models\AiCall;
 use App\Models\Artwork;
 use App\Models\Capture;
+use App\Models\Epoch;
 use App\Models\KnowledgeItem;
 use App\Models\Museum;
 use App\Models\Research;
@@ -19,14 +20,19 @@ use App\Models\User;
 use App\Models\Visit;
 use App\Services\Ai\ClaudeClient;
 use App\Services\Captures\CaptureService;
+use App\Services\Pipeline\AudioMixer;
+use App\Services\Pipeline\MusicBed;
 use App\Services\Pipeline\Pipeline;
 use App\Services\Pipeline\Schemas;
 use App\Services\Tts\ElevenLabsTtsProvider;
+use App\Services\Tts\FakeTtsProvider;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Symfony\Component\Process\Process;
 
 /*
  * Pipeline-Tests mit gefaelschten API-Antworten (nie echte Kosten). Die Queue laeuft in Tests synchron, eine Kette
@@ -413,4 +419,64 @@ test('no schema uses union types, the api allows only a few', function () {
 
     expect(Schemas::normalize(['title' => ' ', 'artist_born' => 0, 'sections' => ['quote_text' => '', 'artist' => 'x']]))
         ->toBe(['title' => null, 'artist_born' => null, 'sections' => ['quote_text' => null, 'artist' => 'x']]);
+});
+
+test('the full guide speaks every role with its own voice and mixes the pieces', function () {
+    $recorder = new class extends FakeTtsProvider
+    {
+        /** @var list<array{text: string, voice: string}> */
+        public array $many = [];
+
+        public function synthesizeMany(array $segments): array
+        {
+            $this->many = $segments;
+
+            return parent::synthesizeMany($segments);
+        }
+    };
+    $this->app->instance(TtsProvider::class, $recorder);
+    $user = User::factory()->create();
+    $capture = Capture::factory()->done()->for($user)->create(['status' => CaptureStatus::Scripted]);
+    $guide = $capture->audioGuides()->create(['script' => scriptJson()['segments'], 'word_count' => 20]);
+
+    (new SynthesizeAudio($capture->getKey()))->handle();
+
+    expect(array_column($recorder->many, 'voice'))->toBe(['narrator', 'quote', 'narrator'])
+        ->and($guide->fresh()->tts_characters)->toBe(array_sum(array_map(fn ($s) => mb_strlen($s['text']), scriptJson()['segments'])))
+        ->and($capture->fresh()->status)->toBe(CaptureStatus::Done);
+    Storage::disk('local')->assertExists($guide->fresh()->audio_path);
+});
+
+test('the mixer joins segments with ffmpeg and lays music underneath, the bed is picked by epoch', function () {
+    $mixer = app(AudioMixer::class);
+
+    if (! $mixer->hasFfmpeg()) {
+        $this->markTestSkipped('ffmpeg fehlt lokal');
+    }
+
+    $dir = sys_get_temp_dir().'/kb-music-'.uniqid();
+    mkdir($dir);
+    $tone = fn (string $file, int $hz, float $seconds) => (new Process(['ffmpeg', '-nostdin', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', "sine=frequency=$hz:duration=$seconds", '-codec:a', 'libmp3lame', '-b:a', '64k', $file]))->mustRun();
+    $tone("$dir/a.mp3", 440, 1);
+    $tone("$dir/b.mp3", 660, 1);
+    $tone("$dir/barock.mp3", 220, 2);
+    config()->set('museumguide.music.dir', $dir);
+    config()->set('museumguide.music.epochs.rokoko', 'barock');
+
+    $music = app(MusicBed::class);
+    $epoch = Epoch::factory()->create(['slug' => 'rokoko', 'name' => 'Rokoko']);
+    $artwork = Artwork::factory()->create(['epoch_id' => $epoch->getKey()]);
+    expect($music->pick($artwork))->toBe("$dir/barock.mp3")
+        ->and($music->pick(Artwork::factory()->create(['epoch_id' => null])))->toBeNull();
+
+    $mixed = $mixer->mix([file_get_contents("$dir/a.mp3"), file_get_contents("$dir/b.mp3")], "$dir/barock.mp3");
+    file_put_contents("$dir/out.mp3", $mixed);
+    $probe = new Process(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', "$dir/out.mp3"]);
+    $probe->run();
+
+    // 2 s Intro + 2 x (1 s Ton + 0,5 s Pause) + 3 s Ausklang = etwa 8 Sekunden
+    expect(strlen($mixed))->toBeGreaterThan(1000)
+        ->and((float) trim($probe->getOutput()))->toBeGreaterThan(6.5)->toBeLessThan(9.5);
+
+    File::deleteDirectory($dir);
 });
