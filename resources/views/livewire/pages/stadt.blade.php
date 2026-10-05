@@ -39,7 +39,7 @@
         <div class="kb-card flex flex-col gap-2">
             <p class="font-semibold">In der Nähe</p>
             @foreach ($nearby as $place)
-                <button type="button" class="flex items-center gap-3 rounded-xl border border-stone-200 p-2 text-left" wire:click="choose('{{ $place['wikidata_id'] }}')" wire:loading.attr="disabled">
+                <button type="button" class="flex items-center gap-3 rounded-xl border border-stone-200 p-2 text-left" wire:click="choose('{{ \App\Services\Places\PlaceFinder::key($place) }}')" wire:loading.attr="disabled">
                     @if ($place['image'])
                         <img src="{{ $place['image'] }}" alt="" class="h-16 w-16 shrink-0 rounded-lg bg-stone-100 object-cover" loading="lazy">
                     @else
@@ -47,7 +47,7 @@
                     @endif
                     <span class="min-w-0 flex-1">
                         <span class="block truncate font-medium">{{ $place['name'] }}</span>
-                        <span class="block truncate text-xs text-stone-500">{{ $place['distance_m'] }} m · {{ \App\Models\Place::KINDS[$place['kind']] ?? 'Ort' }}{{ $place['architect'] ? ' · '.$place['architect'] : '' }}{{ $place['built'] ? ' · '.$place['built'] : '' }}</span>
+                        <span class="block truncate text-xs text-stone-500">{{ $place['distance_m'] }} m · {{ \App\Models\Place::KINDS[$place['kind']] ?? 'Ort' }}{{ $place['architect'] ? ' · '.$place['architect'] : '' }}{{ $place['built'] ? ' · '.$place['built'] : '' }}{{ ($place['source'] ?? '') === 'google' && $place['address'] ? ' · '.$place['address'] : '' }}</span>
                         @if ($place['description'])<span class="block truncate text-xs text-stone-500">{{ $place['description'] }}</span>@endif
                     </span>
                 </button>

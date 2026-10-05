@@ -40,7 +40,7 @@ class QuickOverview extends PipelineJob
                 'knowledge_profile' => $profile,
                 'name' => $place->name,
                 'kind' => $place->kindLabel(),
-                'city' => $place->city?->name ?? 'Wien',
+                'city' => $place->city?->name ?? 'unbekannt',
                 'architect' => $place->architect ?? 'unbekannt',
                 'built' => $place->built ?? 'unbekannt',
                 'description' => $place->description ?? 'keine',

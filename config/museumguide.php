@@ -135,6 +135,9 @@ return [
         // Reiter Stadt: Umkreis fuer Orte aus Wikidata (Meter) und Zeitlimit der SPARQL-Abfrage
         'poi_radius_m' => (int) env('MUSEUMGUIDE_POI_RADIUS', 400),
         'wikidata_timeout' => 12,
+        'overpass_timeout' => 12,
+        // Google Places als dritte Quelle fuer Orte (nur mit Schluessel)
+        'google_pois' => (bool) env('MUSEUMGUIDE_GOOGLE_POIS', true),
         'key' => env('GOOGLE_PLACES_KEY'),
         'radius_m' => (int) env('MUSEUMGUIDE_PLACES_RADIUS', 300),
     ],

@@ -167,7 +167,13 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Ort-Seite** ist die Werk-Seite mit anderen Beschriftungen: Kopf mit Art, Stadt, Architekt und Baujahr und dem Wikidata-Bild (oder dem eigenen Foto), Abschnitte Architekt und Bauherr, Baugeschichte, Umbauten und Restaurierungen, Zeit und Stil, Vor Ort hinschauen, Nutzung und Anekdoten, Vergleichsbauten. Kein "Mehr zum Künstler" (Architektenprofile später).
 - Offen für Schritt 2: historische Karten (Kulturgut Wien), Architektenprofile im Reiter Künstler, Google Places als Ergänzung für Orte ohne Wikidata-Eintrag.
 
-## 8. Offen nach Etappe 3 (Stand 05.10.2026)
+## 24. Orte aus drei Quellen, Stadt aus der Position (Sebastian, 05.10.2026, aus Paris)
+
+- "Es geht mir nicht nur um Wiki-Einträge." Der Finder (`App\Services\Places\PlaceFinder`) führt jetzt drei Quellen zusammen: Wikidata (bekannte Orte mit Bild, Architekt, Baujahr), OpenStreetMap über die Overpass-API (`OverpassPlaces`: Kunst im öffentlichen Raum, historische Bauten, Denkmäler, Kirchen, Brunnen, Plätze, Brücken, Parks, weltweit dichter, kostenlos) und Google Places (`GooglePlacesClient::nearbyPois`, nur mit Schlüssel, abschaltbar mit `MUSEUMGUIDE_GOOGLE_POIS=false`). Gleiche Wikidata-ID oder ähnlicher Name im Umkreis von 80 Metern werden zu einem Treffer verschmolzen, Wikidata-Angaben gewinnen, fehlende Felder (Adresse, Künstler, Baujahr) kommen aus OSM. Reihenfolge: bekannte Orte (Wikipedia-Sprachen, Wikipedia-Verweis in OSM) vor Denkmallisten, dann Entfernung.
+- Orte ohne Wikidata-Eintrag bekommen den Schlüssel `places.osm_id` ("node/123") oder `place_id` (Google). Der Guide selbst recherchiert ohnehin im Netz (Websuche), die Liste ist nur der Finder.
+- Die Stadt kommt aus der Position: `Geocoder` (Nominatim, OpenStreetMap, 30 Tage Cache je gerundeter Position) liefert Stadt und Land für Ort, Prompt und Fotoerkennung. Die Annahme "Wien" ist weg. Prompt `place-guide.md` nennt je Land die amtlichen Denkmaldatenbanken (Frankreich: Base Mérimée, Base Palissy, Paris Musées, Inventaire général).
+
+
 
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.
 - Stimmen-IDs in `config/museumguide.php` (`tts.elevenlabs.voices`) auf echte Stimmen setzen.

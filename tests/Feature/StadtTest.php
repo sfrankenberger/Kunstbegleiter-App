@@ -41,8 +41,20 @@ function sparqlNearby(): array
     ]]];
 }
 
+function osmFakes(): array
+{
+    return [
+        'overpass-api.de/*' => Http::response(['elements' => [
+            ['type' => 'node', 'id' => 11, 'lat' => 48.2088, 'lon' => 16.3697, 'tags' => ['name' => 'Pestsäule', 'historic' => 'monument', 'wikidata' => 'Q697214', 'addr:street' => 'Graben']],
+            ['type' => 'node', 'id' => 12, 'lat' => 48.2090, 'lon' => 16.3700, 'tags' => ['name' => 'Leopoldsbrunnen', 'amenity' => 'fountain', 'artist_name' => 'Johann Martin Fischer', 'start_date' => '1804']],
+            ['type' => 'way', 'id' => 13, 'center' => ['lat' => 48.2091, 'lon' => 16.3702], 'tags' => ['name' => 'Graben', 'highway' => 'pedestrian']],
+        ]]),
+        'nominatim.openstreetmap.org/*' => Http::response(['address' => ['city' => 'Wien', 'country_code' => 'at']]),
+    ];
+}
+
 test('nearby places come from wikidata without streets, nearest first, and a tap starts the quick guide', function () {
-    Http::fake([
+    Http::fake(osmFakes() + [
         'query.wikidata.org/*' => Http::response(sparqlNearby()),
         'api.anthropic.com/*' => Http::response(claudeJson(scriptJson())),
     ]);
@@ -53,8 +65,11 @@ test('nearby places come from wikidata without streets, nearest first, and a tap
         ->assertSee('Pestsäule')
         ->assertSee('Fischer von Erlach')
         ->assertSee('Peterskirche')
+        ->assertSee('Leopoldsbrunnen')
+        ->assertSee('Johann Martin Fischer')
         ->assertDontSee('Straße in Wien')
         ->assertSet('nearby.0.wikidata_id', 'Q697214')
+        ->assertSet('nearby.0.osm_id', 'node/11')
         ->assertSet('nearby.1.wikidata_id', 'Q871070');
 
     $component->call('choose', 'Q697214')->assertRedirect();
@@ -65,6 +80,9 @@ test('nearby places come from wikidata without streets, nearest first, and a tap
         ->and($place->architect)->toBe('Johann Bernhard Fischer von Erlach')
         ->and($place->built)->toBe('1693')
         ->and($place->image_url)->toContain('Special:FilePath')
+        ->and($place->osm_id)->toBe('node/11')
+        ->and($place->address)->toBe('Graben')
+        ->and($place->city->name)->toBe('Wien')
         ->and($capture->place_id)->toBe($place->getKey())
         ->and($capture->visit_id)->toBeNull()
         ->and($capture->mode)->toBe(GuideMode::Quick)
@@ -82,7 +100,7 @@ test('nearby places come from wikidata without streets, nearest first, and a tap
 });
 
 test('a typed place is looked up at wikidata and the full guide runs through research and voice', function () {
-    Http::fake([
+    Http::fake(osmFakes() + [
         'www.wikidata.org/*' => Http::response(['search' => [['id' => 'Q871070', 'label' => 'Peterskirche', 'description' => 'Barockkirche in Wien']]]),
         'query.wikidata.org/*' => Http::response(['results' => ['bindings' => [[
             'coord' => ['value' => 'Point(16.3697 48.2095)'], 'classes' => ['value' => 'http://www.wikidata.org/entity/Q16970'],
@@ -110,7 +128,7 @@ test('a typed place is looked up at wikidata and the full guide runs through res
 });
 
 test('a photo in the city is recognised and matched to the nearest wikidata place', function () {
-    Http::fake([
+    Http::fake(osmFakes() + [
         'query.wikidata.org/*' => Http::response(sparqlNearby()),
         'api.anthropic.com/*' => Http::response(claudeJson(array_merge(recognitionJson(), scriptJson(), ['title' => 'Pestsäule am Graben', 'artist' => 'Fischer von Erlach', 'inventory_number' => '']))),
     ]);
@@ -129,11 +147,34 @@ test('a photo in the city is recognised and matched to the nearest wikidata plac
         ->and($capture->place->name)->toBe('Pestsäule')
         ->and($capture->status)->toBe(CaptureStatus::Done)
         ->and($capture->photos)->toHaveCount(1);
-    Http::assertSent(fn ($request) => str_contains($request->url(), 'anthropic') && str_contains((string) $request['system'], 'In der Nähe laut Wikidata: Pestsäule (0 m'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'anthropic') && str_contains((string) $request['system'], 'In der Nähe laut Wikidata: Pestsäule (0 m') && str_contains((string) $request['system'], 'Stadt Wien'));
 });
 
 test('the similarity check and the distance are forgiving but not sloppy', function () {
     expect(PlaceMatcher::similar('Pestsäule', 'Pestsaeule am Graben'))->toBeTrue()
         ->and(PlaceMatcher::similar('Peterskirche', 'Pestsäule'))->toBeFalse()
         ->and((int) round(WikiPlaces::distance(48.2089, 16.3698, 48.2095, 16.3697)))->toBeBetween(60, 75);
+});
+
+test('an osm-only place gets its own record keyed by osm id and the city from geocoding', function () {
+    Http::fake(osmFakes() + [
+        'query.wikidata.org/*' => Http::response(['results' => ['bindings' => []]]),
+        'api.anthropic.com/*' => Http::response(claudeJson(scriptJson())),
+    ]);
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)->test(Stadt::class)
+        ->call('locate', 48.2089, 16.3698, 10)
+        ->assertSee('Leopoldsbrunnen')
+        ->assertDontSee('Graben')
+        ->call('choose', 'node/12')
+        ->assertRedirect();
+
+    $place = Place::query()->firstWhere('osm_id', 'node/12');
+    expect($place)->not->toBeNull()
+        ->and($place->kind)->toBe('fountain')
+        ->and($place->architect)->toBe('Johann Martin Fischer')
+        ->and($place->built)->toBe('1804')
+        ->and($place->wikidata_id)->toBeNull()
+        ->and($place->city->country_code)->toBe('AT');
 });

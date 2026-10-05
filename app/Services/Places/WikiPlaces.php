@@ -95,7 +95,7 @@ SPARQL;
 
         usort($places, fn (array $a, array $b): int => [$b['notable'], $a['distance_m']] <=> [$a['notable'], $b['distance_m']]);
 
-        return array_values(array_map(fn (array $p): array => array_diff_key($p, ['notable' => 1]), array_slice($places, 0, $limit)));
+        return array_values(array_slice($places, 0, $limit));
     }
 
     /**
@@ -188,9 +188,8 @@ SPARQL);
         $lat = $hit['lat'] ?? null;
         $lng = $hit['lng'] ?? null;
 
-        // Ohne Stadtangabe: innerhalb des Wiener Stadtgebiets ist es Wien
-        if ($city === null && $lat !== null && $lng !== null && $lat > 48.11 && $lat < 48.33 && $lng > 16.18 && $lng < 16.58) {
-            $city = City::query()->firstOrCreate(['name' => 'Wien', 'country_code' => 'AT']);
+        if ($city === null && $lat !== null && $lng !== null) {
+            $city = app(Geocoder::class)->city((float) $lat, (float) $lng);
         }
 
         return Place::query()->create([

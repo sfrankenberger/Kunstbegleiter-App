@@ -3,8 +3,9 @@
 namespace App\Services\Pipeline;
 
 use App\Models\Capture;
-use App\Models\City;
 use App\Models\Place;
+use App\Services\Places\Geocoder;
+use App\Services\Places\PlaceFinder;
 use App\Services\Places\WikiPlaces;
 use Illuminate\Support\Str;
 
@@ -14,7 +15,7 @@ use Illuminate\Support\Str;
  */
 class PlaceMatcher
 {
-    public function __construct(private readonly WikiPlaces $wiki) {}
+    public function __construct(private readonly WikiPlaces $wiki, private readonly PlaceFinder $finder, private readonly Geocoder $geocoder) {}
 
     /**
      * @param  array<string, mixed>  $recognition
@@ -25,17 +26,13 @@ class PlaceMatcher
         $place = null;
 
         if ($capture->lat !== null && $capture->lng !== null) {
-            foreach ($this->wiki->nearby((float) $capture->lat, (float) $capture->lng, (int) config('museumguide.places.poi_radius_m', 400), 60) as $hit) {
-                if (self::similar($hit['name'], $name)) {
-                    $place = $this->wiki->placeFromHit($hit, $capture->place?->city);
-                    break;
-                }
-            }
+            $hit = PlaceFinder::match($this->finder->nearby((float) $capture->lat, (float) $capture->lng, (int) config('museumguide.places.poi_radius_m', 400), 60), $name);
+            $place = $hit !== null ? $this->finder->place($hit, (float) $capture->lat, (float) $capture->lng) : null;
         }
 
         if ($place === null) {
             $hit = $this->wiki->search($name);
-            $place = $hit !== null ? $this->wiki->placeFromHit($hit) : Place::query()->whereRaw('lower(name) = ?', [Str::lower($name)])->first();
+            $place = $hit !== null ? $this->finder->place($hit, $capture->lat !== null ? (float) $capture->lat : null, $capture->lng !== null ? (float) $capture->lng : null) : Place::query()->whereRaw('lower(name) = ?', [Str::lower($name)])->first();
         }
 
         if ($place === null) {
@@ -46,7 +43,7 @@ class PlaceMatcher
                 'lng' => $capture->lng,
                 'architect' => filled($recognition['artist'] ?? null) ? (string) $recognition['artist'] : null,
                 'built' => filled($recognition['dating'] ?? null) ? mb_substr((string) $recognition['dating'], 0, 60) : null,
-                'city_id' => City::query()->firstOrCreate(['name' => 'Wien', 'country_code' => 'AT'])->getKey(),
+                'city_id' => $capture->lat !== null && $capture->lng !== null ? $this->geocoder->city((float) $capture->lat, (float) $capture->lng)?->getKey() : null,
                 'facts' => [],
             ]);
         }

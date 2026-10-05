@@ -43,7 +43,7 @@ class ResearchAndWrite extends PipelineJob
                 'max_searches' => $existing !== null ? 0 : $maxSearches,
                 'name' => $place->name,
                 'kind' => $place->kindLabel(),
-                'city' => $place->city?->name ?? 'Wien',
+                'city' => $place->city?->name ?? 'unbekannt',
                 'address' => $place->address ? ', '.$place->address : '',
                 'architect' => $place->architect ?? 'unbekannt',
                 'built' => $place->built ?? 'unbekannt',

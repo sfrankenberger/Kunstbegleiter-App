@@ -10,7 +10,8 @@ use App\Models\Epoch;
 use App\Services\Ai\ClaudeClient;
 use App\Services\Pipeline\Pipeline;
 use App\Services\Pipeline\Schemas;
-use App\Services\Places\WikiPlaces;
+use App\Services\Places\Geocoder;
+use App\Services\Places\PlaceFinder;
 use App\Support\Prompts;
 
 /**
@@ -38,16 +39,18 @@ class QuickGuide extends PipelineJob
         $profile = filled($capture->user->knowledge_profile) ? (string) $capture->user->knowledge_profile : 'Austria Guide in Wien, breites Vorwissen zur Kunstgeschichte.';
         $placeMode = $capture->visit_id === null;
         $nearby = 'keine';
+        $city = null;
 
         if ($placeMode && $capture->lat !== null && $capture->lng !== null) {
-            $nearby = collect(app(WikiPlaces::class)->nearby((float) $capture->lat, (float) $capture->lng, (int) config('museumguide.places.poi_radius_m', 400), 25))
+            $city = app(Geocoder::class)->city((float) $capture->lat, (float) $capture->lng);
+            $nearby = collect(app(PlaceFinder::class)->nearby((float) $capture->lat, (float) $capture->lng, (int) config('museumguide.places.poi_radius_m', 400), 25))
                 ->map(fn (array $p): string => $p['name'].' ('.$p['distance_m'].' m'.($p['architect'] ? ', '.$p['architect'] : '').($p['built'] ? ', '.$p['built'] : '').')')
                 ->implode('; ') ?: 'keine';
         }
 
         $result = app(ClaudeClient::class)->structured(AiPurpose::Quick, [['role' => 'user', 'content' => $content]], Schemas::quickGuide(), [
             'system' => $placeMode ? Prompts::render('place-quick', [
-                'city' => 'Wien',
+                'city' => $city?->name ?? 'unbekannt',
                 'location' => $capture->lat !== null ? round((float) $capture->lat, 4).', '.round((float) $capture->lng, 4) : 'unbekannt',
                 'nearby' => $nearby,
                 'knowledge_profile' => $profile,

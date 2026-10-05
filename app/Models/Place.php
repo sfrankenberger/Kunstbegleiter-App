@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['city_id', 'name', 'kind', 'wikidata_id', 'place_id', 'lat', 'lng', 'address', 'description', 'architect', 'built', 'image_url', 'image_credit', 'facts'])]
+#[Fillable(['city_id', 'name', 'kind', 'wikidata_id', 'osm_id', 'place_id', 'lat', 'lng', 'address', 'description', 'architect', 'built', 'image_url', 'image_credit', 'facts'])]
 /**
  * Ort in der Stadt (docs/konzept.md Abschnitt 23): Statue, Gebaeude, Platz, Kirche, Denkmal. Einmal angelegt
  * (Schluessel Wikidata-ID), geteilt, mit Recherche und Vergleichsbauten wie ein Werk.

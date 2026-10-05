@@ -15,7 +15,26 @@ class GooglePlacesClient implements PlacesClient
 {
     public const ENDPOINT = 'https://places.googleapis.com/v1/places:searchNearby';
 
+    /**
+     * Sehenswuerdigkeiten, Denkmaeler, Kirchen, Plaetze im Umkreis (Reiter Stadt), gleiche Form wie die Museen.
+     *
+     * @return list<array{place_id: string, name: string, address: ?string, lat: float, lng: float, website: ?string, distance_m: int}>
+     */
+    public function nearbyPois(float $lat, float $lng, int $radiusMeters): array
+    {
+        return $this->search($lat, $lng, $radiusMeters, ['tourist_attraction', 'historical_landmark', 'monument', 'church', 'cultural_landmark', 'sculpture', 'plaza', 'historical_place'], 20);
+    }
+
     public function nearbyMuseums(float $lat, float $lng, int $radiusMeters): array
+    {
+        return $this->search($lat, $lng, $radiusMeters, ['museum', 'art_gallery'], 10);
+    }
+
+    /**
+     * @param  list<string>  $types
+     * @return list<array{place_id: string, name: string, address: ?string, lat: float, lng: float, website: ?string, distance_m: int}>
+     */
+    private function search(float $lat, float $lng, int $radiusMeters, array $types, int $max): array
     {
         $key = (string) Secrets::get('google_places_key');
 
@@ -29,8 +48,8 @@ class GooglePlacesClient implements PlacesClient
         ])
             ->timeout(15)
             ->post(self::ENDPOINT, [
-                'includedTypes' => ['museum', 'art_gallery'],
-                'maxResultCount' => 10,
+                'includedTypes' => $types,
+                'maxResultCount' => $max,
                 'languageCode' => 'de',
                 'rankPreference' => 'DISTANCE',
                 'locationRestriction' => ['circle' => ['center' => ['latitude' => $lat, 'longitude' => $lng], 'radius' => $radiusMeters]],

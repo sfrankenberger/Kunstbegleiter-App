@@ -6,6 +6,7 @@ use App\Enums\GuideMode;
 use App\Models\Capture;
 use App\Models\User;
 use App\Services\Captures\CaptureService;
+use App\Services\Places\PlaceFinder;
 use App\Services\Places\WikiPlaces;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
@@ -64,14 +65,14 @@ class Stadt extends Component
         $this->searched = true;
 
         try {
-            $this->nearby = app(WikiPlaces::class)->nearby($lat, $lng, (int) config('museumguide.places.poi_radius_m', 400));
+            $this->nearby = app(PlaceFinder::class)->nearby($lat, $lng, (int) config('museumguide.places.poi_radius_m', 400));
         } catch (Throwable $e) {
             report($e);
             $this->nearby = [];
         }
 
         if ($this->nearby === []) {
-            $this->locationError = 'In der Nähe kennt Wikidata nichts. Ort eingeben oder Foto machen.';
+            $this->locationError = 'In der Nähe ist nichts verzeichnet. Ort eingeben oder Foto machen.';
         }
     }
 
@@ -82,9 +83,9 @@ class Stadt extends Component
         $this->showManual = true;
     }
 
-    public function choose(string $wikidataId): void
+    public function choose(string $key): void
     {
-        $hit = collect($this->nearby)->firstWhere('wikidata_id', $wikidataId);
+        $hit = collect($this->nearby)->first(fn (array $h): bool => PlaceFinder::key($h) === $key);
 
         if ($hit === null) {
             return;
@@ -99,7 +100,7 @@ class Stadt extends Component
         $hit = app(WikiPlaces::class)->search($this->manualName);
 
         if ($hit === null) {
-            $this->addError('manualName', 'Wikidata kennt diesen Ort nicht. Anders schreiben oder ein Foto machen.');
+            $this->addError('manualName', 'Dieser Ort ist nicht verzeichnet. Anders schreiben oder ein Foto machen.');
 
             return;
         }
@@ -163,8 +164,7 @@ class Stadt extends Component
      */
     private function startFor(array $hit): void
     {
-        $wiki = app(WikiPlaces::class);
-        $place = $wiki->placeFromHit($hit);
+        $place = app(PlaceFinder::class)->place($hit, $this->lat, $this->lng);
         $capture = app(CaptureService::class)->createForPlace($this->user(), $place, $this->full ? GuideMode::Full : GuideMode::Quick, $this->lat, $this->lng);
 
         $this->redirectRoute('aufnahme', ['capture' => $capture], navigate: true);
