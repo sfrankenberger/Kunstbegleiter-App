@@ -125,7 +125,7 @@ class ElevenLabsTtsProvider implements TtsProvider
         return [
             'text' => $text,
             'model_id' => (string) config('museumguide.tts.elevenlabs.model', 'eleven_flash_v2_5'),
-            'voice_settings' => ['stability' => 0.5, 'similarity_boost' => 0.75, 'style' => 0.2],
+            'voice_settings' => ['stability' => (float) config('museumguide.tts.elevenlabs.stability', 0.45), 'similarity_boost' => 0.75, 'style' => (float) config('museumguide.tts.elevenlabs.style', 0.35)],
         ];
     }
 

@@ -1,36 +1,43 @@
 #!/usr/bin/env bash
-# Musikbett fuer den ausfuehrlichen Guide (docs/konzept.md Abschnitt 16): gemeinfreie Aufnahmen der United States
-# Air Force Band von Wikimedia Commons (Public Domain, Werke von US-Bundesbediensteten) nach storage/app/music/
-# laden, auf einheitliche Lautstaerke bringen (loudnorm) und als 96 kbit MP3 ablegen. Einmal am Server ausfuehren:
-#   bin/fetch-music            (braucht curl und ffmpeg)
-# Eigene Stuecke: Datei mit gleichem Namen ersetzen. Dateinamen = Epochen-Slug oder default (MusicBed).
+# Musikbett fuer den ausfuehrlichen Guide (docs/konzept.md Abschnitt 16): gemeinfreie Aufnahmen (Musopen,
+# United States Air Force Band) von Wikimedia Commons nach storage/app/music/{epoche}/ laden, auf einheitliche
+# Lautstaerke bringen (loudnorm) und als 96 kbit MP3 ablegen. Liste: resources/music/manifest.tsv
+# (Epoche, Dateiname, URL, Lizenz, Titel). Einmal am Server ausfuehren, dauert einige Minuten:
+#   nohup bin/fetch-music > storage/logs/fetch-music.log 2>&1 &
+# Schon vorhandene Dateien werden uebersprungen. Eigene Stuecke einfach als MP3 in den Epochen-Ordner legen.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 dir="storage/app/music"
-mkdir -p "$dir"
 ua="Kunstbegleiter/1.0 (mail@sfrankenberger.com)"
-base="https://upload.wikimedia.org/wikipedia/commons"
+mkdir -p "$dir"
 
-fetch() {
-    local name="$1" url="$2" tmp="$dir/$1.download"
-    if [ -s "$dir/$name.mp3" ]; then echo "$name.mp3 ist schon da"; return; fi
-    echo "lade $name ..."
-    curl -fsSL -A "$ua" -o "$tmp" "$url"
-    ffmpeg -nostdin -hide_banner -loglevel error -y -i "$tmp" -af "loudnorm=I=-20:TP=-2:LRA=11" -ar 44100 -codec:a libmp3lame -b:a 96k "$dir/$name.mp3"
+# Einzeldateien der ersten Fassung in die Ordner uebernehmen
+for f in "$dir"/*.mp3; do
+    [ -f "$f" ] || continue
+    name=$(basename "$f" .mp3)
+    mkdir -p "$dir/$name"
+    mv "$f" "$dir/$name/usaf-$name.mp3"
+done
+
+: > "$dir/QUELLEN.md"
+echo "Musikbett, geladen mit bin/fetch-music aus resources/music/manifest.tsv (Wikimedia Commons). Lizenz je Datei:" >> "$dir/QUELLEN.md"
+
+while IFS=$'\t' read -r epoche datei url lizenz titel; do
+    [ -z "$epoche" ] && continue
+    case "$epoche" in \#*) continue ;; esac
+    mkdir -p "$dir/$epoche"
+    echo "- $epoche/$datei.mp3: $titel ($lizenz)" >> "$dir/QUELLEN.md"
+    if [ -s "$dir/$epoche/$datei.mp3" ]; then continue; fi
+    tmp="$dir/$epoche/$datei.download"
+    echo "lade $epoche/$datei ..."
+    if ! curl -fsSL --retry 3 --retry-delay 5 -A "$ua" -o "$tmp" "$url"; then echo "FEHLER beim Laden: $url"; rm -f "$tmp"; continue; fi
+    if ffmpeg -nostdin -hide_banner -loglevel error -y -i "$tmp" -t 600 -af "loudnorm=I=-20:TP=-2:LRA=11" -ar 44100 -ac 2 -codec:a libmp3lame -b:a 96k "$dir/$epoche/$datei.mp3"; then
+        echo "$epoche/$datei.mp3 fertig"
+    else
+        echo "FEHLER beim Umrechnen: $datei"; rm -f "$dir/$epoche/$datei.mp3"
+    fi
     rm -f "$tmp"
-    echo "$name.mp3 fertig"
-}
+    sleep 1
+done < resources/music/manifest.tsv
 
-fetch barock          "$base/e/ec/Air_-_Air_Force_Strings_-_United_States_Air_Force_Band.mp3"                                        # Bach, Air
-fetch default         "$base/1/12/Canon_%282004%29_-_Strolling_Strings_-_United_States_Air_Force_Band.mp3"                            # Pachelbel, Canon
-fetch klassik         "$base/c/cd/Allegro_in_C_Major_-_Air_Force_Strings_-_United_States_Air_Force_Band.mp3"                          # Allegro in C
-fetch romantik        "$base/4/48/USAF_Band_Strauss_Waltz_Medley.ogg"                                                                 # Strauss, Walzer
-fetch impressionismus "$base/6/63/Clair_de_Lune_-_Wright_Brass_-_United_States_Air_Force_Band_of_Flight.mp3"                          # Debussy, Clair de Lune
-fetch moderne         "$base/5/51/La_mer_-_I._De_l%27aube_%C3%A0_midi_sur_la_mer_-_Concert_Band_-_United_States_Air_Force_Band.mp3"   # Debussy, La mer
-
-cat > "$dir/QUELLEN.md" <<'TXT'
-Gemeinfreie Aufnahmen der United States Air Force Band (Public Domain, Wikimedia Commons), geladen mit bin/fetch-music:
-barock = Bach, Air (Air Force Strings); default = Pachelbel, Canon (Strolling Strings); klassik = Allegro in C Major (Air Force Strings);
-romantik = Strauss Waltz Medley (USAF Band); impressionismus = Debussy, Clair de Lune (Wright Brass); moderne = Debussy, La mer I (Concert Band).
-TXT
-echo "Musik liegt in $dir"
+echo "Musik liegt in $dir"; ls "$dir"

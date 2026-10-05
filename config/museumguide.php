@@ -78,13 +78,16 @@ return [
             // Gleichzeitige Anfragen (Tarif Free 4, Starter 6, Creator 10; wir bleiben darunter), Pause vor dem Wiederholen bei 429
             'concurrency' => (int) env('ELEVENLABS_CONCURRENCY', 5),
             'retry_seconds' => 3,
-            // Stimmen je Rolle (Voice-IDs aus Sebastians ElevenLabs-Bibliothek, 05.10.2026): narrator "Christian,
-            // warm and captivating" (deutscher Dokumentarsprecher), second und quote "Alexander, deep TV narrator".
-            // Etappe 3 nutzt nur narrator.
+            // Ausdruck: niedrigere Stabilitaet und mehr Stil machen das Erzaehlen lebendiger (0.5/0.2 waere neutral)
+            'stability' => (float) env('ELEVENLABS_STABILITY', 0.45),
+            'style' => (float) env('ELEVENLABS_STYLE', 0.35),
+            // Stimmen je Rolle (Voice-IDs aus Sebastians ElevenLabs-Bibliothek, 05.10.2026): immer Mann und Frau.
+            // narrator "Christian, warm and captivating" (Mann, reif, gemuetlich), second und quote "Leonie, clear and
+            // engaging" (Frau, wach, dynamisch). Die Schnellstufe nutzt nur narrator.
             'voices' => [
                 'narrator' => env('ELEVENLABS_VOICE_NARRATOR', 'NBqeXKdZHweef6y0B67V'),
-                'second' => env('ELEVENLABS_VOICE_SECOND', 'kkJxCnlRCckmfFvzDW5Q'),
-                'quote' => env('ELEVENLABS_VOICE_QUOTE', 'kkJxCnlRCckmfFvzDW5Q'),
+                'second' => env('ELEVENLABS_VOICE_SECOND', 'uvysWDLbKpA4XvpD3GI6'),
+                'quote' => env('ELEVENLABS_VOICE_QUOTE', 'uvysWDLbKpA4XvpD3GI6'),
             ],
         ],
     ],
