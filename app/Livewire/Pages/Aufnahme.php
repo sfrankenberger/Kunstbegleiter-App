@@ -153,12 +153,13 @@ class Aufnahme extends Component
 
     public function render(): View
     {
-        $this->capture->refresh()->load(['photos', 'artwork.artist', 'artwork.epoch', 'artwork.research', 'visit.museum', 'audioGuide', 'factSheet']);
+        $this->capture->refresh()->load(['photos', 'artwork.artist', 'artwork.epoch', 'artwork.research', 'artwork.relatedWorks', 'visit.museum', 'audioGuide', 'factSheet']);
         $research = $this->capture->artwork?->research;
 
         return view('livewire.pages.aufnahme', [
             'photoTypes' => PhotoType::cases(),
             'sources' => $research !== null ? ContextBuilder::sources($research) : [],
+            'imagesPending' => (bool) config('museumguide.images.enabled', true) && $this->capture->isDone() && $this->capture->artwork !== null && $this->capture->artwork->image_checked_at === null && $this->capture->finished_at?->gt(now()->subMinutes(3)),
             'segments' => collect($this->capture->audioGuide?->script ?? [])->filter(fn (mixed $s): bool => is_array($s) && filled($s['text'] ?? null))->values(),
         ]);
     }

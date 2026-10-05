@@ -107,6 +107,7 @@ class ResearchAndWrite extends PipelineJob
         ]);
 
         $capture->setRelation('audioGuide', $guide);
+        QuickOverview::fetchImages($capture, $sheet);
         $capture->forceFill(['status' => CaptureStatus::Scripted, 'step' => PipelineStep::Speaking])->save();
     }
 }

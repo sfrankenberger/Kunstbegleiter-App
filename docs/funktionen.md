@@ -56,6 +56,7 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Musik je Epoche wählen | `App\Services\Pipeline\MusicBed`, Dateien `storage/app/music/`, Download `bin/fetch-music` |
 | Queue-Worker sofort anstoßen | `App\Support\QueueKick` |
 | Fortschritt, Rückfrage, Player, Fact Sheet, Rückmeldung | `App\Livewire\Pages\Aufnahme`, `Capture::isRunning()`, `Capture::progressLabel()` |
+| Bilder von Wikidata und Commons (Portrait, Werk, Vergleichswerke) | `App\Services\Images\WikiImages`, `App\Jobs\FetchImages`, `App\Models\RelatedWork` |
 | Icons im Fact Sheet | `resources/views/components/kb-icon.blade.php` (`<x-kb-icon name="user" />`) |
 | Audio ausliefern (signiert) | `App\Http\Controllers\AudioController`, `AudioGuide::url()`, Route `audio.show` |
 | Sicht auf Aufnahmen (Besitzer, Partner) | `App\Policies\CapturePolicy` |

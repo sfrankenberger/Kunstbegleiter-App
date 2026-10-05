@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-4" @if ($capture->isRunning()) wire:poll.4s @endif>
+<div class="flex flex-col gap-4" @if ($capture->isRunning()) wire:poll.4s @elseif ($imagesPending) wire:poll.5s @endif>
     @php($bullets = fn (mixed $v): array => is_array($v) ? array_values(array_filter(array_map(fn ($x) => is_array($x) ? ($x['text'] ?? '') : (string) $x, $v), 'filled')) : array_values(array_filter(preg_split('/(?<=[.!?])\s+/u', (string) $v) ?: [], 'filled')))
     <div class="kb-card flex gap-3">
         <div class="min-w-0 flex-1">
@@ -216,9 +216,13 @@
             ] as $key => [$label, $icon])
                 @if (filled($sections[$key] ?? null))
                     <div class="kb-card flex gap-3">
-                        <x-kb-icon :name="$icon" class="mt-0.5 h-5 w-5 text-accent" />
+                        @if ($key === 'artist' && $capture->artwork?->artist?->portrait_url)
+                            <img src="{{ $capture->artwork->artist->portrait_url }}" alt="" class="h-20 w-16 shrink-0 rounded-lg object-cover" loading="lazy" title="{{ $capture->artwork->artist->portrait_credit }}">
+                        @else
+                            <x-kb-icon :name="$icon" class="mt-0.5 h-5 w-5 text-accent" />
+                        @endif
                         <div class="min-w-0">
-                            <h2 class="text-sm font-semibold text-stone-700">{{ $label }}</h2>
+                            <h2 class="text-sm font-semibold text-stone-700">{{ $label }}{{ $key === 'artist' && $capture->artwork?->artist ? ': '.$capture->artwork->artist->name : '' }}</h2>
                             <ul class="mt-1 list-disc pl-4 text-sm leading-relaxed">
                                 @foreach ($bullets($sections[$key]) as $point)
                                     <li>{{ $point }}</li>
@@ -228,6 +232,25 @@
                     </div>
                 @endif
             @endforeach
+            @if ($capture->artwork?->relatedWorks?->isNotEmpty())
+                <div class="kb-card">
+                    <h2 class="text-sm font-semibold text-stone-700">Vergleichswerke</h2>
+                    <div class="-mx-4 mt-2 flex gap-3 overflow-x-auto px-4 pb-1">
+                        @foreach ($capture->artwork->relatedWorks as $work)
+                            <div class="w-40 shrink-0">
+                                @if ($work->image_url)
+                                    <img src="{{ $work->image_url }}" alt="" class="h-40 w-40 rounded-lg bg-stone-100 object-cover" loading="lazy" title="{{ $work->image_credit }}">
+                                @else
+                                    <div class="flex h-40 w-40 items-center justify-center rounded-lg bg-stone-100 text-xs text-stone-400">kein Bild</div>
+                                @endif
+                                <p class="mt-1 text-sm font-medium leading-tight">{{ $work->title }}</p>
+                                <p class="text-xs text-stone-500">{{ $work->artist }}{{ $work->year ? ', '.$work->year : '' }}</p>
+                                @if ($work->reason)<p class="mt-1 text-xs leading-snug text-stone-600">{{ $work->reason }}</p>@endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
             @if (filled($sections['quote_text'] ?? null))
                 <div class="kb-card flex gap-3 bg-accent-soft">
                     <x-kb-icon name="quote" class="mt-0.5 h-5 w-5 text-accent" />

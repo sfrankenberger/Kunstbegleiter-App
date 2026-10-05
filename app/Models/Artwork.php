@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['artist_id', 'epoch_id', 'museum_id', 'title', 'dating', 'technique', 'dimensions', 'inventory_number', 'wikidata_id', 'facts', 'sources'])]
+#[Fillable(['artist_id', 'epoch_id', 'museum_id', 'title', 'dating', 'technique', 'dimensions', 'inventory_number', 'wikidata_id', 'facts', 'sources', 'image_url', 'image_credit', 'image_checked_at'])]
 /**
  * Das Werk, einmal angelegt und geteilt. Papierkorb ohne Kaskade auf Aufnahmen: ein Werk im Papierkorb laesst die
  * Aufnahmen beider Nutzer stehen (docs/plan-etappe-1.md Abschnitt 4).
@@ -27,6 +27,7 @@ class Artwork extends Model
         return [
             'facts' => 'array',
             'sources' => 'array',
+            'image_checked_at' => 'datetime',
         ];
     }
 
@@ -46,6 +47,12 @@ class Artwork extends Model
     public function museum(): BelongsTo
     {
         return $this->belongsTo(Museum::class);
+    }
+
+    /** @return HasMany<RelatedWork, $this> */
+    public function relatedWorks(): HasMany
+    {
+        return $this->hasMany(RelatedWork::class)->orderBy('sort_order');
     }
 
     /** @return HasMany<Capture, $this> */

@@ -120,6 +120,13 @@ class Schemas
                     'curator_text' => self::nullableString(),
                     'curator_name' => self::nullableString(),
                     'more' => self::array(['type' => 'string']),
+                    // Vergleichswerke, auf die Text oder Abschnitte verweisen; Bilder holt FetchImages
+                    'related_works' => self::array(self::object([
+                        'title' => ['type' => 'string'],
+                        'artist' => ['type' => 'string'],
+                        'year' => ['type' => 'string'],
+                        'reason' => ['type' => 'string'],
+                    ])),
                 ]),
             ]),
         ];

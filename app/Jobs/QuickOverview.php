@@ -11,6 +11,7 @@ use App\Services\Ai\ClaudeClient;
 use App\Services\Pipeline\Schemas;
 use App\Services\Pipeline\Voice;
 use App\Support\Prompts;
+use App\Support\QueueKick;
 
 /**
  * Schnellstufe (docs/konzept.md Abschnitt 11): ein einziger Aufruf ohne Websuche liefert Kurztext und Fact Sheet.
@@ -56,6 +57,21 @@ class QuickOverview extends PipelineJob
     }
 
     /**
+     * Bilder (Portraet, Werk, Vergleichswerke) in der Queue nachladen, ohne die Antwortzeit zu verlaengern.
+     *
+     * @param  array<string, mixed>  $sheet
+     */
+    public static function fetchImages(Capture $capture, array $sheet): void
+    {
+        if (! (bool) config('museumguide.images.enabled', true) || $capture->artwork_id === null) {
+            return;
+        }
+
+        FetchImages::dispatch((int) $capture->artwork_id, array_values(array_filter((array) ($sheet['sections']['related_works'] ?? []), 'is_array')));
+        QueueKick::now();
+    }
+
+    /**
      * Kurztext (ohne MP3, das Handy liest vor) und Fact Sheet anlegen.
      *
      * @param  list<array<string, mixed>>  $segments
@@ -83,6 +99,7 @@ class QuickOverview extends PipelineJob
         ]);
 
         $capture->setRelation('audioGuide', $guide);
+        self::fetchImages($capture, $sheet);
 
         // Studio-Stimme auch in der Schnellstufe (Sebastian, 05.10.2026); ohne Anbieter liest das Handy vor
         $voice = app(Voice::class);

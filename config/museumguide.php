@@ -111,6 +111,14 @@ return [
         ],
     ],
 
+    // Bilder von Wikidata und Wikimedia Commons (App\Services\Images\WikiImages): nur Links, keine Dateien
+    'images' => [
+        'enabled' => (bool) env('MUSEUMGUIDE_IMAGES', true),
+        'width' => 640,
+        'timeout' => 8,
+        'max_related' => 6,
+    ],
+
     // Ort: Google Places hinter App\Contracts\PlacesClient (auto, fake, google). Etappe 2.
     // auto: google, wenn ein Schluessel da ist (Admin > Zugaenge oder .env), sonst fake.
     'places' => [

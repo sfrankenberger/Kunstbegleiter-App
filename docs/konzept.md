@@ -136,7 +136,14 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 
 - Vorher musste erst die Standortsuche durch (bis 12 Sekunden), ehe "Ich bin im ..." und "Ohne Museum" erschienen. Jetzt stehen alle drei Wege von Anfang an auf der Startkarte: "Museum in der Nähe suchen" (GPS plus Places), "Museum eingeben" (Name und Stadt), "Ohne Museum" (sofort).
 
-## 8. Offen nach Etappe 3 (Stand 05.10.2026)
+## 20. Bilder zu Künstler und Vergleichswerken (Sebastian, 05.10.2026)
+
+- Wunsch: beim Abschnitt Künstler immer ein Bild des Künstlers, und Bilder zu den Werken, auf die der Text verweist; je Künstler einmal erfasst und dann verknüpft, damit die App nicht aufgebläht wird.
+- Umsetzung: `App\Services\Images\WikiImages` sucht bei Wikidata (deutsch, dann englisch), nimmt das Bild aus Eigenschaft P18 und baut einen Vorschau-Link über Wikimedia Commons (`Special:FilePath`, Breite `museumguide.images.width` = 640 px) samt Nachweis (Urheber, Lizenz, "Wikimedia Commons"). Nur Links, keine Dateien. Gespeichert in `artists.portrait_url` und `.portrait_credit`, `artworks.image_url` und `.image_credit` (je mit `*_checked_at`, einmal geprüft, auch wenn nichts gefunden wurde), Vergleichswerke in `related_works` (Titel, Künstler, Jahr, Grund, Bild) je Werk.
+- Ablauf: Das Fact Sheet bekommt `sections.related_works` (2 bis 6 Werke, auf die Skript oder Abschnitte verweisen). Nach Kurztext bzw. Skript schickt `QuickOverview::fetchImages` den Job `FetchImages` in die Queue (Worker sofort angestoßen), die Antwortzeit bleibt unberührt. Die Werk-Seite pollt nach dem Fertigwerden noch bis zu drei Minuten alle 5 Sekunden, bis die Bilder da sind. Anzeige: Portrait im Abschnitt Künstler, Karte "Vergleichswerke" als seitlich scrollbare Reihe. Abschaltbar mit `MUSEUMGUIDE_IMAGES=false` (in Tests aus, `phpunit.xml`).
+- Grenzen: Wikidata kennt nicht jedes Werk; dann steht "kein Bild". Bildrechte: Commons liefert Werke mit freier Lizenz oder gemeinfrei, der Nachweis steht als Tooltip am Bild.
+
+
 
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.
 - Stimmen-IDs in `config/museumguide.php` (`tts.elevenlabs.voices`) auf echte Stimmen setzen.

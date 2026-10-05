@@ -5,11 +5,13 @@ use App\Enums\AiPurpose;
 use App\Enums\CaptureStatus;
 use App\Enums\GuideMode;
 use App\Enums\PipelineStep;
+use App\Jobs\FetchImages;
 use App\Jobs\SynthesizeAudio;
 use App\Livewire\Pages\Aufnahme;
 use App\Livewire\Pages\Jetzt;
 use App\Livewire\Pages\Profil;
 use App\Models\AiCall;
+use App\Models\Artist;
 use App\Models\Artwork;
 use App\Models\Capture;
 use App\Models\Epoch;
@@ -20,6 +22,7 @@ use App\Models\User;
 use App\Models\Visit;
 use App\Services\Ai\ClaudeClient;
 use App\Services\Captures\CaptureService;
+use App\Services\Images\WikiImages;
 use App\Services\Pipeline\AudioMixer;
 use App\Services\Pipeline\MusicBed;
 use App\Services\Pipeline\Pipeline;
@@ -495,4 +498,43 @@ test('elevenlabs synthesizes in groups below the concurrency limit and retries o
     expect($results)->toHaveCount(12)
         ->and($calls)->toBe(17)
         ->and($results[0]->characters)->toBe(6);
+});
+
+test('images for artist, artwork and related works come from wikidata and commons and are stored once', function () {
+    Http::fake([
+        'www.wikidata.org/w/api.php*' => function ($request) {
+            if ($request['action'] === 'wbsearchentities') {
+                return Http::response(['search' => [['id' => str_contains($request['search'], 'Klimt') && ! str_contains($request['search'], 'Kuss') ? 'Q34661' : 'Q698487', 'label' => $request['search'], 'description' => 'x']]]);
+            }
+
+            return Http::response(['claims' => ['P18' => [['mainsnak' => ['datavalue' => ['value' => $request['entity'] === 'Q34661' ? 'Klimt Portrait.jpg' : 'Der Kuss.jpg']]]]]]);
+        },
+        'commons.wikimedia.org/*' => Http::response(['query' => ['pages' => ['1' => ['imageinfo' => [['extmetadata' => ['Artist' => ['value' => '<a>Moriz Nähr</a>'], 'LicenseShortName' => ['value' => 'Public domain']]]]]]]]),
+    ]);
+    $artist = Artist::factory()->create(['name' => 'Gustav Klimt', 'wikidata_id' => null]);
+    $artwork = Artwork::factory()->create(['title' => 'Der Kuss', 'artist_id' => $artist->getKey(), 'wikidata_id' => null]);
+
+    (new FetchImages($artwork->getKey(), [['title' => 'Judith', 'artist' => 'Gustav Klimt', 'year' => '1901', 'reason' => 'Gleiche Goldtechnik']]))->handle(app(WikiImages::class));
+
+    $artist->refresh();
+    $artwork->refresh();
+    expect($artist->portrait_url)->toContain('Special:FilePath/Klimt_Portrait.jpg')
+        ->and($artist->portrait_credit)->toBe('Moriz Nähr, Public domain, Wikimedia Commons')
+        ->and($artist->wikidata_id)->toBe('Q34661')
+        ->and($artwork->image_url)->toContain('Der_Kuss.jpg')
+        ->and($artwork->relatedWorks)->toHaveCount(1)
+        ->and($artwork->relatedWorks[0]->image_url)->not->toBeNull()
+        ->and($artwork->relatedWorks[0]->reason)->toBe('Gleiche Goldtechnik');
+
+    $calls = count(Http::recorded());
+    (new FetchImages($artwork->getKey()))->handle(app(WikiImages::class));
+    expect(count(Http::recorded()))->toBe($calls);
+
+    $user = User::factory()->create();
+    $capture = Capture::factory()->done()->for($user)->create(['artwork_id' => $artwork->getKey()]);
+    $capture->factSheets()->create(['sections' => ['artist' => ['Goldene Periode.']]]);
+    Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])
+        ->assertSee('Klimt_Portrait.jpg')
+        ->assertSee('Vergleichswerke')
+        ->assertSee('Judith');
 });
