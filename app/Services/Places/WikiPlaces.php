@@ -50,7 +50,7 @@ SELECT ?item ?itemLabel ?itemDescription ?coord ?image ?architectLabel ?inceptio
   OPTIONAL { ?dewiki schema:about ?item ; schema:isPartOf <https://de.wikipedia.org/> . }
   OPTIONAL { ?enwiki schema:about ?item ; schema:isPartOf <https://en.wikipedia.org/> . }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "de,en". }
-} GROUP BY ?item ?itemLabel ?itemDescription ?coord ?image ?architectLabel ?inception ?dewiki ?enwiki ?sitelinks LIMIT 150
+} GROUP BY ?item ?itemLabel ?itemDescription ?coord ?image ?architectLabel ?inception ?dewiki ?enwiki ?sitelinks ORDER BY DESC(?sitelinks) LIMIT 200
 SPARQL;
 
         $rows = $this->run($query);
