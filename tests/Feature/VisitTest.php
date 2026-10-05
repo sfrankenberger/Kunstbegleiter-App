@@ -80,7 +80,7 @@ test('a visit can get its museum later and be ended', function () {
 
     expect($visit->fresh()->museum?->name)->toBe('Belvedere');
 
-    Livewire::actingAs($user)->test(Jetzt::class)->call('endVisit')->assertSee('Besuch starten');
+    Livewire::actingAs($user)->test(Jetzt::class)->call('endVisit')->assertSee('Museum in der Nähe suchen')->assertSee('Ohne Museum');
     expect($user->activeVisit())->toBeNull();
 });
 

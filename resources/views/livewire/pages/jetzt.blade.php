@@ -128,12 +128,19 @@
             }"
         >
             <p class="text-xs uppercase tracking-wide text-stone-500">Kein aktiver Besuch</p>
-            <p class="text-sm text-stone-600">Die App sucht das Museum in deiner Nähe. Der Standort wird nur jetzt verwendet, nicht gespeichert als Spur.</p>
+            <p class="text-sm text-stone-600">Wo bist du? Der Standort wird nur für die Suche verwendet, nicht als Spur gespeichert.</p>
             <button type="button" class="kb-button" x-on:click="locate" x-bind:disabled="busy">
-                <span x-show="!busy">Besuch starten</span>
+                <span x-show="!busy">Museum in der Nähe suchen</span>
                 <span x-show="busy" x-cloak>Standort wird gesucht ...</span>
             </button>
             <div wire:loading wire:target="locate" class="text-sm text-stone-600">Museen in der Nähe werden gesucht ...</div>
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" class="kb-button-secondary" wire:click="$set('showManual', true)">Museum eingeben</button>
+                <button type="button" class="kb-button-secondary" wire:click="startWithoutMuseum" wire:loading.attr="disabled">
+                    <span wire:loading.remove wire:target="startWithoutMuseum">Ohne Museum</span>
+                    <span wire:loading wire:target="startWithoutMuseum">Einen Moment ...</span>
+                </button>
+            </div>
         </div>
     @endif
 

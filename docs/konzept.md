@@ -132,6 +132,10 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - Alle Kästen außer dem Text zum Mitlesen sind Stichpunkte: die Abschnitte kommen vom Modell als Listen (Schema `sections.*` als Array, je 2 bis 5 Punkte von höchstens 20 Wörtern); ältere Aufnahmen mit Fließtext werden satzweise aufgeteilt.
 - Weg: Kasten "Für deine Gäste" (auch aus Schema und Prompts), Kostenzeile unten.
 
+## 19. Besuch starten mit drei Knöpfen (Sebastian, 05.10.2026)
+
+- Vorher musste erst die Standortsuche durch (bis 12 Sekunden), ehe "Ich bin im ..." und "Ohne Museum" erschienen. Jetzt stehen alle drei Wege von Anfang an auf der Startkarte: "Museum in der Nähe suchen" (GPS plus Places), "Museum eingeben" (Name und Stadt), "Ohne Museum" (sofort).
+
 ## 8. Offen nach Etappe 3 (Stand 05.10.2026)
 
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.
