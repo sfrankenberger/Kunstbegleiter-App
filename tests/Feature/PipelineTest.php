@@ -84,13 +84,12 @@ function scriptJson(): array
         'fact_sheet' => [
             'key_facts' => [['label' => 'Entstanden', 'value' => '1908/09'], ['label' => 'Technik', 'value' => 'Öl und Blattgold auf Leinwand']],
             'key_statements' => ['Höhepunkt der Goldenen Periode.'],
-            'guest_ideas' => ['opener' => 'Wer kennt das Bild von Postkarten?', 'question' => 'Wo endet der Kuss?', 'anecdote' => 'Der Staat kaufte es noch unfertig.', 'vienna_link' => 'Secession, nur zehn Gehminuten entfernt.'],
             'cross_references' => ['Egon Schiele, Umarmung'],
             'sections' => [
-                'artist' => 'Klimt führte die Wiener Secession an.', 'provenance' => 'Vom Staat 1908 gekauft, seit 1908 im Belvedere.',
-                'interpretation' => 'Verschmelzung zweier Menschen in Gold.', 'epoch' => 'Jugendstil um 1900.', 'look' => 'Die Füße am Rand der Wiese.',
+                'artist' => ['Klimt führte die Wiener Secession an.'], 'provenance' => ['Vom Staat 1908 gekauft', 'seit 1908 im Belvedere'],
+                'interpretation' => ['Verschmelzung zweier Menschen in Gold.'], 'epoch' => ['Jugendstil um 1900.'], 'look' => ['Die Füße am Rand der Wiese.'],
                 'quote_text' => 'Alle Kunst ist erotisch.', 'quote_speaker' => 'Gustav Klimt', 'quote_context' => 'zugeschrieben',
-                'anecdote' => 'Die Kaufsumme war die höchste je für ein lebendes Werk.', 'curator_text' => 'Das Bild ist ein Versprechen.', 'curator_name' => 'Kuratorin Belvedere', 'more' => null,
+                'anecdote' => 'Die Kaufsumme war die höchste je für ein lebendes Werk.', 'curator_text' => 'Das Bild ist ein Versprechen.', 'curator_name' => 'Kuratorin Belvedere', 'more' => [],
             ],
         ],
     ];
@@ -207,7 +206,6 @@ test('a capture runs through the whole chain to a finished guide', function () {
         ->and($capture->audioGuide->script)->toHaveCount(3)
         ->and($capture->audioGuide->audio_path)->toBe('captures/'.$capture->getKey().'/guide-'.$capture->audioGuide->getKey().'.mp3')
         ->and($capture->audioGuide->tts_provider)->toBe('fake')
-        ->and($capture->factSheet->guest_ideas['question'])->toBe('Wo endet der Kuss?')
         ->and(KnowledgeItem::query()->whereBelongsTo($user)->count())->toBe(1)
         ->and(AiCall::query()->where('capture_id', $capture->getKey())->where('succeeded', true)->count())->toBe(4)
         ->and(AiCall::query()->where('purpose', AiPurpose::Script)->value('characters'))->toBe(3)
@@ -352,11 +350,10 @@ test('the finished capture page shows player, facts, guests, sources and takes f
     Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])
         ->assertSee('Anhören')
         ->assertSee('Ausgabe wählen')
-        ->assertSee('Für deine Gäste')
-        ->assertSee('Wo endet der Kuss?')
+        ->assertSee('War der Guide gut?')
         ->assertSee('Belvedere: Der Kuss')
         ->assertSee('Provenienz')
-        ->assertSee('Vom Staat 1908 gekauft')
+        ->assertSee('seit 1908 im Belvedere')
         ->assertSee('Kuratorenstimme')
         ->assertSee('Blattgold stammt')
         ->call('feedback', 'up')

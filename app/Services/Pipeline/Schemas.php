@@ -105,27 +105,21 @@ class Schemas
             'fact_sheet' => self::object([
                 'key_facts' => self::array(self::object(['label' => ['type' => 'string'], 'value' => ['type' => 'string']])),
                 'key_statements' => self::array(['type' => 'string']),
-                'guest_ideas' => self::object([
-                    'opener' => ['type' => 'string'],
-                    'question' => ['type' => 'string'],
-                    'anecdote' => ['type' => 'string'],
-                    'vienna_link' => ['type' => 'string'],
-                ]),
                 'cross_references' => self::array(['type' => 'string']),
                 // Abschnitte fuer den Bildschirm mit Dingen, die im Audio nicht gesagt werden (Abschnitt 14)
                 'sections' => self::object([
-                    'artist' => self::nullableString(),
-                    'provenance' => self::nullableString(),
-                    'interpretation' => self::nullableString(),
-                    'epoch' => self::nullableString(),
-                    'look' => self::nullableString(),
+                    'artist' => self::array(['type' => 'string']),
+                    'provenance' => self::array(['type' => 'string']),
+                    'interpretation' => self::array(['type' => 'string']),
+                    'epoch' => self::array(['type' => 'string']),
+                    'look' => self::array(['type' => 'string']),
                     'quote_text' => self::nullableString(),
                     'quote_speaker' => self::nullableString(),
                     'quote_context' => self::nullableString(),
                     'anecdote' => self::nullableString(),
                     'curator_text' => self::nullableString(),
                     'curator_name' => self::nullableString(),
-                    'more' => self::nullableString(),
+                    'more' => self::array(['type' => 'string']),
                 ]),
             ]),
         ];

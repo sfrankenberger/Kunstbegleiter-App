@@ -126,6 +126,12 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - "Ich brauche den Guide wirklich auf einem tieferen Niveau, so wie eine Kuratorin über so ein Werk sprechen würde, die sich mit einem Kunstexperten austauscht." Prompt `guide.md` neu: Fachgespräch auf Kuratorenniveau, keine Grundlagen, keine Hinweise auf Wiener Museen, die eine Wiener Guide kennt (Wien-Bezug nur, wenn er inhaltlich trägt), keine Vermutungen zur Ausstellungssituation ("vielleicht Sonderausstellung"), keine Sätze über Unbekanntes oder Lücken (unbelegte Provenienz bleibt einfach weg). Inhalt: Bildaufbau, Malweise, Restaurierungsbefunde, Ikonographie, Forschungsstand und Streitfragen, Vergleichswerke mit Begründung. Die Frau ist nicht mehr die Fragende, sondern eine zweite Fachfrau mit eigenem Schwerpunkt (Technik, Material, Ikonographie, Provenienz), die ergänzt und mit Argumenten widerspricht. Dieselben Regeln verkürzt in `quick.md` und `quick-text.md`.
 - Zweite Stimme: "Leonie" wirkte neben "Christian" zu jung ("fast etwas dumm"). Jetzt "Sabrina - Authentic and Engaging" (`cqPdIo76zSHFDcSZpFov`, reif, ruhig, artikuliert), in Sebastians ElevenLabs-Bibliothek übernommen, `ELEVENLABS_VOICE_SECOND` und `_QUOTE` in der `.env`.
 
+## 18. Aufgeräumte Werk-Seite (Sebastian, 05.10.2026)
+
+- Reihenfolge: Kopf (Titel, Künstler, Stand) mit dem eigenen Foto klein rechts daneben, dann Rückfrage oder "Ausführlichen Guide erstellen", Kurzfakten, Kernaussagen, Abschnitte (Künstler, Provenienz, Deutung, Epoche, Genau hinschauen, Außerdem), Zitat, Anekdote, Kuratorenstimme, Querverweise, Text zum Mitlesen (zugeklappt), Quellen, Fotos (zugeklappt), ganz am Ende "War der Guide gut?" (Daumen, Schwierigkeit) und Löschen. Player bleibt fest unten.
+- Alle Kästen außer dem Text zum Mitlesen sind Stichpunkte: die Abschnitte kommen vom Modell als Listen (Schema `sections.*` als Array, je 2 bis 5 Punkte von höchstens 20 Wörtern); ältere Aufnahmen mit Fließtext werden satzweise aufgeteilt.
+- Weg: Kasten "Für deine Gäste" (auch aus Schema und Prompts), Kostenzeile unten.
+
 ## 8. Offen nach Etappe 3 (Stand 05.10.2026)
 
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.

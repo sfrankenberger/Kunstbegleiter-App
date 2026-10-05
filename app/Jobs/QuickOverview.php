@@ -78,7 +78,6 @@ class QuickOverview extends PipelineJob
         $capture->factSheets()->create([
             'key_facts' => (array) ($sheet['key_facts'] ?? []),
             'key_statements' => (array) ($sheet['key_statements'] ?? []),
-            'guest_ideas' => (array) ($sheet['guest_ideas'] ?? []),
             'cross_references' => (array) ($sheet['cross_references'] ?? []),
             'sections' => is_array($sheet['sections'] ?? null) ? $sheet['sections'] : null,
         ]);

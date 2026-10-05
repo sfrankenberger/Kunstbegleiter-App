@@ -160,7 +160,6 @@ class Aufnahme extends Component
             'photoTypes' => PhotoType::cases(),
             'sources' => $research !== null ? ContextBuilder::sources($research) : [],
             'segments' => collect($this->capture->audioGuide?->script ?? [])->filter(fn (mixed $s): bool => is_array($s) && filled($s['text'] ?? null))->values(),
-            'costCents' => (int) $this->capture->aiCalls()->sum('cost_cents'),
         ]);
     }
 

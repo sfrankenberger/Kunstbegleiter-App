@@ -1,27 +1,33 @@
 <div class="flex flex-col gap-4" @if ($capture->isRunning()) wire:poll.4s @endif>
-    <div class="kb-card">
-        <p class="text-xs uppercase tracking-wide text-stone-500">{{ $capture->visit?->museum?->name ?? 'Ohne Museum' }} · {{ $capture->created_at->format('d.m.Y H:i') }}</p>
-        <p class="mt-1 text-lg font-semibold">{{ $capture->artwork?->title ?? ($capture->recognition['title'] ?? 'Werk wird erkannt') }}</p>
-        @if ($capture->artwork?->artist)
-            <p class="text-sm text-stone-600">{{ $capture->artwork->artist->name }}{{ $capture->artwork->dating ? ', '.$capture->artwork->dating : '' }}</p>
-        @elseif (filled($capture->recognition['artist'] ?? null))
-            <p class="text-sm text-stone-600">{{ $capture->recognition['artist'] }}</p>
-        @endif
-        <div class="mt-2 flex items-center gap-2">
-            <span class="rounded-full bg-stone-100 px-2 py-1 text-xs text-stone-600">{{ $capture->mode?->short() ?? 'Schnell' }}</span>
-            @if ($capture->isRunning())
-                <span class="inline-block h-3 w-3 animate-pulse rounded-full bg-accent"></span>
+    @php($bullets = fn (mixed $v): array => is_array($v) ? array_values(array_filter(array_map(fn ($x) => is_array($x) ? ($x['text'] ?? '') : (string) $x, $v), 'filled')) : array_values(array_filter(preg_split('/(?<=[.!?])\s+/u', (string) $v) ?: [], 'filled')))
+    <div class="kb-card flex gap-3">
+        <div class="min-w-0 flex-1">
+            <p class="text-xs uppercase tracking-wide text-stone-500">{{ $capture->visit?->museum?->name ?? 'Ohne Museum' }} · {{ $capture->created_at->format('d.m.Y H:i') }}</p>
+            <p class="mt-1 text-lg font-semibold">{{ $capture->artwork?->title ?? ($capture->recognition['title'] ?? 'Werk wird erkannt') }}</p>
+            @if ($capture->artwork?->artist)
+                <p class="text-sm text-stone-600">{{ $capture->artwork->artist->name }}{{ $capture->artwork->dating ? ', '.$capture->artwork->dating : '' }}</p>
+            @elseif (filled($capture->recognition['artist'] ?? null))
+                <p class="text-sm text-stone-600">{{ $capture->recognition['artist'] }}</p>
             @endif
-            <p class="inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-medium text-accent">{{ $capture->progressLabel() }}</p>
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+                <span class="rounded-full bg-stone-100 px-2 py-1 text-xs text-stone-600">{{ $capture->mode?->short() ?? 'Schnell' }}</span>
+                @if ($capture->isRunning())
+                    <span class="inline-block h-3 w-3 animate-pulse rounded-full bg-accent"></span>
+                @endif
+                <p class="inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-medium text-accent">{{ $capture->progressLabel() }}</p>
+            </div>
+            @if ($capture->error_message)
+                <p class="mt-2 text-sm text-red-700">{{ $capture->error_message }}</p>
+            @endif
+            @if ($notice)
+                <p class="mt-2 text-sm text-red-700">{{ $notice }}</p>
+            @endif
+            @if ($capture->status === \App\Enums\CaptureStatus::Failed || ($capture->error_message && ! $capture->isRunning() && ! $capture->needs_confirmation && ! $capture->audioGuide?->hasAudio()))
+                <button type="button" class="kb-button mt-3" wire:click="retry">Erneut versuchen</button>
+            @endif
         </div>
-        @if ($capture->error_message)
-            <p class="mt-2 text-sm text-red-700">{{ $capture->error_message }}</p>
-        @endif
-        @if ($notice)
-            <p class="mt-2 text-sm text-red-700">{{ $notice }}</p>
-        @endif
-        @if ($capture->status === \App\Enums\CaptureStatus::Failed || ($capture->error_message && ! $capture->isRunning() && ! $capture->needs_confirmation && ! $capture->audioGuide?->hasAudio()))
-            <button type="button" class="kb-button mt-3" wire:click="retry">Erneut versuchen</button>
+        @if ($capture->photos->first())
+            <img src="{{ $capture->photos->first()->url() }}" alt="" class="h-24 w-24 shrink-0 rounded-xl object-cover">
         @endif
     </div>
 
@@ -170,19 +176,6 @@
         </div>
         <div class="h-28" aria-hidden="true"></div>
 
-        <div class="kb-card">
-            <div class="flex items-center justify-between gap-2 text-sm">
-                <div class="flex gap-2">
-                    <button type="button" class="rounded-full px-3 py-1 {{ $guide->feedback === 'up' ? 'bg-accent text-white' : 'bg-stone-100' }}" wire:click="feedback('up')" aria-label="Gut">👍</button>
-                    <button type="button" class="rounded-full px-3 py-1 {{ $guide->feedback === 'down' ? 'bg-accent text-white' : 'bg-stone-100' }}" wire:click="feedback('down')" aria-label="Nicht gut">👎</button>
-                </div>
-                <div class="flex gap-1 text-xs">
-                    @foreach (['too_easy' => 'Zu leicht', 'right' => 'Passt', 'too_hard' => 'Zu schwer'] as $value => $label)
-                        <button type="button" class="rounded-full px-2 py-1 {{ $guide->difficulty_feedback === $value ? 'bg-accent text-white' : 'bg-stone-100' }}" wire:click="difficulty('{{ $value }}')">{{ $label }}</button>
-                    @endforeach
-                </div>
-            </div>
-        </div>
     @endif
 
     @if ($capture->isQuick() && $capture->isDone() && $capture->artwork_id)
@@ -210,6 +203,16 @@
                 </dl>
             </div>
         @endif
+        @if (filled($sheet->key_statements))
+            <div class="kb-card">
+                <h2 class="text-sm font-semibold text-stone-700">Kernaussagen</h2>
+                <ul class="mt-2 list-disc pl-5 text-sm">
+                    @foreach ($sheet->key_statements as $statement)
+                        <li>{{ is_array($statement) ? ($statement['text'] ?? '') : $statement }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         @php($sections = array_filter((array) ($sheet->sections ?? []), fn ($v) => filled($v)))
         @if ($sections !== [])
             @foreach ([
@@ -225,7 +228,11 @@
                         <x-kb-icon :name="$icon" class="mt-0.5 h-5 w-5 text-accent" />
                         <div class="min-w-0">
                             <h2 class="text-sm font-semibold text-stone-700">{{ $label }}</h2>
-                            <p class="mt-1 text-sm leading-relaxed">{{ $sections[$key] }}</p>
+                            <ul class="mt-1 list-disc pl-4 text-sm leading-relaxed">
+                                @foreach ($bullets($sections[$key]) as $point)
+                                    <li>{{ $point }}</li>
+                                @endforeach
+                            </ul>
                         </div>
                     </div>
                 @endif
@@ -244,7 +251,11 @@
                     <x-kb-icon name="sparkles" class="mt-0.5 h-5 w-5 text-accent" />
                     <div class="min-w-0">
                         <h2 class="text-sm font-semibold text-stone-700">Anekdote</h2>
-                        <p class="mt-1 text-sm leading-relaxed">{{ $sections['anecdote'] }}</p>
+                        <ul class="mt-1 list-disc pl-4 text-sm leading-relaxed">
+                            @foreach ($bullets($sections['anecdote']) as $point)
+                                <li>{{ $point }}</li>
+                            @endforeach
+                        </ul>
                     </div>
                 </div>
             @endif
@@ -258,36 +269,6 @@
                     </div>
                 </div>
             @endif
-        @endif
-        @if (filled($sheet->key_statements))
-            <div class="kb-card">
-                <h2 class="text-sm font-semibold text-stone-700">Kernaussagen</h2>
-                <ul class="mt-2 list-disc pl-5 text-sm">
-                    @foreach ($sheet->key_statements as $statement)
-                        <li>{{ is_array($statement) ? ($statement['text'] ?? '') : $statement }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-        @if (filled($sheet->guest_ideas))
-            <div class="kb-card">
-                <h2 class="text-sm font-semibold text-stone-700">Für deine Gäste</h2>
-                <dl class="mt-2 flex flex-col gap-2 text-sm">
-                    @foreach (['opener' => 'Einstieg', 'question' => 'Frage an die Gruppe', 'anecdote' => 'Anekdote', 'vienna_link' => 'Wien-Bezug'] as $key => $label)
-                        @if (filled($sheet->guest_ideas[$key] ?? null))
-                            <div>
-                                <dt class="text-xs uppercase tracking-wide text-stone-500">{{ $label }}</dt>
-                                <dd>{{ $sheet->guest_ideas[$key] }}</dd>
-                            </div>
-                        @endif
-                    @endforeach
-                    @foreach ($sheet->guest_ideas as $key => $idea)
-                        @if (is_int($key))
-                            <dd>{{ is_array($idea) ? ($idea['text'] ?? '') : $idea }}</dd>
-                        @endif
-                    @endforeach
-                </dl>
-            </div>
         @endif
         @if (filled($sheet->cross_references))
             <div class="kb-card">
@@ -348,8 +329,22 @@
             </ul>
     </div>
 
-    @if ($costCents > 0)
-        <p class="text-center text-xs text-stone-400">Kosten dieser Aufnahme: {{ number_format($costCents / 100, 2, ',', '.') }} €</p>
+    @if ($capture->audioGuide)
+        @php($guide = $capture->audioGuide)
+        <div class="kb-card">
+            <p class="mb-2 text-sm font-semibold text-stone-700">War der Guide gut?</p>
+            <div class="flex items-center justify-between gap-2 text-sm">
+                <div class="flex gap-2">
+                    <button type="button" class="rounded-full px-3 py-1 {{ $guide->feedback === 'up' ? 'bg-accent text-white' : 'bg-stone-100' }}" wire:click="feedback('up')" aria-label="Gut">👍</button>
+                    <button type="button" class="rounded-full px-3 py-1 {{ $guide->feedback === 'down' ? 'bg-accent text-white' : 'bg-stone-100' }}" wire:click="feedback('down')" aria-label="Nicht gut">👎</button>
+                </div>
+                <div class="flex gap-1 text-xs">
+                    @foreach (['too_easy' => 'Zu leicht', 'right' => 'Passt', 'too_hard' => 'Zu schwer'] as $value => $label)
+                        <button type="button" class="rounded-full px-2 py-1 {{ $guide->difficulty_feedback === $value ? 'bg-accent text-white' : 'bg-stone-100' }}" wire:click="difficulty('{{ $value }}')">{{ $label }}</button>
+                    @endforeach
+                </div>
+            </div>
+        </div>
     @endif
 
     <button type="button" class="kb-button-secondary text-red-700" wire:click="delete" wire:confirm="Aufnahme in den Papierkorb legen?">Aufnahme löschen</button>
