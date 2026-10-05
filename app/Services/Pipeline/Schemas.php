@@ -11,7 +11,33 @@ class Schemas
     /** @return array<string, mixed> */
     public static function recognition(): array
     {
-        return self::object([
+        return self::object(self::recognitionFields());
+    }
+
+    /**
+     * Schnellstufe in einem Aufruf: Erkennung plus Kurztext plus Fact Sheet.
+     *
+     * @return array<string, mixed>
+     */
+    public static function quickGuide(): array
+    {
+        return self::object(self::recognitionFields() + self::scriptFields());
+    }
+
+    /**
+     * Ausfuehrlich in einem Aufruf: Recherche plus Skript plus Fact Sheet.
+     *
+     * @return array<string, mixed>
+     */
+    public static function guide(): array
+    {
+        return self::object(self::researchFields() + self::scriptFields());
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    private static function recognitionFields(): array
+    {
+        return [
             'photos' => self::array(self::object([
                 'index' => ['type' => 'integer'],
                 'type' => ['type' => 'string', 'enum' => ['artwork', 'label', 'room_text']],
@@ -32,15 +58,21 @@ class Schemas
                 'reason' => self::nullableString(),
             ])),
             'notes' => self::nullableString(),
-        ]);
+        ];
     }
 
     /** @return array<string, mixed> */
     public static function research(): array
     {
+        return self::object(self::researchFields());
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    private static function researchFields(): array
+    {
         $source = self::object(['url' => ['type' => 'string'], 'title' => self::nullableString(), 'kind' => ['type' => 'string']]);
 
-        return self::object([
+        return [
             'summary' => ['type' => 'string'],
             'facts' => self::array(self::object(['statement' => ['type' => 'string'], 'source_url' => ['type' => 'string']])),
             'quotes' => self::array(self::object([
@@ -56,13 +88,19 @@ class Schemas
             'artist_born' => ['type' => ['integer', 'null']],
             'artist_died' => ['type' => ['integer', 'null']],
             'wikidata_id' => self::nullableString(),
-        ]);
+        ];
     }
 
     /** @return array<string, mixed> */
     public static function script(): array
     {
-        return self::object([
+        return self::object(self::scriptFields());
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    private static function scriptFields(): array
+    {
+        return [
             'segments' => self::array(self::segment()),
             'fact_sheet' => self::object([
                 'key_facts' => self::array(self::object(['label' => ['type' => 'string'], 'value' => ['type' => 'string']])),
@@ -75,7 +113,7 @@ class Schemas
                 ]),
                 'cross_references' => self::array(['type' => 'string']),
             ]),
-        ]);
+        ];
     }
 
     /** @return array<string, mixed> */

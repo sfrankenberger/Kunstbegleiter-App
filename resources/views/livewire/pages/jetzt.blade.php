@@ -87,7 +87,7 @@
                 </label>
                 <button type="button" class="kb-button h-14 text-lg" wire:click="createCapture" wire:loading.attr="disabled">
                     <span wire:loading.remove wire:target="createCapture">{{ $full ? 'Ausführlichen Guide erstellen' : 'Schnellen Überblick erstellen' }}</span>
-                    <span wire:loading wire:target="createCapture">Einen Moment ...</span>
+                    <span wire:loading wire:target="createCapture">{{ $full ? 'Erkenne das Werk ...' : 'Erkenne das Werk und schreibe den Überblick ...' }}</span>
                 </button>
                 <button type="button" class="text-sm text-stone-500" x-on:click="clear">Fotos verwerfen</button>
             @endif

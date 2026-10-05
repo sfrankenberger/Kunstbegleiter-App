@@ -12,7 +12,7 @@ use App\Services\Pipeline\Pipeline;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use RuntimeException;
+use Throwable;
 
 /**
  * Seite einer Aufnahme (Werk-Seite, docs/grundgeruest.md): Fortschritt der Pipeline (alle paar Sekunden neu
@@ -95,7 +95,7 @@ class Aufnahme extends Component
         try {
             app(Pipeline::class)->upgrade($this->capture);
             $this->notice = '';
-        } catch (RuntimeException $e) {
+        } catch (Throwable $e) {
             $this->notice = $e->getMessage();
         }
     }
@@ -107,8 +107,9 @@ class Aufnahme extends Component
         try {
             app(Pipeline::class)->retry($this->capture);
             $this->notice = '';
-        } catch (RuntimeException $e) {
-            Pipeline::fail($this->capture, $e->getMessage());
+        } catch (Throwable $e) {
+            report($e);
+            Pipeline::fail($this->capture->fresh() ?? $this->capture, $e->getMessage());
         }
     }
 
@@ -174,8 +175,9 @@ class Aufnahme extends Component
         try {
             app(Pipeline::class)->continueAfterRecognition($this->capture);
             $this->notice = '';
-        } catch (RuntimeException $e) {
-            Pipeline::fail($this->capture, $e->getMessage());
+        } catch (Throwable $e) {
+            report($e);
+            Pipeline::fail($this->capture->fresh() ?? $this->capture, $e->getMessage());
         }
 
         $this->manualTitle = '';

@@ -46,11 +46,12 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Besuch starten, Museum aus Places oder von Hand, beenden, Stadt aus Adresse | `App\Services\Visits\VisitService` |
 | Aufnahme anlegen (Fotos speichern, Besuch verlängern, Pipeline starten), endgültig entfernen | `App\Services\Captures\CaptureService` |
 | Pipeline starten, nach Bestätigung fortsetzen (schnell oder ausführlich), ausführlich nachbestellen, erneut versuchen, Monatslimit prüfen | `App\Services\Pipeline\Pipeline` |
-| Schnellstufe (ein Aufruf, Kurztext und Fact Sheet, Handy liest vor) | `App\Jobs\QuickOverview`, `resources/prompts/quick.md`, Browser-Stimme in `resources/views/livewire/pages/aufnahme.blade.php` |
+| Schnellstufe (ein Vision-Aufruf: Erkennung, Kurztext, Fact Sheet; Handy liest satzweise vor) | `App\Jobs\QuickGuide`, `App\Jobs\QuickOverview` (nach Rückfrage), `resources/prompts/quick.md`, `quick-text.md`, Browser-Stimme in `resources/views/livewire/pages/aufnahme.blade.php` |
 | Werk und Künstler zuordnen oder anlegen | `App\Services\Pipeline\ArtworkMatcher` |
 | Kontext für das Skript (Vorwissen, Besuch, Lerngedächtnis, Quellen) | `App\Services\Pipeline\ContextBuilder` |
 | JSON-Schemas der KI-Antworten | `App\Services\Pipeline\Schemas` |
-| Pipeline-Schritte (Jobs) | `App\Jobs\{RecognizeArtwork, ResearchArtwork, WriteScript, CheckFacts, SynthesizeAudio, UpdateKnowledge, ResearchMuseum}`, Basis `App\Jobs\PipelineJob` |
+| Pipeline-Schritte (Jobs) | `App\Jobs\{QuickGuide, QuickOverview, RecognizeArtwork, ResearchAndWrite, SynthesizeAudio, UpdateKnowledge, ResearchMuseum}`, Basis `App\Jobs\PipelineJob` |
+| Queue-Worker sofort anstoßen | `App\Support\QueueKick` |
 | Fortschritt, Rückfrage, Player, Fact Sheet, Rückmeldung | `App\Livewire\Pages\Aufnahme`, `Capture::isRunning()`, `Capture::progressLabel()` |
 | Audio ausliefern (signiert) | `App\Http\Controllers\AudioController`, `AudioGuide::url()`, Route `audio.show` |
 | Sicht auf Aufnahmen (Besitzer, Partner) | `App\Policies\CapturePolicy` |

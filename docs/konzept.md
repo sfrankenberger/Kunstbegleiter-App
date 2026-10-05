@@ -96,6 +96,14 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 
 - "Können wir das direkt auf der App machen, bei der kleinen App brauche ich kein Staging." Entscheidung: direkt auf `main`, kein PR, kein Staging, solange nur Sebastian die App nutzt. Details in `CLAUDE.md` und `docs/betrieb.md` Abschnitt 4. PR #5 (Etappe 3) wurde so direkt gemergt.
 
+## 13. Zeitvorgaben und Handy-Stimme (Sebastian, 05.10.2026)
+
+- **Vorgabe:** schnell höchstens 10 Sekunden, ausführlich höchstens 45 Sekunden. Vorher: Cron-Worker (bis 60 Sekunden Wartezeit vor dem ersten Schritt) und fünf Aufrufe nacheinander, zusammen 2 bis 4 Minuten.
+- **Schnell:** ein einziger Vision-Aufruf (`QuickGuide`, Sonnet 5.5, geringe Anstrengung, 100 bis 160 Wörter, Prompt `quick.md`) macht Erkennung, Kurztext und Fact Sheet zugleich und läuft synchron in der Anfrage (kein Queue-Weg, Knopf zeigt "Erkenne das Werk und schreibe den Überblick ..."). Fotos werden für die KI auf 1024 px verkleinert (`museumguide.vision_edge`). Unsichere Erkennung: nur Rückfrage, nach der Bestätigung schreibt `QuickOverview` (Prompt `quick-text.md`) den Kurztext, ebenfalls synchron. Erwartung 8 bis 12 Sekunden, die 10 sind nicht garantiert (Bildgröße, Modellauslastung).
+- **Ausführlich:** Erkennung synchron (`RecognizeArtwork`), dann über die Queue `ResearchAndWrite` (ein Aufruf: Recherche mit höchstens 4 Websuchen, Skript mit eingebautem Faktencheck, Fact Sheet, Prompt `guide.md`), `SynthesizeAudio` (ElevenLabs `eleven_flash_v2_5`, deutlich schneller als `multilingual_v2`), danach ist die Aufnahme fertig; `UpdateKnowledge` lernt still nach. Die getrennten Jobs Recherche, Skript und Faktencheck (Abschnitt 10) sind damit zusammengelegt, der Faktencheck steht als Regel im Prompt. Vorhandene Recherche wird mitgegeben, dann keine Websuche. Erwartung 35 bis 60 Sekunden bis zur Stimme.
+- **Worker sofort:** `App\Support\QueueKick` startet nach jedem Dispatch einen abgekoppelten `queue:work --stop-when-empty` (nohup, `KUNST_PHP` in der `.env`), höchstens einmal je 15 Sekunden. Der Cron bleibt als Netz. Mit systemd-Worker (Betrieb Abschnitt 2, Punkt 6) per `MUSEUMGUIDE_QUEUE_KICK=false` abschaltbar.
+- **Handy-Stimme:** iOS bricht lange Texte nach etwa einer Minute ab, deshalb wird satzweise in die Warteschlange gestellt (Stücke bis 180 Zeichen, Kette über `onend`). "Satz zurück" statt 15 Sekunden. Stimmenwahl im Player (deutsche Stimmen, bevorzugt Siri, Erweitert oder Premium, de-AT), Auswahl bleibt im Browser gespeichert. Die neuen Siri-Stimmen gibt Safari nur her, wenn sie am iPhone geladen sind (Einstellungen > Bedienungshilfen > Gesprochene Inhalte > Stimmen > Deutsch), der Hinweis steht im Player.
+
 ## 8. Offen nach Etappe 3 (Stand 05.10.2026)
 
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.

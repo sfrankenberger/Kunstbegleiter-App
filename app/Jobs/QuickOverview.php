@@ -29,10 +29,10 @@ class QuickOverview extends PipelineJob
         $capture->forceFill(['step' => PipelineStep::Writing])->save();
         $museum = $capture->visit?->museum ?? $artwork->museum;
         $labelText = $capture->photos->filter(fn ($p) => $p->type !== PhotoType::Artwork)->pluck('ocr_text')->filter()->implode("\n");
-        $words = (array) config('museumguide.quick.words', ['min' => 150, 'max' => 250]);
+        $words = (array) config('museumguide.quick.words', ['min' => 100, 'max' => 160]);
 
         $result = app(ClaudeClient::class)->structured(AiPurpose::Quick, [['role' => 'user', 'content' => 'Schreibe jetzt Kurztext und Fact Sheet als JSON.']], Schemas::script(), [
-            'system' => Prompts::render('quick', [
+            'system' => Prompts::render('quick-text', [
                 'knowledge_profile' => filled($capture->user->knowledge_profile) ? (string) $capture->user->knowledge_profile : 'Austria Guide in Wien, breites Vorwissen zur Kunstgeschichte.',
                 'title' => $artwork->title,
                 'artist' => $artwork->artist?->name ?? 'unbekannt',
@@ -42,14 +42,26 @@ class QuickOverview extends PipelineJob
                 'city' => $museum?->city?->name ?? '',
                 'label_text' => $labelText !== '' ? $labelText : 'keine',
                 'museum_notes' => RecognizeArtwork::museumNotes($museum?->research),
-                'words_min' => $words['min'] ?? 150,
-                'words_max' => $words['max'] ?? 250,
+                'words_min' => $words['min'] ?? 100,
+                'words_max' => $words['max'] ?? 160,
             ]),
             'effort' => 'low',
-            'max_tokens' => 4096,
+            'max_tokens' => 2048,
         ], $capture->user, $capture);
 
         $segments = array_values(array_filter((array) ($result['segments'] ?? []), fn (mixed $s): bool => is_array($s) && filled($s['text'] ?? null)));
+        self::storeGuide($capture, $segments, (array) ($result['fact_sheet'] ?? []));
+        $capture->forceFill(['status' => CaptureStatus::Done, 'step' => null, 'finished_at' => now()])->save();
+    }
+
+    /**
+     * Kurztext (ohne MP3, das Handy liest vor) und Fact Sheet anlegen.
+     *
+     * @param  list<array<string, mixed>>  $segments
+     * @param  array<string, mixed>  $sheet
+     */
+    public static function storeGuide(Capture $capture, array $segments, array $sheet): void
+    {
         $call = $capture->aiCalls()->latest('id')->first();
 
         $guide = $capture->audioGuides()->create([
@@ -62,7 +74,6 @@ class QuickOverview extends PipelineJob
             'cost_cents' => (int) $capture->aiCalls()->sum('cost_cents'),
         ]);
 
-        $sheet = (array) ($result['fact_sheet'] ?? []);
         $capture->factSheets()->create([
             'key_facts' => (array) ($sheet['key_facts'] ?? []),
             'key_statements' => (array) ($sheet['key_statements'] ?? []),
@@ -71,6 +82,5 @@ class QuickOverview extends PipelineJob
         ]);
 
         $capture->setRelation('audioGuide', $guide);
-        $capture->forceFill(['status' => CaptureStatus::Done, 'step' => null, 'finished_at' => now()])->save();
     }
 }

@@ -44,28 +44,12 @@ class RecognizeArtwork extends PipelineJob
                 'epochs' => Epoch::query()->orderBy('sort_order')->pluck('name')->implode(', '),
             ]),
             'effort' => 'low',
-            'max_tokens' => 4096,
+            'max_tokens' => 2048,
         ], $capture->user, $capture);
 
-        foreach ((array) ($result['photos'] ?? []) as $row) {
-            $photo = $capture->photos->get((int) ($row['index'] ?? -1));
-
-            if ($photo instanceof CapturePhoto) {
-                $photo->update(['type' => PhotoType::tryFrom((string) ($row['type'] ?? '')) ?? $photo->type, 'ocr_text' => $row['text'] ?? null]);
-            }
+        if (self::store($capture, $result)) {
+            app(Pipeline::class)->continueAfterRecognition($capture);
         }
-
-        $confidence = (float) ($result['confidence'] ?? 0);
-        $capture->forceFill(['recognition' => $result])->save();
-
-        if (blank($result['title'] ?? null) || $confidence < (float) config('museumguide.pipeline.confidence_threshold', 0.7)) {
-            $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Confirming, 'needs_confirmation' => true])->save();
-
-            return;
-        }
-
-        app(ArtworkMatcher::class)->attach($capture, $result);
-        app(Pipeline::class)->continueAfterRecognition($capture);
     }
 
     /**
@@ -75,8 +59,56 @@ class RecognizeArtwork extends PipelineJob
     {
         $path = app(CaptureService::class)->photoPath($photo);
         $mime = (string) (mime_content_type($path) ?: 'image/jpeg');
+        $edge = (int) config('museumguide.vision_edge', 1024);
+        $data = (string) file_get_contents($path);
 
-        return ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true) ? $mime : 'image/jpeg', 'data' => base64_encode((string) file_get_contents($path))]];
+        // Verkleinern spart Zeit (weniger Bytes hochladen, weniger Bildtokens), GD ist am Server da
+        if ($edge > 0 && function_exists('imagecreatefromstring') && max((int) $photo->width, (int) $photo->height) > $edge) {
+            $image = @imagecreatefromstring($data);
+
+            if ($image !== false) {
+                $scaled = imagescale($image, (int) $photo->width >= (int) $photo->height ? $edge : -1, (int) $photo->width >= (int) $photo->height ? -1 : $edge);
+
+                if ($scaled !== false) {
+                    ob_start();
+                    imagejpeg($scaled, null, 82);
+                    $data = (string) ob_get_clean();
+                    $mime = 'image/jpeg';
+                }
+            }
+        }
+
+        return ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true) ? $mime : 'image/jpeg', 'data' => base64_encode($data)]];
+    }
+
+    /**
+     * Erkennung in die Aufnahme schreiben: Fototypen, OCR, Recognition. Liefert true, wenn sie sicher genug ist.
+     *
+     * @param  array<string, mixed>  $result
+     */
+    public static function store(Capture $capture, array $result): bool
+    {
+        foreach ((array) ($result['photos'] ?? []) as $row) {
+            $photo = $capture->photos->get((int) ($row['index'] ?? -1));
+
+            if ($photo instanceof CapturePhoto) {
+                $photo->update(['type' => PhotoType::tryFrom((string) ($row['type'] ?? '')) ?? $photo->type, 'ocr_text' => $row['text'] ?? null]);
+            }
+        }
+
+        $confidence = (float) ($result['confidence'] ?? 0);
+        $recognition = array_intersect_key($result, array_flip(['photos', 'title', 'artist', 'artist_life_dates', 'dating', 'technique', 'dimensions', 'inventory_number', 'epoch', 'confidence', 'alternatives', 'notes']));
+        $capture->forceFill(['recognition' => $recognition])->save();
+
+        if (blank($result['title'] ?? null) || $confidence < (float) config('museumguide.pipeline.confidence_threshold', 0.7)) {
+            $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Confirming, 'needs_confirmation' => true])->save();
+
+            return false;
+        }
+
+        app(ArtworkMatcher::class)->attach($capture, $recognition);
+
+        return true;
     }
 
     /**

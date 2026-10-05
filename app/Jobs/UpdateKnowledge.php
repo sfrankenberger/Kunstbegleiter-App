@@ -4,7 +4,6 @@ namespace App\Jobs;
 
 use App\Enums\AiPurpose;
 use App\Enums\CaptureStatus;
-use App\Enums\PipelineStep;
 use App\Models\Capture;
 use App\Services\Ai\ClaudeClient;
 use App\Services\Pipeline\Schemas;
@@ -20,7 +19,6 @@ class UpdateKnowledge extends PipelineJob
     {
         $guide = $capture->audioGuide;
         $artwork = $capture->artwork;
-        $capture->forceFill(['step' => PipelineStep::Learning])->save();
 
         try {
             if ($guide !== null && $artwork !== null && ($artwork->artist !== null || $artwork->epoch !== null)) {
@@ -47,6 +45,8 @@ class UpdateKnowledge extends PipelineJob
             report($e);
         }
 
-        $capture->forceFill(['status' => CaptureStatus::Done, 'step' => null, 'finished_at' => now()])->save();
+        if ($capture->status !== CaptureStatus::Done) {
+            $capture->forceFill(['status' => CaptureStatus::Done, 'step' => null, 'finished_at' => now()])->save();
+        }
     }
 }

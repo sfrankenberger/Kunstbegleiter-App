@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Contracts\TtsProvider;
 use App\Enums\AiPurpose;
+use App\Enums\CaptureStatus;
 use App\Enums\PipelineStep;
 use App\Models\AiCall;
 use App\Models\Capture;
@@ -13,8 +14,8 @@ use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
- * Schritt 7: Skript einsprechen. Etappe 3: eine Stimme (narrator) fuer alle Segmente, Zitate werden mit "Zitat:"
- * angesagt. Scheitert die Stimme, bleibt der Guide ohne Audio lesbar (Fehler am Guide, Kette laeuft weiter).
+ * Skript einsprechen: eine Stimme (narrator) fuer alle Segmente. Danach ist die Aufnahme fertig (das Lernen
+ * laeuft noch still nach). Scheitert die Stimme, bleibt der Guide ohne Audio lesbar, die Aufnahme ist trotzdem fertig.
  */
 class SynthesizeAudio extends PipelineJob
 {
@@ -35,7 +36,7 @@ class SynthesizeAudio extends PipelineJob
             $result = $provider->synthesize($text, 'narrator');
         } catch (Throwable $e) {
             AiCall::query()->create(['user_id' => $capture->user_id, 'capture_id' => $capture->getKey(), 'purpose' => AiPurpose::Tts, 'model' => $provider->name(), 'characters' => mb_strlen($text), 'succeeded' => false, 'error' => mb_substr($e->getMessage(), 0, 500), 'duration_ms' => (int) ((hrtime(true) - $started) / 1_000_000)]);
-            $capture->forceFill(['error_message' => 'Die Stimme ist ausgefallen: '.mb_substr($e->getMessage(), 0, 200).' Text und Fakten sind trotzdem da.'])->save();
+            $capture->forceFill(['status' => CaptureStatus::Done, 'step' => null, 'finished_at' => now(), 'error_message' => 'Die Stimme ist ausgefallen: '.mb_substr($e->getMessage(), 0, 200).' Text und Fakten sind trotzdem da.'])->save();
 
             return;
         }
@@ -53,5 +54,7 @@ class SynthesizeAudio extends PipelineJob
             'tts_characters' => $result->characters,
             'cost_cents' => (int) $capture->aiCalls()->sum('cost_cents'),
         ])->save();
+
+        $capture->forceFill(['status' => CaptureStatus::Done, 'step' => null, 'finished_at' => now()])->save();
     }
 }

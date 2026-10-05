@@ -79,33 +79,70 @@
                     x-data="{
                         text: @js($segments->pluck('text')->implode(' ')),
                         state: 'idle', rate: 1, supported: 'speechSynthesis' in window,
-                        voice() {
-                            const voices = window.speechSynthesis.getVoices();
-                            return voices.find(v => v.lang === 'de-AT') || voices.find(v => v.lang.startsWith('de')) || null;
+                        voices: [], voiceUri: '', chunks: [], index: 0, keepAlive: null,
+                        init() {
+                            if (! this.supported) return;
+                            try { this.voiceUri = localStorage.getItem('kb-voice') || '' } catch (e) {}
+                            this.loadVoices();
+                            window.speechSynthesis.addEventListener('voiceschanged', () => this.loadVoices());
+                        },
+                        loadVoices() {
+                            const all = window.speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
+                            const score = v => (/siri/i.test(v.name) ? 40 : 0) + (/premium|enhanced|erweitert|verbessert/i.test(v.name) ? 20 : 0) + (v.lang === 'de-AT' ? 10 : 0) + (v.localService ? 1 : 0);
+                            all.sort((a, b) => score(b) - score(a) || a.name.localeCompare(b.name));
+                            this.voices = all;
+                            if (! this.voices.some(v => v.voiceURI === this.voiceUri)) this.voiceUri = this.voices[0]?.voiceURI || '';
+                        },
+                        voice() { return this.voices.find(v => v.voiceURI === this.voiceUri) || null },
+                        chooseVoice(uri) { this.voiceUri = uri; try { localStorage.setItem('kb-voice', uri) } catch (e) {} if (this.state !== 'idle') this.restart() },
+                        split(text) {
+                            // iOS bricht lange Texte nach etwa einer Minute ab: satzweise in die Warteschlange
+                            const parts = text.replace(/\s+/g, ' ').match(/[^.!?]+[.!?]+["»)]?\s*|[^.!?]+$/g) || [text];
+                            const out = []; let buffer = '';
+                            for (const p of parts) { if ((buffer + p).length > 180 && buffer) { out.push(buffer.trim()); buffer = '' } buffer += p }
+                            if (buffer.trim()) out.push(buffer.trim());
+                            return out;
                         },
                         play() {
-                            if (this.state === 'paused') { window.speechSynthesis.resume(); this.state = 'playing'; return; }
+                            if (this.state === 'paused') { window.speechSynthesis.resume(); this.state = 'playing'; return }
                             window.speechSynthesis.cancel();
-                            const u = new SpeechSynthesisUtterance(this.text);
-                            u.lang = 'de-AT'; u.rate = this.rate; const v = this.voice(); if (v) u.voice = v;
-                            u.onend = () => { this.state = 'idle' }; u.onerror = () => { this.state = 'idle' };
-                            window.speechSynthesis.speak(u); this.state = 'playing';
+                            this.chunks = this.split(this.text); this.index = 0; this.state = 'playing';
+                            this.speakNext();
+                        },
+                        speakNext() {
+                            if (this.state !== 'playing') return;
+                            if (this.index >= this.chunks.length) { this.state = 'idle'; return }
+                            const u = new SpeechSynthesisUtterance(this.chunks[this.index++]);
+                            const v = this.voice(); if (v) { u.voice = v; u.lang = v.lang } else { u.lang = 'de-AT' }
+                            u.rate = this.rate;
+                            u.onend = () => this.speakNext();
+                            u.onerror = (e) => { if (e.error !== 'interrupted' && e.error !== 'canceled') this.speakNext() };
+                            window.speechSynthesis.speak(u);
                         },
                         pause() { window.speechSynthesis.pause(); this.state = 'paused' },
-                        stop() { window.speechSynthesis.cancel(); this.state = 'idle' },
-                        speed() { const rates = [0.8, 1, 1.2, 1.5]; this.rate = rates[(rates.indexOf(this.rate) + 1) % rates.length]; if (this.state === 'playing') this.play() },
+                        stop() { this.state = 'idle'; window.speechSynthesis.cancel() },
+                        restart() { const was = this.state; this.stop(); if (was !== 'idle') this.play() },
+                        back() { if (this.state === 'idle') return; this.state = 'idle'; window.speechSynthesis.cancel(); this.index = Math.max(0, this.index - 2); this.state = 'playing'; this.speakNext() },
+                        speed() { const rates = [0.8, 1, 1.2, 1.5]; this.rate = rates[(rates.indexOf(this.rate) + 1) % rates.length]; if (this.state === 'playing') { this.state = 'idle'; window.speechSynthesis.cancel(); this.index = Math.max(0, this.index - 1); this.state = 'playing'; this.speakNext() } },
                         destroy() { window.speechSynthesis.cancel() }
                     }"
                     class="flex flex-col gap-2"
                 >
                     <template x-if="supported">
-                        <div class="flex items-center gap-3">
-                            <button type="button" class="kb-button flex-1" @click="state === 'playing' ? pause() : play()" x-text="state === 'playing' ? 'Pause' : (state === 'paused' ? 'Weiter' : 'Vorlesen lassen')"></button>
-                            <button type="button" class="kb-button-secondary" @click="stop()" x-show="state !== 'idle'">Von vorn</button>
-                            <button type="button" class="kb-button-secondary" @click="speed()" x-text="rate + '×'"></button>
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center gap-3">
+                                <button type="button" class="kb-button flex-1" @click="state === 'playing' ? pause() : play()" x-text="state === 'playing' ? 'Pause' : (state === 'paused' ? 'Weiter' : 'Vorlesen lassen')"></button>
+                                <button type="button" class="kb-button-secondary" @click="back()" x-show="state !== 'idle'">Satz zurück</button>
+                                <button type="button" class="kb-button-secondary" @click="speed()" x-text="rate + '×'"></button>
+                            </div>
+                            <select class="kb-input py-2 text-sm" :value="voiceUri" @change="chooseVoice($event.target.value)" x-show="voices.length > 1">
+                                <template x-for="v in voices" :key="v.voiceURI">
+                                    <option :value="v.voiceURI" :selected="v.voiceURI === voiceUri" x-text="v.name + ' (' + v.lang + ')'"></option>
+                                </template>
+                            </select>
                         </div>
                     </template>
-                    <p class="text-xs text-stone-500" x-show="supported">Handy-Stimme (am iPhone Siri), ohne Kosten. Für die Studio-Stimme unten den ausführlichen Guide erstellen.</p>
+                    <p class="text-xs text-stone-500" x-show="supported">Handy-Stimme, ohne Kosten. Bessere Stimmen am iPhone: Einstellungen > Bedienungshilfen > Gesprochene Inhalte > Stimmen > Deutsch, dort eine Stimme mit "Erweitert" oder "Premium" laden, dann hier auswählen.</p>
                     <p class="text-sm text-stone-600" x-show="! supported">Dieser Browser kann nicht vorlesen. Der Text steht unten zum Lesen.</p>
                 </div>
             @else

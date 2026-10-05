@@ -13,13 +13,13 @@ use App\Services\Pipeline\Pipeline;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
-use RuntimeException;
+use Throwable;
 
 /**
  * Aufnahme anlegen (docs/grundgeruest.md, "Aufnahme"): 1 bis 3 Fotos auf die private Platte, Capture mit Status
  * "hochgeladen", Fototypen vorbelegen (erstes Foto Werk, weitere Werktext), Besuch um 30 Minuten verlaengern.
- * Danach startet die Pipeline (Erkennung, Recherche, Skript, Audio); ist das Monatslimit erreicht, bleibt die
- * Aufnahme mit der Meldung stehen und kann spaeter mit "Erneut versuchen" nachgeholt werden.
+ * Danach startet die Pipeline synchron (schnell: ein Aufruf, ausfuehrlich: Erkennung, Rest ueber die Queue).
+ * Jeder Fehler (Monatslimit, API) bleibt als Meldung an der Aufnahme stehen, "Erneut versuchen" holt nach.
  */
 class CaptureService
 {
@@ -63,14 +63,15 @@ class CaptureService
     }
 
     /**
-     * Pipeline anstossen. Das Monatslimit wird als Fehler an der Aufnahme festgehalten, nicht geworfen.
+     * Pipeline anstossen. Fehler werden an der Aufnahme festgehalten, nicht geworfen.
      */
     public function startPipeline(Capture $capture): void
     {
         try {
             app(Pipeline::class)->start($capture);
-        } catch (RuntimeException $e) {
-            Pipeline::fail($capture, $e->getMessage());
+        } catch (Throwable $e) {
+            report($e);
+            Pipeline::fail($capture->fresh() ?? $capture, $e->getMessage());
         }
     }
 

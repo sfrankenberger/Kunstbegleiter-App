@@ -52,7 +52,7 @@ return [
         'backoff_seconds' => 20,
     ],
     'research' => [
-        'max_searches' => (int) env('MUSEUMGUIDE_MAX_SEARCHES', 8),
+        'max_searches' => (int) env('MUSEUMGUIDE_MAX_SEARCHES', 4),
         'museum_max_searches' => 4,
     ],
 
@@ -73,7 +73,8 @@ return [
         'elevenlabs_key' => env('ELEVENLABS_API_KEY'),
         'openai_key' => env('OPENAI_API_KEY'),
         'elevenlabs' => [
-            'model' => env('ELEVENLABS_MODEL', 'eleven_multilingual_v2'),
+            // eleven_flash_v2_5 ist deutlich schneller als eleven_multilingual_v2 (Ziel: Guide in 45 Sekunden)
+            'model' => env('ELEVENLABS_MODEL', 'eleven_flash_v2_5'),
             // Stimmen je Rolle (Voice-IDs aus der ElevenLabs-Bibliothek); Etappe 3 nutzt nur narrator
             'voices' => [
                 'narrator' => env('ELEVENLABS_VOICE_NARRATOR', 'EXAVITQu4vr4xnSDxMaL'),
@@ -104,9 +105,21 @@ return [
     ],
 
     // Skript: Woerter je Laenge (App\Enums\GuideLength), Rueckbezuege je Guide
+    // Queue-Worker sofort anstossen (App\Support\QueueKick), bis systemd laeuft. PHP-Binary am Server: /opt/plesk/php/8.5/bin/php
+    'queue' => [
+        'kick' => (bool) env('MUSEUMGUIDE_QUEUE_KICK', true),
+        'php' => env('KUNST_PHP', 'php'),
+    ],
+
+    // Zielzeiten (Sebastian, 05.10.2026): schnell hoechstens 10 Sekunden, ausfuehrlich hoechstens 45 Sekunden
+    'targets' => ['quick_seconds' => 10, 'full_seconds' => 45],
+
+    // Bildkante fuer die KI (kleiner als das gespeicherte Foto, spart Zeit beim Hochladen und Lesen)
+    'vision_edge' => (int) env('MUSEUMGUIDE_VISION_EDGE', 1024),
+
     // Schnellstufe: Kurztext ohne Websuche, vom Handy vorgelesen (docs/konzept.md Abschnitt 11)
     'quick' => [
-        'words' => ['min' => 150, 'max' => 250],
+        'words' => ['min' => 100, 'max' => 160],
     ],
 
     'script' => [

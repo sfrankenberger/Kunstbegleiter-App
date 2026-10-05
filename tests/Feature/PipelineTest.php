@@ -83,11 +83,6 @@ function scriptJson(): array
     ];
 }
 
-function checkJson(): array
-{
-    return ['segments' => scriptJson()['segments'], 'changes' => []];
-}
-
 function knowledgeJson(): array
 {
     return ['artist_summary' => 'Goldene Periode, Blattgold, Staatskauf 1908.', 'epoch_summary' => 'Jugendstil als Gesamtkunstwerk.'];
@@ -100,13 +95,10 @@ function captureWithPhotos(User $user, ?Museum $museum = null, GuideMode $mode =
     return app(CaptureService::class)->create($user, $visit, [UploadedFile::fake()->image('werk.jpg', 600, 400), UploadedFile::fake()->image('schild.jpg', 400, 300)], $mode);
 }
 
-test('the quick mode needs one call after recognition, no web search, no mp3, and can be upgraded', function () {
+test('the quick mode is one call with the photos, no web search, no mp3, and can be upgraded', function () {
     Http::fake(['api.anthropic.com/*' => Http::sequence()
-        ->push(claudeJson(recognitionJson()))
-        ->push(claudeJson(scriptJson()))
-        ->push(claudeJson(researchJson()))
-        ->push(claudeJson(scriptJson()))
-        ->push(claudeJson(checkJson()))
+        ->push(claudeJson(recognitionJson() + scriptJson()))
+        ->push(claudeJson(researchJson() + scriptJson()))
         ->push(claudeJson(knowledgeJson())),
     ]);
     $user = User::factory()->create();
@@ -120,9 +112,9 @@ test('the quick mode needs one call after recognition, no web search, no mp3, an
         ->and($capture->audioGuide->audio_path)->toBeNull()
         ->and($capture->audioGuide->tts_provider)->toBe('browser')
         ->and($capture->factSheet->key_statements)->toHaveCount(1)
-        ->and(AiCall::query()->where('capture_id', $capture->getKey())->count())->toBe(2)
+        ->and(AiCall::query()->where('capture_id', $capture->getKey())->count())->toBe(1)
         ->and(AiCall::query()->where('purpose', AiPurpose::Quick)->exists())->toBeTrue();
-    Http::assertSent(fn ($request) => ! isset($request['tools']) && str_contains((string) $request['system'], 'schnellen Überblick'));
+    Http::assertSent(fn ($request) => ! isset($request['tools']) && str_contains((string) $request['system'], 'schnellen Überblick') && ($request['messages'][0]['content'][1]['type'] ?? '') === 'image');
 
     Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])
         ->assertSee('Vorlesen lassen')
@@ -163,9 +155,7 @@ test('the profile default and the switch on jetzt decide the mode', function () 
 test('a capture runs through the whole chain to a finished guide', function () {
     Http::fake(['api.anthropic.com/*' => Http::sequence()
         ->push(claudeJson(recognitionJson()))
-        ->push(claudeJson(researchJson(), ['input_tokens' => 5000, 'output_tokens' => 1500, 'server_tool_use' => ['web_search_requests' => 3]]))
-        ->push(claudeJson(scriptJson()))
-        ->push(claudeJson(checkJson()))
+        ->push(claudeJson(researchJson() + scriptJson(), ['input_tokens' => 5000, 'output_tokens' => 1500, 'server_tool_use' => ['web_search_requests' => 3]]))
         ->push(claudeJson(knowledgeJson())),
     ]);
     $user = User::factory()->create();
@@ -187,22 +177,20 @@ test('a capture runs through the whole chain to a finished guide', function () {
         ->and($capture->audioGuide->tts_provider)->toBe('fake')
         ->and($capture->factSheet->guest_ideas['question'])->toBe('Wo endet der Kuss?')
         ->and(KnowledgeItem::query()->whereBelongsTo($user)->count())->toBe(1)
-        ->and(AiCall::query()->where('capture_id', $capture->getKey())->where('succeeded', true)->count())->toBe(6)
-        ->and(AiCall::query()->where('purpose', AiPurpose::Research)->value('characters'))->toBe(3)
-        ->and(AiCall::query()->where('purpose', AiPurpose::Research)->value('cost_cents'))->toBeGreaterThan(0);
+        ->and(AiCall::query()->where('capture_id', $capture->getKey())->where('succeeded', true)->count())->toBe(4)
+        ->and(AiCall::query()->where('purpose', AiPurpose::Script)->value('characters'))->toBe(3)
+        ->and(AiCall::query()->where('purpose', AiPurpose::Script)->value('cost_cents'))->toBeGreaterThan(0);
 
     Storage::disk('local')->assertExists($capture->audioGuide->audio_path);
 
-    Http::assertSent(fn ($request) => str_contains($request->url(), 'anthropic') && isset($request['tools'][0]['name']) && $request['tools'][0]['name'] === 'web_search' && $request['tools'][0]['max_uses'] === 8);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'anthropic') && isset($request['tools'][0]['name']) && $request['tools'][0]['name'] === 'web_search' && $request['tools'][0]['max_uses'] === 4);
     Http::assertSent(fn ($request) => isset($request['output_config']['format']['type']) && $request['output_config']['format']['type'] === 'json_schema' && ($request['messages'][0]['content'][1]['type'] ?? '') === 'image');
 });
 
 test('an unsure recognition waits for confirmation and continues after a tap', function () {
     Http::fake(['api.anthropic.com/*' => Http::sequence()
         ->push(claudeJson(recognitionJson(0.4)))
-        ->push(claudeJson(researchJson()))
-        ->push(claudeJson(scriptJson()))
-        ->push(claudeJson(checkJson()))
+        ->push(claudeJson(researchJson() + scriptJson()))
         ->push(claudeJson(knowledgeJson())),
     ]);
     $user = User::factory()->create();
@@ -229,9 +217,7 @@ test('an unsure recognition waits for confirmation and continues after a tap', f
 test('a typed title is used when nothing was recognised', function () {
     Http::fake(['api.anthropic.com/*' => Http::sequence()
         ->push(claudeJson(array_merge(recognitionJson(0.1), ['title' => null, 'artist' => null, 'alternatives' => []])))
-        ->push(claudeJson(researchJson()))
-        ->push(claudeJson(scriptJson()))
-        ->push(claudeJson(checkJson()))
+        ->push(claudeJson(researchJson() + scriptJson()))
         ->push(claudeJson(knowledgeJson())),
     ]);
     $user = User::factory()->create();
@@ -252,9 +238,7 @@ test('an api failure marks the capture and retry finishes it', function () {
     Http::fake(['api.anthropic.com/*' => Http::sequence()
         ->push(['error' => ['message' => 'Overloaded']], 529)
         ->push(claudeJson(recognitionJson()))
-        ->push(claudeJson(researchJson()))
-        ->push(claudeJson(scriptJson()))
-        ->push(claudeJson(checkJson()))
+        ->push(claudeJson(researchJson() + scriptJson()))
         ->push(claudeJson(knowledgeJson())),
     ]);
     $user = User::factory()->create();
@@ -288,6 +272,7 @@ test('a known artwork reuses its research and a refusal is reported', function (
         ->and(Research::query()->count())->toBe(1)
         ->and($capture->status)->toBe(CaptureStatus::Failed)
         ->and($capture->error_message)->toContain('abgelehnt');
+    Http::assertSent(fn ($request) => str_contains((string) $request['system'], 'Schon recherchiert.') && ! isset($request['tools']));
 });
 
 test('the monthly limit stops a new capture with a clear message', function () {
