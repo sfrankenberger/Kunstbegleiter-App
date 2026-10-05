@@ -6,6 +6,7 @@ use App\Enums\AiPurpose;
 use App\Models\AiCall;
 use App\Models\Capture;
 use App\Models\User;
+use App\Services\Pipeline\Schemas;
 use App\Support\Secrets;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -82,7 +83,7 @@ class ClaudeClient
      */
     public function structured(AiPurpose $purpose, array $messages, array $schema, array $options = [], ?User $user = null, ?Capture $capture = null): array
     {
-        return $this->json($purpose, $messages, $options, $user, $capture, $schema);
+        return Schemas::normalize($this->json($purpose, $messages, $options, $user, $capture, $schema));
     }
 
     /**

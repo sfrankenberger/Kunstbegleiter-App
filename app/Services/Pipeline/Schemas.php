@@ -85,8 +85,8 @@ class Schemas
             'sources' => self::array($source),
             'existing_guides' => self::array(self::object(['title' => ['type' => 'string'], 'url' => ['type' => 'string']])),
             'vienna_links' => self::array(self::object(['title' => ['type' => 'string'], 'reason' => ['type' => 'string']])),
-            'artist_born' => ['type' => ['integer', 'null']],
-            'artist_died' => ['type' => ['integer', 'null']],
+            'artist_born' => ['type' => 'integer', 'description' => '0, wenn unbekannt.'],
+            'artist_died' => ['type' => 'integer', 'description' => '0, wenn unbekannt oder noch lebend.'],
             'wikidata_id' => self::nullableString(),
         ];
     }
@@ -189,8 +189,34 @@ class Schemas
     }
 
     /** @return array<string, mixed> */
+    /**
+     * Optionale Texte als einfacher String (leer = unbekannt). Union-Typen wie ["string", "null"] erlaubt die
+     * API nur in kleiner Zahl ("schema contains too many parameters with union types"), darum keine.
+     * Leere Strings werden in Schemas::normalize zu null.
+     */
     private static function nullableString(): array
     {
-        return ['type' => ['string', 'null']];
+        return ['type' => 'string', 'description' => 'Leer lassen, wenn unbekannt oder unsicher.'];
+    }
+
+    /**
+     * Leere Strings und 0 bei Jahreszahlen in null verwandeln, rekursiv.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function normalize(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $data[$key] = self::normalize($value);
+            } elseif (is_string($value) && trim($value) === '') {
+                $data[$key] = null;
+            } elseif (in_array($key, ['artist_born', 'artist_died'], true) && (int) $value <= 0) {
+                $data[$key] = null;
+            }
+        }
+
+        return $data;
     }
 }

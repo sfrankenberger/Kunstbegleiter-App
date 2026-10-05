@@ -20,6 +20,7 @@ use App\Models\Visit;
 use App\Services\Ai\ClaudeClient;
 use App\Services\Captures\CaptureService;
 use App\Services\Pipeline\Pipeline;
+use App\Services\Pipeline\Schemas;
 use App\Services\Tts\ElevenLabsTtsProvider;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
@@ -370,4 +371,27 @@ test('the elevenlabs provider is bound when a key exists', function () {
     config()->set('museumguide.tts.elevenlabs_key', 'el-key');
 
     expect(app(TtsProvider::class))->toBeInstanceOf(ElevenLabsTtsProvider::class);
+});
+
+test('no schema uses union types, the api allows only a few', function () {
+    $hasUnion = function (array $node) use (&$hasUnion): bool {
+        foreach ($node as $key => $value) {
+            if ($key === 'type' && is_array($value)) {
+                return true;
+            }
+
+            if (is_array($value) && $hasUnion($value)) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    foreach (['recognition', 'quickGuide', 'guide', 'research', 'script', 'museum', 'knowledge'] as $name) {
+        expect($hasUnion(Schemas::$name()))->toBeFalse($name);
+    }
+
+    expect(Schemas::normalize(['title' => ' ', 'artist_born' => 0, 'sections' => ['quote_text' => '', 'artist' => 'x']]))
+        ->toBe(['title' => null, 'artist_born' => null, 'sections' => ['quote_text' => null, 'artist' => 'x']]);
 });
