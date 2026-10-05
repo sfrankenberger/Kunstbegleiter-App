@@ -376,7 +376,7 @@ test('the elevenlabs provider is bound when a key exists', function () {
 test('no schema uses union types, the api allows only a few', function () {
     $hasUnion = function (array $node) use (&$hasUnion): bool {
         foreach ($node as $key => $value) {
-            if ($key === 'type' && is_array($value)) {
+            if ($key === 'type' && is_array($value) && array_is_list($value)) {
                 return true;
             }
 
