@@ -59,6 +59,8 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Künstlerprofil (Leben, Werke, Stil, Rezeption, einmal je Künstler) | `App\Jobs\ProfileArtist`, `resources/prompts/artist.md`, `artists.profile` |
 | Bilder von Wikidata und Commons (Portrait, Werk, Vergleichswerke) | `App\Services\Images\WikiImages`, `App\Jobs\FetchImages`, `App\Models\RelatedWork` |
 | Icons im Fact Sheet | `resources/views/components/kb-icon.blade.php` (`<x-kb-icon name="user" />`) |
+| Reiter Künstler, Künstler-Seite | `App\Livewire\Pages\Kuenstler`, `App\Livewire\Pages\KuenstlerDetail` |
+| Globaler Audio-Player (läuft über Seitenwechsel) | `public/js/player.js` (Alpine-Store), `@persist('player')` in `resources/views/components/layouts/app.blade.php` |
 | Audio ausliefern (signiert) | `App\Http\Controllers\AudioController`, `AudioGuide::url()`, Route `audio.show` |
 | Sicht auf Aufnahmen (Besitzer, Partner) | `App\Policies\CapturePolicy` |
 | Kopplung, Partner | `Pairing::between()`, `Pairing::partnerOf()`, `User::partner()` |

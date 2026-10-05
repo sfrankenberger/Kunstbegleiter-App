@@ -151,7 +151,13 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - `App\Jobs\ProfileArtist`: einmal je Künstler (nach 180 Tagen neu) ein eigener Aufruf (Sonnet 5.5, höchstens 3 Websuchen, Prompt `artist.md`, Schema `Schemas::artistProfile`): Geburt und Tod mit Ort, Leben (4 bis 8 Stichpunkte), wichtigste Werke mit Jahr und Standort, Stil und Technik, Rezeption (Einfluss, Wiederentdeckung, Forschungsstand). Bei unbekannten Namen helfen die Websuchen (AKL, Wien Geschichte Wiki, RKD), lieber wenig Belegtes als Füllmaterial. Abgelegt in `artists.profile` (JSON) und `profile_checked_at`, fehlende Lebensjahre werden am Künstler nachgetragen. Kosten einmalig je Künstler, etwa 5 bis 10 Cent.
 - Läuft nach dem Guide in der Queue (aus `QuickOverview::fetchImages`, zusammen mit den Bildern), die Werk-Seite pollt bis zu drei Minuten nach. Anzeige im Abschnitt "Künstler": Portrait, Lebensdaten, Leben, Stil und Technik, Rezeption, Wichtige Werke, darunter "Zu diesem Werk" (die werkbezogenen Punkte aus dem Fact Sheet). Abschaltbar mit `MUSEUMGUIDE_ARTIST_PROFILE=false` (in Tests aus).
 
-## 8. Offen nach Etappe 3 (Stand 05.10.2026)
+## 22. Reiter Künstler statt Entdecken, Player läuft über Seiten hinweg (Sebastian, 05.10.2026)
+
+- "Künstler ist jetzt zu groß geworden": Der dritte Reiter heißt jetzt Künstler (`/kuenstler`, `App\Livewire\Pages\Kuenstler`): alle Künstler mit eigenen Aufnahmen (und denen des Partners), Portrait, Lebensdaten, Zahl der Werke, Suche. Künstler-Seite (`/kuenstler/{artist}`, `KuenstlerDetail`): Portrait, Lebensdaten, Leben, Stil und Technik, Rezeption, Wichtige Werke, eigene Aufnahmen, Quellen. Der Reiter Entdecken (Tipps, Rundgang-Ideen, Etappe 5) ist entfernt; die Ideen bleiben im Grundgerüst und kommen später an anderer Stelle.
+- Auf der Werk-Seite bleibt im Abschnitt Künstler nur das Wichtigste: Portrait, Lebensdaten, zwei Punkte aus dem Leben, Link "Mehr zum Künstler", darunter "Zu diesem Werk".
+- Damit der Audioguide beim Wechsel nicht abbricht, liegt der Player jetzt im Layout unter Livewires `@persist('player')` und wird von einem Alpine-Store gesteuert (`public/js/player.js`): Die Werk-Seite ruft `$store.player.load(...)` auf (derselbe Guide wird nicht neu geladen), die Leiste bleibt bei `wire:navigate` erhalten und spielt auf Künstler-, Archiv- und Jetzt-Seite weiter, mit Titel-Link zurück zum Werk und Schließen-Knopf. Die Handy-Stimme (Rückfall ohne MP3) bleibt ein Player in der Werk-Seite.
+
+
 
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.
 - Stimmen-IDs in `config/museumguide.php` (`tts.elevenlabs.voices`) auf echte Stimmen setzen.

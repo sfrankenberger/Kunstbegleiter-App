@@ -352,8 +352,8 @@ test('the finished capture page shows player, facts, guests, sources and takes f
     $capture->factSheets()->create(scriptJson()['fact_sheet']);
 
     Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])
-        ->assertSee('Anhören')
-        ->assertSee('Ausgabe wählen')
+        ->assertSee('$store.player.load')
+        ->assertSee('Mehr zum Künstler')
         ->assertSee('War der Guide gut?')
         ->assertSee('Belvedere: Der Kuss')
         ->assertSee('Provenienz')
@@ -568,8 +568,7 @@ test('an artist profile is researched once and shown with life, works and recept
     $capture->factSheets()->create(['sections' => ['artist' => ['Zu diesem Blatt.']]]);
     Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])
         ->assertSee('Michael Wolgemut')
-        ->assertSee('Wichtige Werke')
-        ->assertSee('Selbstbildnis im Pelzrock')
-        ->assertSee('Dürer-Kults')
-        ->assertSee('Zu diesem Werk');
+        ->assertSee('Mehr zum Künstler')
+        ->assertSee('Zu diesem Werk')
+        ->assertDontSee('Selbstbildnis im Pelzrock');
 });

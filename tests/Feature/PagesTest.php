@@ -3,6 +3,8 @@
 use App\Enums\GuideLength;
 use App\Livewire\Pages\Profil;
 use App\Models\AiCall;
+use App\Models\Artist;
+use App\Models\Artwork;
 use App\Models\Capture;
 use App\Models\User;
 use App\Models\Visit;
@@ -13,7 +15,7 @@ test('every tab loads for a signed-in user', function (string $path, string $tex
 })->with([
     ['/jetzt', 'Museum in der Nähe suchen'],
     ['/archiv', 'Noch keine Werke im Archiv'],
-    ['/entdecken', 'Tipps in der Stadt'],
+    ['/kuenstler', 'Noch keine Künstler'],
     ['/profil', 'Vorwissen'],
 ]);
 
@@ -61,4 +63,16 @@ test('profile shows the monthly costs against the limit', function () {
     AiCall::factory()->for($user)->create(['cost_cents' => 850]);
 
     $this->actingAs($user)->get('/profil')->assertSee('8,50 € von 10,00 €')->assertSee('85 %');
+});
+
+test('the artist tab lists artists of own captures and the artist page shows the profile', function () {
+    $user = User::factory()->create();
+    $artist = Artist::factory()->create(['name' => 'Egon Schiele', 'born_year' => 1890, 'died_year' => 1918, 'profile' => ['born' => '12. Juni 1890, Tulln', 'died' => '31. Oktober 1918, Wien', 'life' => ['Schüler von Klimt.'], 'key_works' => [['title' => 'Die Familie', 'year' => '1918', 'location' => 'Belvedere']], 'style' => [], 'reception' => ['Leopold Museum als Zentrum der Schiele-Forschung.'], 'sources' => []]]);
+    $capture = Capture::factory()->for($user)->done()->create(['artwork_id' => Artwork::factory()->create(['artist_id' => $artist->getKey(), 'title' => 'Sitzende Frau'])->getKey()]);
+    Artist::factory()->create(['name' => 'Fremder Maler']);
+
+    $this->actingAs($user)->get('/kuenstler')->assertOk()->assertSee('Egon Schiele')->assertSee('1 Werk')->assertDontSee('Fremder Maler');
+    $this->actingAs($user)->get(route('kuenstler.show', $artist))->assertOk()
+        ->assertSee('Tulln')->assertSee('Schüler von Klimt')->assertSee('Die Familie')->assertSee('Schiele-Forschung')->assertSee('Sitzende Frau');
+    $this->actingAs($user)->get(route('aufnahme', $capture))->assertOk()->assertSee('player.js');
 });

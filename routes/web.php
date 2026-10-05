@@ -6,8 +6,9 @@ use App\Http\Controllers\PhotoController;
 use App\Livewire\Auth\Login;
 use App\Livewire\Pages\Archiv;
 use App\Livewire\Pages\Aufnahme;
-use App\Livewire\Pages\Entdecken;
 use App\Livewire\Pages\Jetzt;
+use App\Livewire\Pages\Kuenstler;
+use App\Livewire\Pages\KuenstlerDetail;
 use App\Livewire\Pages\Profil;
 use Illuminate\Support\Facades\Route;
 
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 | Handy-Oberflaeche (docs/grundgeruest.md, Bildschirme)
 |--------------------------------------------------------------------------
 |
-| Vier Reiter: Jetzt, Archiv, Entdecken, Profil. Anmeldung unter /anmelden (E-Mail + Passwort oder Passkey ueber
+| Vier Reiter: Jetzt, Archiv, Kuenstler, Profil. Anmeldung unter /anmelden (E-Mail + Passwort oder Passkey ueber
 | die Routen des Pakets laravel/passkeys). Die Verwaltung liegt unter /admin (Filament, AdminPanelProvider).
 |
 */
@@ -33,7 +34,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('fotos/{photo}', PhotoController::class)->middleware('signed')->name('fotos.show');
     Route::get('audio/{guide}', AudioController::class)->middleware('signed')->name('audio.show');
     Route::get('archiv', Archiv::class)->name('archiv');
-    Route::get('entdecken', Entdecken::class)->name('entdecken');
+    Route::get('kuenstler', Kuenstler::class)->name('kuenstler');
+    Route::get('kuenstler/{artist}', KuenstlerDetail::class)->name('kuenstler.show');
     Route::get('profil', Profil::class)->name('profil');
     Route::post('abmelden', LogoutController::class)->name('logout');
 });
