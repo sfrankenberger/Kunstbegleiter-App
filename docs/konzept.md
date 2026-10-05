@@ -145,6 +145,14 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 
 
 
+## 21. Künstlerprofil (Sebastian, 05.10.2026)
+
+- "Bei Albrecht Dürer sind die Fakten über den Künstler etwas dürftig: Geburt, Tod, wichtigste Werke, Rezeption in der Kunstgeschichte. Manchmal habe ich auch Bilder von komplett unbekannten Künstlern dabei."
+- `App\Jobs\ProfileArtist`: einmal je Künstler (nach 180 Tagen neu) ein eigener Aufruf (Sonnet 5.5, höchstens 3 Websuchen, Prompt `artist.md`, Schema `Schemas::artistProfile`): Geburt und Tod mit Ort, Leben (4 bis 8 Stichpunkte), wichtigste Werke mit Jahr und Standort, Stil und Technik, Rezeption (Einfluss, Wiederentdeckung, Forschungsstand). Bei unbekannten Namen helfen die Websuchen (AKL, Wien Geschichte Wiki, RKD), lieber wenig Belegtes als Füllmaterial. Abgelegt in `artists.profile` (JSON) und `profile_checked_at`, fehlende Lebensjahre werden am Künstler nachgetragen. Kosten einmalig je Künstler, etwa 5 bis 10 Cent.
+- Läuft nach dem Guide in der Queue (aus `QuickOverview::fetchImages`, zusammen mit den Bildern), die Werk-Seite pollt bis zu drei Minuten nach. Anzeige im Abschnitt "Künstler": Portrait, Lebensdaten, Leben, Stil und Technik, Rezeption, Wichtige Werke, darunter "Zu diesem Werk" (die werkbezogenen Punkte aus dem Fact Sheet). Abschaltbar mit `MUSEUMGUIDE_ARTIST_PROFILE=false` (in Tests aus).
+
+## 8. Offen nach Etappe 3 (Stand 05.10.2026)
+
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.
 - Stimmen-IDs in `config/museumguide.php` (`tts.elevenlabs.voices`) auf echte Stimmen setzen.
 - Entscheidung schnell/ausführlich (Abschnitt 10, letzter Punkt).
