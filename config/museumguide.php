@@ -75,11 +75,13 @@ return [
         'elevenlabs' => [
             // eleven_flash_v2_5 ist deutlich schneller als eleven_multilingual_v2 (Ziel: Guide in 45 Sekunden)
             'model' => env('ELEVENLABS_MODEL', 'eleven_flash_v2_5'),
-            // Stimmen je Rolle (Voice-IDs aus der ElevenLabs-Bibliothek); Etappe 3 nutzt nur narrator
+            // Stimmen je Rolle (Voice-IDs aus Sebastians ElevenLabs-Bibliothek, 05.10.2026): narrator "Christian,
+            // warm and captivating" (deutscher Dokumentarsprecher), second und quote "Alexander, deep TV narrator".
+            // Etappe 3 nutzt nur narrator.
             'voices' => [
-                'narrator' => env('ELEVENLABS_VOICE_NARRATOR', 'EXAVITQu4vr4xnSDxMaL'),
-                'second' => env('ELEVENLABS_VOICE_SECOND', 'onwK4e9ZLuTAKqWW03F9'),
-                'quote' => env('ELEVENLABS_VOICE_QUOTE', 'JBFqnCBsd6RMkjVDRZzb'),
+                'narrator' => env('ELEVENLABS_VOICE_NARRATOR', 'NBqeXKdZHweef6y0B67V'),
+                'second' => env('ELEVENLABS_VOICE_SECOND', 'kkJxCnlRCckmfFvzDW5Q'),
+                'quote' => env('ELEVENLABS_VOICE_QUOTE', 'kkJxCnlRCckmfFvzDW5Q'),
             ],
         ],
     ],

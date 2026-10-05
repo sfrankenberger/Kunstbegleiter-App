@@ -9,11 +9,12 @@ use App\Enums\PipelineStep;
 use App\Models\Capture;
 use App\Services\Ai\ClaudeClient;
 use App\Services\Pipeline\Schemas;
+use App\Services\Pipeline\Voice;
 use App\Support\Prompts;
 
 /**
  * Schnellstufe (docs/konzept.md Abschnitt 11): ein einziger Aufruf ohne Websuche liefert Kurztext und Fact Sheet.
- * Kein MP3, das Handy liest vor (Web Speech API). Danach ist die Aufnahme fertig; "Ausfuehrlichen Guide
+ * Danach die Studio-Stimme (Voice); faellt sie aus oder fehlt der Schluessel, liest das Handy vor. Danach ist die Aufnahme fertig; "Ausfuehrlichen Guide
  * erstellen" haengt die volle Kette an (Pipeline::upgrade).
  */
 class QuickOverview extends PipelineJob
@@ -83,5 +84,13 @@ class QuickOverview extends PipelineJob
         ]);
 
         $capture->setRelation('audioGuide', $guide);
+
+        // Studio-Stimme auch in der Schnellstufe (Sebastian, 05.10.2026); ohne Anbieter liest das Handy vor
+        $voice = app(Voice::class);
+
+        if ($voice->isReal()) {
+            $capture->forceFill(['step' => PipelineStep::Speaking])->save();
+            $voice->synthesize($capture, $guide);
+        }
     }
 }

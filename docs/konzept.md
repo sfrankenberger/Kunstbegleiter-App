@@ -109,6 +109,11 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Abbruch beim Aufklappen:** Livewire zeichnete beim Aufklappen (Text, Fotos) die Seite neu und ersetzte den Player, die Wiedergabe stoppte. Jetzt: Aufklappen rein im Browser (Alpine `x-show`), Player-Karte mit `wire:ignore` (Livewire fasst sie nie an), Rückmeldung (Daumen, Schwierigkeit) in eigener Karte.
 - **Abschnitte:** `fact_sheets.sections` (JSON) mit Künstler, Provenienz, Deutung, Epoche, Genau hinschauen, Außerdem, Zitat (Text, Sprecher, Anlass), Anekdote, Kuratorenstimme (Text, Name). Die Prompts verlangen Ergänzungen, die im Audio nicht gesagt werden, Unsicheres bleibt null. Anzeige als Karten mit Icons (`resources/views/components/kb-icon.blade.php`, Heroicons, Name `x-kb-icon`, weil `x-icon` von blade-icons belegt ist). Im ausführlichen Guide sollen belegtes Zitat, Anekdote und Kuratorenstimme auch im Audio vorkommen (Prompt `guide.md`).
 
+## 15. Studio-Stimme auch in der Schnellstufe (Sebastian, 05.10.2026: "ja super so machen wir das")
+
+- Safari bekommt die Siri-Stimmen nicht (Apple gibt sie Web-Apps nicht frei), nur die Stimmen aus Bedienungshilfen > Gesprochene Inhalte. Deshalb spricht jetzt auch die Schnellstufe mit ElevenLabs (`App\Services\Pipeline\Voice`, gemeinsam mit `SynthesizeAudio`), synchron nach dem Kurztext (etwa 4 Sekunden, 10 bis 15 Cent). Ohne Schlüssel oder bei Ausfall liest weiter das Handy vor (Stimmenwahl mit Kompakt, Erweitert, Premium).
+- Stimme: männlich, warm, Dokumentarsprecher. Aus der ElevenLabs-Bibliothek in Sebastians Konto übernommen: narrator "Christian - Warm and Captivating" (`NBqeXKdZHweef6y0B67V`), second und quote "Alexander - Deep TV Narrator" (`kkJxCnlRCckmfFvzDW5Q`). IDs in `config/museumguide.php` und als `ELEVENLABS_VOICE_*` in der `.env` am Server.
+
 ## 8. Offen nach Etappe 3 (Stand 05.10.2026)
 
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.

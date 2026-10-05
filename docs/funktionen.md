@@ -51,6 +51,7 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Kontext für das Skript (Vorwissen, Besuch, Lerngedächtnis, Quellen) | `App\Services\Pipeline\ContextBuilder` |
 | JSON-Schemas der KI-Antworten | `App\Services\Pipeline\Schemas` |
 | Pipeline-Schritte (Jobs) | `App\Jobs\{QuickGuide, QuickOverview, RecognizeArtwork, ResearchAndWrite, SynthesizeAudio, UpdateKnowledge, ResearchMuseum}`, Basis `App\Jobs\PipelineJob` |
+| Skript einsprechen und MP3 ablegen (schnell und ausführlich) | `App\Services\Pipeline\Voice` |
 | Queue-Worker sofort anstoßen | `App\Support\QueueKick` |
 | Fortschritt, Rückfrage, Player, Fact Sheet, Rückmeldung | `App\Livewire\Pages\Aufnahme`, `Capture::isRunning()`, `Capture::progressLabel()` |
 | Icons im Fact Sheet | `resources/views/components/kb-icon.blade.php` (`<x-kb-icon name="user" />`) |

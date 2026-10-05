@@ -138,6 +138,25 @@ test('the quick mode is one call with the photos, no web search, no mp3, and can
         ->and($capture->audioGuide->tts_provider)->toBe('fake');
 });
 
+test('the quick mode speaks with the studio voice when a real provider is bound', function () {
+    config()->set('museumguide.tts.elevenlabs_key', 'el-key');
+    $this->app->instance(TtsProvider::class, new ElevenLabsTtsProvider);
+    Http::fake([
+        'api.anthropic.com/*' => Http::response(claudeJson(recognitionJson() + scriptJson())),
+        'api.elevenlabs.io/*' => Http::response('MP3BYTES', 200, ['Content-Type' => 'audio/mpeg']),
+    ]);
+    $user = User::factory()->create();
+
+    $capture = captureWithPhotos($user, null, GuideMode::Quick)->fresh();
+
+    expect($capture->status)->toBe(CaptureStatus::Done)
+        ->and($capture->audioGuide->tts_provider)->toBe('elevenlabs')
+        ->and($capture->audioGuide->audio_path)->not->toBeNull()
+        ->and(AiCall::query()->where('purpose', AiPurpose::Tts)->where('succeeded', true)->exists())->toBeTrue();
+    Storage::disk('local')->assertExists($capture->audioGuide->audio_path);
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/text-to-speech/NBqeXKdZHweef6y0B67V'));
+});
+
 test('the profile default and the switch on jetzt decide the mode', function () {
     Bus::fake();
     $user = User::factory()->create(['default_mode' => GuideMode::Full]);
