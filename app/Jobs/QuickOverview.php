@@ -57,17 +57,26 @@ class QuickOverview extends PipelineJob
     }
 
     /**
-     * Bilder (Portraet, Werk, Vergleichswerke) in der Queue nachladen, ohne die Antwortzeit zu verlaengern.
+     * Bilder (Portraet, Werk, Vergleichswerke) und Kuenstlerprofil in der Queue nachladen, ohne die Antwortzeit zu verlaengern.
      *
      * @param  array<string, mixed>  $sheet
      */
     public static function fetchImages(Capture $capture, array $sheet): void
     {
-        if (! (bool) config('museumguide.images.enabled', true) || $capture->artwork_id === null) {
+        if ($capture->artwork_id === null) {
             return;
         }
 
-        FetchImages::dispatch((int) $capture->artwork_id, array_values(array_filter((array) ($sheet['sections']['related_works'] ?? []), 'is_array')));
+        if ((bool) config('museumguide.images.enabled', true)) {
+            FetchImages::dispatch((int) $capture->artwork_id, array_values(array_filter((array) ($sheet['sections']['related_works'] ?? []), 'is_array')));
+        }
+
+        $artist = $capture->artwork?->artist;
+
+        if ($artist !== null && (bool) config('museumguide.artist_profile.enabled', true) && ($artist->profile_checked_at === null || $artist->profile_checked_at->lt(now()->subDays((int) config('museumguide.artist_profile.days', 180))))) {
+            ProfileArtist::dispatch($artist->getKey(), $capture->user_id, (string) $capture->artwork?->title);
+        }
+
         QueueKick::now();
     }
 

@@ -24,6 +24,7 @@ return [
         'script_premium' => env('MUSEUMGUIDE_MODEL_SCRIPT_PREMIUM', 'claude-opus-5-5'),
         'check' => env('MUSEUMGUIDE_MODEL_CHECK', 'claude-sonnet-5-5'),
         'museum' => env('MUSEUMGUIDE_MODEL_MUSEUM', 'claude-sonnet-5-5'),
+        'artist' => env('MUSEUMGUIDE_MODEL_ARTIST', 'claude-sonnet-5-5'),
         'tips' => env('MUSEUMGUIDE_MODEL_TIPS', 'claude-sonnet-5-5'),
         'small' => env('MUSEUMGUIDE_MODEL_SMALL', 'claude-haiku-4-5'),
     ],
@@ -109,6 +110,13 @@ return [
             'jugendstil' => 'impressionismus', 'expressionismus' => 'moderne', 'klassische-moderne' => 'moderne',
             'nachkriegsmoderne' => 'moderne',
         ],
+    ],
+
+    // Kuenstlerprofil einmal je Kuenstler (App\Jobs\ProfileArtist), nach 180 Tagen neu
+    'artist_profile' => [
+        'enabled' => (bool) env('MUSEUMGUIDE_ARTIST_PROFILE', true),
+        'max_searches' => 3,
+        'days' => 180,
     ],
 
     // Bilder von Wikidata und Wikimedia Commons (App\Services\Images\WikiImages): nur Links, keine Dateien

@@ -221,8 +221,30 @@
                         @else
                             <x-kb-icon :name="$icon" class="mt-0.5 h-5 w-5 text-accent" />
                         @endif
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                             <h2 class="text-sm font-semibold text-stone-700">{{ $label }}{{ $key === 'artist' && $capture->artwork?->artist ? ': '.$capture->artwork->artist->name : '' }}</h2>
+                            @if ($key === 'artist' && is_array($profile = $capture->artwork?->artist?->profile) && $profile !== [])
+                                @if (filled($profile['born'] ?? null) || filled($profile['died'] ?? null))
+                                    <p class="mt-1 text-sm text-stone-600">{{ filled($profile['born'] ?? null) ? '* '.$profile['born'] : '' }}{{ filled($profile['born'] ?? null) && filled($profile['died'] ?? null) ? ' · ' : '' }}{{ filled($profile['died'] ?? null) ? '† '.$profile['died'] : '' }}</p>
+                                @endif
+                                @foreach (['life' => 'Leben', 'style' => 'Stil und Technik', 'reception' => 'Rezeption'] as $pk => $pl)
+                                    @if (filled($profile[$pk] ?? null))
+                                        <p class="mt-2 text-xs uppercase tracking-wide text-stone-500">{{ $pl }}</p>
+                                        <ul class="mt-0.5 list-disc pl-4 text-sm leading-relaxed">
+                                            @foreach ($bullets($profile[$pk]) as $point)<li>{{ $point }}</li>@endforeach
+                                        </ul>
+                                    @endif
+                                @endforeach
+                                @if (filled($profile['key_works'] ?? null))
+                                    <p class="mt-2 text-xs uppercase tracking-wide text-stone-500">Wichtige Werke</p>
+                                    <ul class="mt-0.5 list-disc pl-4 text-sm leading-relaxed">
+                                        @foreach ($profile['key_works'] as $kw)
+                                            @if (is_array($kw) && filled($kw['title'] ?? null))<li>{{ $kw['title'] }}{{ filled($kw['year'] ?? null) ? ', '.$kw['year'] : '' }}{{ filled($kw['location'] ?? null) ? ' ('.$kw['location'].')' : '' }}</li>@endif
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                <p class="mt-2 text-xs uppercase tracking-wide text-stone-500">Zu diesem Werk</p>
+                            @endif
                             <ul class="mt-1 list-disc pl-4 text-sm leading-relaxed">
                                 @foreach ($bullets($sections[$key]) as $point)
                                     <li>{{ $point }}</li>

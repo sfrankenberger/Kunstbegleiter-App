@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['name', 'sort_name', 'born_year', 'died_year', 'wikidata_id', 'gnd_id', 'short_bio', 'portrait_url', 'portrait_credit', 'portrait_checked_at'])]
+#[Fillable(['name', 'sort_name', 'born_year', 'died_year', 'wikidata_id', 'gnd_id', 'short_bio', 'portrait_url', 'portrait_credit', 'portrait_checked_at', 'profile', 'profile_checked_at'])]
 /**
  * Kuenstler, geteilt. Normdaten-IDs (Wikidata, GND) erkennen Wiederholungen ueber Schreibweisen hinweg.
  */
@@ -19,7 +19,7 @@ class Artist extends Model
 {
     protected function casts(): array
     {
-        return ['portrait_checked_at' => 'datetime'];
+        return ['portrait_checked_at' => 'datetime', 'profile' => 'array', 'profile_checked_at' => 'datetime'];
     }
 
     /** @use HasFactory<ArtistFactory> */

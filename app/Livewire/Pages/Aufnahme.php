@@ -159,7 +159,10 @@ class Aufnahme extends Component
         return view('livewire.pages.aufnahme', [
             'photoTypes' => PhotoType::cases(),
             'sources' => $research !== null ? ContextBuilder::sources($research) : [],
-            'imagesPending' => (bool) config('museumguide.images.enabled', true) && $this->capture->isDone() && $this->capture->artwork !== null && $this->capture->artwork->image_checked_at === null && $this->capture->finished_at?->gt(now()->subMinutes(3)),
+            'imagesPending' => $this->capture->isDone() && $this->capture->artwork !== null && $this->capture->finished_at?->gt(now()->subMinutes(3)) && (
+                ((bool) config('museumguide.images.enabled', true) && $this->capture->artwork->image_checked_at === null)
+                || ((bool) config('museumguide.artist_profile.enabled', true) && $this->capture->artwork->artist !== null && $this->capture->artwork->artist->profile_checked_at === null)
+            ),
             'segments' => collect($this->capture->audioGuide?->script ?? [])->filter(fn (mixed $s): bool => is_array($s) && filled($s['text'] ?? null))->values(),
         ]);
     }

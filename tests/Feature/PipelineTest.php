@@ -6,6 +6,7 @@ use App\Enums\CaptureStatus;
 use App\Enums\GuideMode;
 use App\Enums\PipelineStep;
 use App\Jobs\FetchImages;
+use App\Jobs\ProfileArtist;
 use App\Jobs\SynthesizeAudio;
 use App\Livewire\Pages\Aufnahme;
 use App\Livewire\Pages\Jetzt;
@@ -537,4 +538,38 @@ test('images for artist, artwork and related works come from wikidata and common
         ->assertSee('Klimt_Portrait.jpg')
         ->assertSee('Vergleichswerke')
         ->assertSee('Judith');
+});
+
+test('an artist profile is researched once and shown with life, works and reception', function () {
+    config()->set('museumguide.artist_profile.enabled', true);
+    Http::fake(['api.anthropic.com/*' => Http::response(claudeJson([
+        'born' => '21. Mai 1471, Nürnberg', 'died' => '6. April 1528, Nürnberg',
+        'life' => ['Lehre beim Vater, dann bei Michael Wolgemut.', 'Zwei Italienreisen 1494 und 1505.'],
+        'key_works' => [['title' => 'Selbstbildnis im Pelzrock', 'year' => '1500', 'location' => 'Alte Pinakothek München']],
+        'style' => ['Kupferstich und Holzschnitt auf neuem Niveau.'], 'reception' => ['Dürer-Jahr 1828 als Beginn des Dürer-Kults.'], 'sources' => [],
+    ]))]);
+    $user = User::factory()->create();
+    $artist = Artist::factory()->create(['name' => 'Albrecht Dürer', 'born_year' => null, 'died_year' => null, 'profile' => null]);
+    $artwork = Artwork::factory()->create(['artist_id' => $artist->getKey()]);
+
+    (new ProfileArtist($artist->getKey(), $user->getKey(), $artwork->title))->handle();
+    $calls = count(Http::recorded());
+    (new ProfileArtist($artist->getKey(), $user->getKey()))->handle();
+
+    $artist->refresh();
+    expect($artist->profile['life'])->toHaveCount(2)
+        ->and($artist->born_year)->toBe(1471)
+        ->and($artist->died_year)->toBe(1528)
+        ->and(count(Http::recorded()))->toBe($calls)
+        ->and(AiCall::query()->where('purpose', AiPurpose::Artist)->whereBelongsTo($user)->exists())->toBeTrue();
+    Http::assertSent(fn ($request) => isset($request['tools'][0]) && $request['tools'][0]['max_uses'] === 3 && str_contains((string) $request['system'], 'Albrecht Dürer'));
+
+    $capture = Capture::factory()->done()->for($user)->create(['artwork_id' => $artwork->getKey()]);
+    $capture->factSheets()->create(['sections' => ['artist' => ['Zu diesem Blatt.']]]);
+    Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])
+        ->assertSee('Michael Wolgemut')
+        ->assertSee('Wichtige Werke')
+        ->assertSee('Selbstbildnis im Pelzrock')
+        ->assertSee('Dürer-Kults')
+        ->assertSee('Zu diesem Werk');
 });

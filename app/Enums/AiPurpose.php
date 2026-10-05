@@ -13,6 +13,7 @@ enum AiPurpose: string
     case Script = 'script';
     case Check = 'check';
     case Museum = 'museum';
+    case Artist = 'artist';
     case Tips = 'tips';
     case Small = 'small';
     case Tts = 'tts';
@@ -26,6 +27,7 @@ enum AiPurpose: string
             self::Script => 'Skript',
             self::Check => 'Faktencheck',
             self::Museum => 'Museum',
+            self::Artist => 'Künstlerprofil',
             self::Tips => 'Stadt-Tipps',
             self::Small => 'Kleinkram',
             self::Tts => 'Stimme',

@@ -141,6 +141,24 @@ class Schemas
         ]);
     }
 
+    /**
+     * Kuenstlerprofil (ProfileArtist).
+     *
+     * @return array<string, mixed>
+     */
+    public static function artistProfile(): array
+    {
+        return self::object([
+            'born' => self::nullableString(),
+            'died' => self::nullableString(),
+            'life' => self::array(['type' => 'string']),
+            'key_works' => self::array(self::object(['title' => ['type' => 'string'], 'year' => ['type' => 'string'], 'location' => ['type' => 'string']])),
+            'style' => self::array(['type' => 'string']),
+            'reception' => self::array(['type' => 'string']),
+            'sources' => self::array(self::object(['url' => ['type' => 'string'], 'title' => ['type' => 'string']])),
+        ]);
+    }
+
     /** @return array<string, mixed> */
     public static function museum(): array
     {
