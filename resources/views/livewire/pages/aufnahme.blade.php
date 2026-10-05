@@ -174,16 +174,7 @@
             @endif
             </div>
         </div>
-        <div class="h-28" aria-hidden="true"></div>
 
-    @endif
-
-    @if ($capture->isQuick() && $capture->isDone() && $capture->artwork_id)
-        <div class="kb-card flex flex-col gap-2">
-            <p class="font-semibold">Mehr zu diesem Werk?</p>
-            <p class="text-sm text-stone-600">Der ausführliche Guide recherchiert im Netz, prüft die Fakten und wird von der Studio-Stimme gesprochen. Dauert einige Minuten, kostet etwa 20 bis 40 Cent.</p>
-            <button type="button" class="kb-button" wire:click="upgrade" wire:loading.attr="disabled">Ausführlichen Guide erstellen</button>
-        </div>
     @endif
 
     @if ($capture->factSheet)
@@ -329,6 +320,14 @@
             </ul>
     </div>
 
+    @if ($capture->isQuick() && $capture->isDone() && $capture->artwork_id)
+        <div class="kb-card flex flex-col gap-2">
+            <p class="font-semibold">Mehr zu diesem Werk?</p>
+            <p class="text-sm text-stone-600">Der ausführliche Guide recherchiert im Netz, prüft die Fakten und wird von der Studio-Stimme gesprochen. Dauert einige Minuten, kostet etwa 20 bis 40 Cent.</p>
+            <button type="button" class="kb-button" wire:click="upgrade" wire:loading.attr="disabled">Ausführlichen Guide erstellen</button>
+        </div>
+    @endif
+
     @if ($capture->audioGuide)
         @php($guide = $capture->audioGuide)
         <div class="kb-card">
@@ -348,4 +347,8 @@
     @endif
 
     <button type="button" class="kb-button-secondary text-red-700" wire:click="delete" wire:confirm="Aufnahme in den Papierkorb legen?">Aufnahme löschen</button>
+
+    @if ($capture->audioGuide)
+        <div class="h-24" aria-hidden="true"></div>
+    @endif
 </div>
