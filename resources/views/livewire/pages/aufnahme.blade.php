@@ -105,12 +105,14 @@
                         },
                         loadVoices() {
                             const all = window.speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
-                            const score = v => (/siri/i.test(v.name) ? 40 : 0) + (/premium|enhanced|erweitert|verbessert/i.test(v.name) ? 20 : 0) + (v.lang === 'de-AT' ? 10 : 0) + (v.localService ? 1 : 0);
+                            // iOS nennt Kompakt-, Erweitert- und Premium-Fassung gleich, die Qualitaet steht nur in der voiceURI
+                            const quality = v => /premium/i.test(v.voiceURI + v.name) ? 'Premium' : (/enhanced|erweitert|verbessert/i.test(v.voiceURI + v.name) ? 'Erweitert' : (/compact/i.test(v.voiceURI) ? 'Kompakt' : ''));
+                            const score = v => (/siri/i.test(v.name) ? 40 : 0) + (quality(v) === 'Premium' ? 30 : quality(v) === 'Erweitert' ? 20 : 0) + (v.lang === 'de-AT' ? 10 : 0) + (v.localService ? 1 : 0);
                             all.sort((a, b) => score(b) - score(a) || a.name.localeCompare(b.name));
-                            this.voices = all;
+                            this.voices = all.map(v => ({ voiceURI: v.voiceURI, name: v.name, lang: v.lang, label: v.name + (quality(v) ? ', ' + quality(v) : '') + ' (' + v.lang + ')' }));
                             if (! this.voices.some(v => v.voiceURI === this.voiceUri)) this.voiceUri = this.voices[0]?.voiceURI || '';
                         },
-                        voice() { return this.voices.find(v => v.voiceURI === this.voiceUri) || null },
+                        voice() { return window.speechSynthesis.getVoices().find(v => v.voiceURI === this.voiceUri) || null },
                         chooseVoice(uri) { this.voiceUri = uri; try { localStorage.setItem('kb-voice', uri) } catch (e) {} if (this.state !== 'idle') this.playFrom(this.index) },
                         play() {
                             if (this.state === 'paused') { window.speechSynthesis.resume(); this.state = 'playing'; return }
@@ -153,10 +155,10 @@
                             </div>
                             <select class="kb-input py-2 text-sm" :value="voiceUri" @change="chooseVoice($event.target.value)" x-show="showVoices" x-cloak>
                                 <template x-for="v in voices" :key="v.voiceURI">
-                                    <option :value="v.voiceURI" :selected="v.voiceURI === voiceUri" x-text="v.name + ' (' + v.lang + ')'"></option>
+                                    <option :value="v.voiceURI" :selected="v.voiceURI === voiceUri" x-text="v.label"></option>
                                 </template>
                             </select>
-                            <p class="text-xs text-stone-500" x-show="showVoices" x-cloak>Bessere Stimmen am iPhone: Einstellungen > Bedienungshilfen > Gesprochene Inhalte > Stimmen > Deutsch, eine Stimme mit "Erweitert" oder "Premium" laden, dann hier auswählen.</p>
+                            <p class="text-xs text-stone-500" x-show="showVoices" x-cloak>Safari bekommt die Siri-Stimmen nicht, nur die Stimmen aus Einstellungen > Bedienungshilfen > Gesprochene Inhalte > Stimmen > Deutsch. Dort bei Anna, Petra oder Markus die Fassung "Premium" oder "Erweitert" laden, dann erscheint sie hier mit diesem Zusatz. Für eine wirklich gute Stimme: ausführlicher Guide (Studio-Stimme).</p>
                         </div>
                     </template>
                     <p class="text-sm text-stone-600" x-show="! supported">Dieser Browser kann nicht vorlesen. Der Text steht oben zum Lesen.</p>
