@@ -9,6 +9,7 @@ enum AiPurpose: string
 {
     case Recognize = 'recognize';
     case Research = 'research';
+    case Quick = 'quick';
     case Script = 'script';
     case Check = 'check';
     case Museum = 'museum';
@@ -21,6 +22,7 @@ enum AiPurpose: string
         return match ($this) {
             self::Recognize => 'Erkennung',
             self::Research => 'Recherche',
+            self::Quick => 'Schnellüberblick',
             self::Script => 'Skript',
             self::Check => 'Faktencheck',
             self::Museum => 'Museum',

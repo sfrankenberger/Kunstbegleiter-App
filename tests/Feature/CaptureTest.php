@@ -9,10 +9,12 @@ use App\Models\User;
 use App\Models\Visit;
 use App\Services\Captures\CaptureService;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 beforeEach(function () {
+    Bus::fake();
     Storage::fake('local');
 });
 

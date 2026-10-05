@@ -7,8 +7,13 @@ use App\Models\User;
 use App\Models\Visit;
 use App\Services\Places\GooglePlacesClient;
 use App\Services\Visits\VisitService;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
+
+beforeEach(function () {
+    Bus::fake();
+});
 
 test('one museum nearby starts the visit right away', function () {
     config()->set('museumguide.places.radius_m', 150);

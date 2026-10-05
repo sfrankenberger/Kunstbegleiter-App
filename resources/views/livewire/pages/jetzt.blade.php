@@ -81,8 +81,12 @@
 
             @if ($photos !== [])
                 <p class="text-sm text-stone-700">{{ count($photos) }} {{ count($photos) === 1 ? 'Foto' : 'Fotos' }} bereit.</p>
+                <label class="flex items-center gap-2 text-sm text-stone-700">
+                    <input type="checkbox" wire:model="full" class="h-5 w-5 rounded border-stone-300">
+                    <span>Gleich ausführlich (Recherche und Studio-Stimme, dauert einige Minuten)</span>
+                </label>
                 <button type="button" class="kb-button h-14 text-lg" wire:click="createCapture" wire:loading.attr="disabled">
-                    <span wire:loading.remove wire:target="createCapture">Audioguide erstellen</span>
+                    <span wire:loading.remove wire:target="createCapture">{{ $full ? 'Ausführlichen Guide erstellen' : 'Schnellen Überblick erstellen' }}</span>
                     <span wire:loading wire:target="createCapture">Einen Moment ...</span>
                 </button>
                 <button type="button" class="text-sm text-stone-500" x-on:click="clear">Fotos verwerfen</button>
@@ -100,7 +104,7 @@
                             @endif
                             <div class="min-w-0">
                                 <p class="truncate font-medium">{{ $capture->artwork?->title ?? 'Aufnahme von '.$capture->created_at->format('H:i') }}</p>
-                                <p class="text-sm text-stone-600">{{ $capture->artwork?->artist?->name ?? $capture->photos->count().' '.($capture->photos->count() === 1 ? 'Foto' : 'Fotos') }} · {{ $capture->status->label() }}</p>
+                                <p class="text-sm text-stone-600">{{ $capture->artwork?->artist?->name ?? $capture->photos->count().' '.($capture->photos->count() === 1 ? 'Foto' : 'Fotos') }} · {{ $capture->progressLabel() }}</p>
                             </div>
                         </a>
                     </li>

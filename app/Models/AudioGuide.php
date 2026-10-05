@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\URL;
 
 #[Fillable(['capture_id', 'script', 'audio_path', 'duration_seconds', 'word_count', 'model', 'tts_provider', 'tts_characters', 'input_tokens', 'output_tokens', 'cost_cents', 'feedback', 'difficulty_feedback'])]
 /**
@@ -30,6 +31,19 @@ class AudioGuide extends Model
     public function capture(): BelongsTo
     {
         return $this->belongsTo(Capture::class);
+    }
+
+    public function hasAudio(): bool
+    {
+        return filled($this->audio_path);
+    }
+
+    /**
+     * Signierte Adresse fuer die MP3 (60 Minuten), Auslieferung ueber AudioController.
+     */
+    public function url(): ?string
+    {
+        return $this->hasAudio() ? URL::temporarySignedRoute('audio.show', now()->addHour(), ['guide' => $this->getKey()]) : null;
     }
 
     /**

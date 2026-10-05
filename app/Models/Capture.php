@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\CaptureStatus;
 use App\Enums\GuideLength;
+use App\Enums\GuideMode;
+use App\Enums\PipelineStep;
 use App\Models\Concerns\CascadesSoftDeletes;
 use App\Models\Concerns\LogsChanges;
 use Database\Factories\CaptureFactory;
@@ -15,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['visit_id', 'user_id', 'artwork_id', 'status', 'length', 'recognition', 'confirmed_at', 'error_message'])]
+#[Fillable(['visit_id', 'user_id', 'artwork_id', 'status', 'length', 'mode', 'recognition', 'confirmed_at', 'error_message'])]
 /**
  * Eine Analyse aus 1 bis 3 Fotos: Erkennung, Recherche, Skript, Audio (Etappe 3). Papierkorb mit Kaskade auf
  * Fotos, Audioguide und Fact Sheet.
@@ -33,8 +35,13 @@ class Capture extends Model
         return [
             'status' => CaptureStatus::class,
             'length' => GuideLength::class,
+            'mode' => GuideMode::class,
             'recognition' => 'array',
             'confirmed_at' => 'datetime',
+            'step' => PipelineStep::class,
+            'needs_confirmation' => 'boolean',
+            'premium' => 'boolean',
+            'finished_at' => 'datetime',
         ];
     }
 
@@ -92,8 +99,33 @@ class Capture extends Model
         return $this->hasMany(AiCall::class);
     }
 
+    public function isQuick(): bool
+    {
+        return ($this->mode ?? GuideMode::Quick) === GuideMode::Quick;
+    }
+
     public function isDone(): bool
     {
         return $this->status === CaptureStatus::Done;
+    }
+
+    /**
+     * Laeuft die Pipeline noch (Fortschritt pollen)? Nicht bei Fertig, Fehler oder waehrend der Rueckfrage.
+     */
+    public function isRunning(): bool
+    {
+        return $this->status->isRunning() && ! $this->needs_confirmation;
+    }
+
+    /**
+     * Was gerade angezeigt wird: der laufende Schritt oder der Status.
+     */
+    public function progressLabel(): string
+    {
+        if ($this->needs_confirmation) {
+            return PipelineStep::Confirming->label();
+        }
+
+        return $this->isRunning() && $this->step !== null ? $this->step->label() : $this->status->label();
     }
 }

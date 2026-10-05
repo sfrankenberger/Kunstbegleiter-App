@@ -69,12 +69,34 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - "Anthropic prüfen" (GET /v1/models) und "Google Places prüfen" (Nearby Search um das KHM) melden, ob der Schlüssel gültig ist.
 - Anbieterwahl `auto` (Standard in `.env.example`): Google Places, sobald ein Schlüssel da ist, sonst Fake; TTS bis Etappe 3 immer Fake. `MUSEUMGUIDE_PLACES=fake` erzwingt den Fake.
 
-## 8. Offen nach Etappe 2 (Stand 05.10.2026)
+## 10. Etappe 3: Pipeline (05.10.2026)
 
-- Google-Places-Schlüssel anlegen und unter Admin > Einstellungen > Zugänge eintragen (bis dahin Fake-Museen, nur Wien).
-- Etappe 3: Pipeline (Erkennung mit Typ-Erkennung der Fotos, Recherche, Skript, Faktencheck, Fact Sheet, Audio mit einer Stimme), Prompts in `resources/prompts/`, Preise in `museumguide.pricing`.
-- Museums-Recherche im Hintergrund beim Start eines Besuchs (Grundgerüst, "Beim Öffnen der App" Punkt 3) kommt mit der Pipeline.
+- **Kette:** `CaptureService::create` startet nach dem Speichern der Fotos `Pipeline::start`. Queue-Jobs (`app/Jobs`, Basis `PipelineJob`: 3 Versuche, Pause 20 und 60 Sekunden, dann Status Fehler mit Meldung): `RecognizeArtwork`, `ResearchArtwork`, `WriteScript`, `CheckFacts`, `SynthesizeAudio`, `UpdateKnowledge`. Der laufende Schritt steht in `captures.step` (`PipelineStep`), die Seite Aufnahme lädt alle 4 Sekunden neu (`wire:poll`), solange es läuft.
+- **Erkennung:** Claude Vision (Sonnet 5.5) bekommt alle Fotos als Base64, liest Schilder ab (`capture_photos.ocr_text`), setzt die Fototypen und liefert Titel, Künstler, Datierung, Inventarnummer, Epoche, Sicherheit und Alternativen (JSON-Schema `Schemas::recognition`). Unter `museumguide.pipeline.confidence_threshold` (0,7) wartet die Aufnahme (`needs_confirmation`): Vorschlag, Alternative oder Handeingabe bestätigen, dann geht es weiter.
+- **Abgleich:** `ArtworkMatcher` findet ein bestehendes Werk über Museum plus Inventarnummer oder Titel plus Künstler (auch von Martha). Eine vorhandene Recherche wird wiederverwendet, `ResearchArtwork` übersprungen.
+- **Recherche:** Sonnet 5.5 mit Websuche (Server-Werkzeug `web_search_20260209`, höchstens `museumguide.research.max_searches` = 8 Suchen, `pause_turn` wird fortgesetzt). Ergebnis: Zusammenfassung, belegte Aussagen mit Quelle, Zitate, Quellen, Wien-Bezüge, Lebensdaten. Fakten, Zitate und Wien-Bezüge liegen als Sondereinträge `_facts`, `_quotes`, `_vienna` in `research.sources`; `ContextBuilder::sources` liefert nur echte Quellen.
+- **Skript:** `ContextBuilder` baut Vorwissen-Profil, Werke dieses Besuchs (auch vom Partner) und höchstens zwei Rückbezüge aus dem Lerngedächtnis. Modell Sonnet 5.5, bei `captures.premium` Opus 5.5. Länge nach `GuideLength` (Wörter). Ergebnis: Segmente (Rolle narrator, second, quote) und Fact Sheet (Kurzfakten, Kernaussagen, "Für deine Gäste" mit Einstieg, Frage, Anekdote, Wien-Bezug, Querverweise).
+- **Faktencheck:** eigener Aufruf (Sonnet, geringe Anstrengung) streicht Unbelegtes oder markiert es als Deutung. Danach Stimme: eine Stimme (narrator) für alles, ElevenLabs (`eleven_multilingual_v2`), MP3 unter `captures/{capture}/guide-{guide}.mp3`, Auslieferung signiert über `audio.show`. Fällt die Stimme aus, bleibt der Guide lesbar (Meldung an der Aufnahme, Kette läuft weiter).
+- **Lerngedächtnis:** Haiku fasst je Künstler und Epoche zusammen (`knowledge_items`), Fehler hier lassen den Guide trotzdem fertig werden.
+- **Museumsrecherche:** `ResearchMuseum` beim Start eines Besuchs oder "Museum eintragen", höchstens einmal je Woche je Museum (`museums.researched_at`), fließt in Erkennung und Recherche ein.
+- **Kosten:** jeder HTTP-Aufruf ein `ai_calls`-Eintrag (Tokens inklusive Cache, Websuchen in `characters`, Cent nach `museumguide.pricing`: Sonnet 5.5 2/10, Opus 5.5 4/20, Haiku 4.5 1/5 USD je Million, Websuche 10 USD je 1000, ElevenLabs 0,30 USD je 1000 Zeichen, Kurs 0,92). Vor Start und "Erneut versuchen" prüft `Pipeline::assertBudget` das Monatslimit; überschritten heißt Status Fehler mit Meldung, kein Aufruf.
+- **Claude-API-Regeln** (aus der Doku, Stand 05.10.2026): Modell-IDs ohne Datum (`claude-sonnet-5-5`, `claude-opus-5-5`, `claude-haiku-4-5`), strukturierte Ausgabe über `output_config.format` (JSON-Schema mit `additionalProperties: false`, alle Felder required), Anstrengung über `output_config.effort`, Server-Rückfall `fallbacks: default` mit Beta-Header nur für Sonnet 5.5 und Opus 5.5, `stop_reason refusal` wird als Fehler gemeldet, nie `tool_choice` erzwingen.
+- **Seite Aufnahme:** Fortschritt, Rückfrage, Player (Anhören, 15 Sekunden zurück, Tempo 0,8 bis 1,5), Daumen und Schwierigkeit (`audio_guides.feedback`, `difficulty_feedback`), Kurzfakten, Kernaussagen, Für deine Gäste, Querverweise, Text zum Mitlesen (zugeklappt), Quellen, Fotos (zugeklappt, sobald fertig), Kosten der Aufnahme, "Erneut versuchen" (`Pipeline::retry` setzt ab dem letzten erreichten Stand fort).
+- **Tests:** `tests/Feature/PipelineTest.php` mit `Http::fake`-Sequenzen (Queue in Tests synchron, eine Kette läuft sofort durch). Keine echten Aufrufe in Tests.
+- Zwei Stufen je Aufnahme: siehe Abschnitt 11.
 
+## 11. Schnell oder ausführlich (Sebastian, 05.10.2026: "ja baue das alles so")
+
+- **Warum:** Sebastian will oft nur einen kurzen Überblick vor einem Bild, manchmal den guten Guide. Zwei Stufen je Aufnahme (`captures.mode`, Enum `GuideMode`: quick, full), Standard je Nutzer (`users.default_mode`, im Profil einstellbar, Vorgabe schnell), beim Fotografieren per Schalter "Gleich ausführlich" umschaltbar.
+- **Schnell:** Erkennung wie gehabt (mit Rückfrage), dann ein einziger Aufruf `QuickOverview` (Sonnet 5.5, geringe Anstrengung, keine Websuche, Prompt `quick.md`, 150 bis 250 Wörter nach `museumguide.quick.words`, nur was das Modell sicher weiß). Ergebnis: Kurztext als Audioguide ohne MP3 (`tts_provider` browser) und Fact Sheet. Vorgelesen vom Handy über die Web Speech API (`speechSynthesis`, Sprache de-AT, am iPhone die Siri-Stimmen): Vorlesen, Pause, Von vorn, Tempo. Kein Rückspulen um 15 Sekunden (kann die Browser-Stimme nicht). Dauer etwa 20 bis 40 Sekunden, Kosten wenige Cent. Keine Recherche, kein Lerngedächtnis.
+- **Ausführlich:** die Kette aus Abschnitt 10. Aus der Schnellstufe heraus über "Ausführlichen Guide erstellen" (`Pipeline::upgrade`): Werk und Erkennung bleiben, es läuft Recherche bis Merken; der neue Audioguide ersetzt den Kurztext in der Anzeige (`latestOfMany`), der alte bleibt in der Datenbank.
+- "Erneut versuchen" kennt die Stufe: schnell wiederholt den einen Aufruf, ausführlich setzt beim letzten Stand fort.
+
+## 8. Offen nach Etappe 3 (Stand 05.10.2026)
+
+- Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.
+- Stimmen-IDs in `config/museumguide.php` (`tts.elevenlabs.voices`) auf echte Stimmen setzen.
+- Entscheidung schnell/ausführlich (Abschnitt 10, letzter Punkt).
+- Etappe 4: zwei Stimmen und Zitatstimme, Entdecken-Reiter mit Tipps, Kopplung mit Martha im Alltag.
 - Server: Staging und Live laufen (05.10.2026, Etappe 1 auf `main` gemergt und deployt). Offen sind die Root-Schritte systemd und app-register (docs/betrieb.md Abschnitt 2, Punkte 6 und 7).
 - Datei `claude/laravel-apps-betrieb.md` ins Repo legen, falls sie bei Sebastian liegt.
-- TTS-Anbieter wählen, Martha ab Etappe 3.

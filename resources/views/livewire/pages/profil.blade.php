@@ -20,6 +20,16 @@
             </select>
             @error('preferred_length') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
         </div>
+        <div>
+            <label for="default_mode" class="kb-label">Standard beim Fotografieren</label>
+            <select id="default_mode" wire:model="default_mode" class="kb-input">
+                @foreach ($modes as $mode)
+                    <option value="{{ $mode->value }}">{{ $mode->label() }}</option>
+                @endforeach
+            </select>
+            <p class="mt-1 text-xs text-stone-500">Schnell: ein Aufruf, Handy liest vor, wenige Cent. Ausführlich: Recherche, Faktencheck und Studio-Stimme, einige Minuten. Beim Fotografieren jederzeit umschaltbar.</p>
+            @error('default_mode') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+        </div>
         <button type="submit" class="kb-button">Speichern</button>
         @if ($saved)
             <p class="text-center text-sm text-green-700">Gespeichert.</p>

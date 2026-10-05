@@ -3,6 +3,7 @@
 namespace App\Services\Visits;
 
 use App\Contracts\PlacesClient;
+use App\Jobs\ResearchMuseum;
 use App\Models\City;
 use App\Models\Museum;
 use App\Models\User;
@@ -34,6 +35,7 @@ class VisitService
     public function start(User $user, ?float $lat, ?float $lng, ?int $accuracy, ?Museum $museum = null): Visit
     {
         $this->end($user);
+        $this->researchMuseum($museum, $user);
 
         return $user->visits()->create([
             'museum_id' => $museum?->getKey(),
@@ -98,8 +100,21 @@ class VisitService
     public function setMuseum(Visit $visit, Museum $museum): Visit
     {
         $visit->forceFill(['museum_id' => $museum->getKey(), 'city_id' => $museum->city_id ?? $visit->city_id])->save();
+        $this->researchMuseum($museum, $visit->user);
 
         return $visit;
+    }
+
+    /**
+     * Museumsrecherche (Sonderausstellungen, Sammlung) in die Queue, hoechstens einmal je Woche (ResearchMuseum).
+     */
+    private function researchMuseum(?Museum $museum, ?User $user): void
+    {
+        if ($museum === null || ($museum->researched_at !== null && $museum->researched_at->gt(now()->subWeek()))) {
+            return;
+        }
+
+        ResearchMuseum::dispatch($museum->getKey(), $user?->getKey());
     }
 
     /**

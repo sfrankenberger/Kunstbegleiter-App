@@ -64,11 +64,17 @@ test('without a key the client refuses before any request', function () {
 });
 
 test('pricing uses the configured rates', function () {
-    config()->set('museumguide.pricing.claude-test', ['input_per_million' => 3, 'output_per_million' => 15]);
+    config()->set('museumguide.pricing.models', ['claude-test' => ['input_per_million' => 3, 'output_per_million' => 15]]);
+    config()->set('museumguide.pricing.web_search_per_1000', 10);
+    config()->set('museumguide.pricing.tts.elevenlabs', 0.30);
     config()->set('museumguide.pricing_eur_per_usd', 1);
 
     expect(Pricing::cents('claude-test', 1_000_000, 100_000))->toBe(450)
-        ->and(Pricing::cents('unbekannt', 1000, 1000))->toBe(0);
+        ->and(Pricing::cents('claude-test-20991231', 1_000_000, 0))->toBe(300)
+        ->and(Pricing::cents('unbekannt', 1000, 1000))->toBe(0)
+        ->and(Pricing::searchCents(5))->toBe(5)
+        ->and(Pricing::ttsCents('elevenlabs', 2000))->toBe(60)
+        ->and(Pricing::ttsCents('fake', 2000))->toBe(0);
 });
 
 test('the fake providers are bound by default', function () {
