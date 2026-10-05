@@ -87,8 +87,9 @@ SPARQL;
                 'architect' => filled($row['architectLabel']['value'] ?? null) ? (string) $row['architectLabel']['value'] : null,
                 'built' => filled($row['inception']['value'] ?? null) ? substr((string) $row['inception']['value'], 0, 4) : null,
                 'distance_m' => (int) round(self::distance($lat, $lng, $plat, $plng)),
-                // Bekannte Orte zuerst: Wikipedia-Artikel (de oder en) oder Bild; reine Denkmallisten-Eintraege danach
-                'notable' => filled($row['dewiki']['value'] ?? null) || filled($row['enwiki']['value'] ?? null) || filled($row['image']['value'] ?? null) ? 1 : 0,
+                // Bekannte Orte zuerst: Stufe 2 = Artikel in mindestens drei Sprachen, Stufe 1 = deutscher oder
+                // englischer Artikel, Stufe 0 = nur Denkmalliste oder Commons (Gedenktafeln, Wohnhaeuser)
+                'notable' => (int) ($row['sitelinks']['value'] ?? 0) >= 3 ? 2 : (filled($row['dewiki']['value'] ?? null) || filled($row['enwiki']['value'] ?? null) ? 1 : 0),
             ];
         }
 
