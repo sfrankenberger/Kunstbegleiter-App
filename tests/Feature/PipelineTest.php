@@ -124,7 +124,7 @@ test('the quick mode is one call with the photos, no web search, no mp3, and can
     Http::assertSent(fn ($request) => ! isset($request['tools']) && str_contains((string) $request['system'], 'schnellen Überblick') && ($request['messages'][0]['content'][1]['type'] ?? '') === 'image');
 
     Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])
-        ->assertSee('Vorlesen lassen')
+        ->assertSee('Vorlesen')
         ->assertSee('Ausführlichen Guide erstellen')
         ->assertSee('Vor dir hängt')
         ->call('upgrade');
@@ -326,7 +326,7 @@ test('the finished capture page shows player, facts, guests, sources and takes f
 
     Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])
         ->assertSee('Anhören')
-        ->assertSee('15 s zurück')
+        ->assertSee('Ausgabe wählen')
         ->assertSee('Für deine Gäste')
         ->assertSee('Wo endet der Kuss?')
         ->assertSee('Belvedere: Der Kuss')

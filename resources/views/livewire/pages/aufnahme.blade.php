@@ -46,41 +46,57 @@
 
     @if ($capture->audioGuide)
         @php($guide = $capture->audioGuide)
-        {{-- wire:ignore: Livewire zeichnet den Player nie neu, sonst stoppt die Wiedergabe beim Aufklappen --}}
-        <div class="kb-card flex flex-col gap-3" wire:ignore wire:key="player-{{ $guide->getKey() }}-{{ $guide->hasAudio() ? 'mp3' : 'browser' }}">
+        {{-- Player fest am unteren Rand ueber den Reitern. wire:ignore: Livewire zeichnet ihn nie neu, sonst stoppt die Wiedergabe --}}
+        <div class="fixed inset-x-0 z-10 border-t border-stone-200 bg-white/95 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur" style="bottom: calc(3.6rem + env(safe-area-inset-bottom))" wire:ignore wire:key="player-{{ $guide->getKey() }}-{{ $guide->hasAudio() ? 'mp3' : 'browser' }}">
+            <div class="mx-auto max-w-lg px-4 py-2">
             @if ($guide->hasAudio())
                 <div
                     x-data="{
-                        player: null, playing: false, rate: 1, position: 0, duration: {{ (int) ($guide->duration_seconds ?? 0) }},
+                        player: null, playing: false, rate: 1, position: 0, duration: {{ (int) ($guide->duration_seconds ?? 0) }}, canRoute: false,
                         init() {
                             this.player = this.$refs.audio;
+                            this.canRoute = typeof this.player.webkitShowPlaybackTargetPicker === 'function';
                             this.player.addEventListener('timeupdate', () => { this.position = this.player.currentTime });
                             this.player.addEventListener('loadedmetadata', () => { if (isFinite(this.player.duration)) this.duration = this.player.duration });
+                            this.player.addEventListener('play', () => { this.playing = true });
+                            this.player.addEventListener('pause', () => { this.playing = false });
                             this.player.addEventListener('ended', () => { this.playing = false });
+                            if ('mediaSession' in navigator) {
+                                navigator.mediaSession.metadata = new MediaMetadata({ title: @js($capture->artwork?->title ?? 'Audioguide'), artist: @js($capture->artwork?->artist?->name ?? ''), album: 'Kunstbegleiter' });
+                                navigator.mediaSession.setActionHandler('play', () => this.player.play());
+                                navigator.mediaSession.setActionHandler('pause', () => this.player.pause());
+                                navigator.mediaSession.setActionHandler('seekbackward', () => this.back());
+                            }
                         },
-                        toggle() { this.playing ? this.player.pause() : this.player.play(); this.playing = ! this.playing },
+                        toggle() { this.playing ? this.player.pause() : this.player.play() },
                         back() { this.player.currentTime = Math.max(0, this.player.currentTime - 15) },
                         speed() { const rates = [0.8, 1, 1.2, 1.5]; this.rate = rates[(rates.indexOf(this.rate) + 1) % rates.length]; this.player.playbackRate = this.rate },
+                        route() { try { this.player.webkitShowPlaybackTargetPicker() } catch (e) {} },
                         seek(event) { this.player.currentTime = event.target.value },
                         time(s) { s = Math.floor(s || 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') }
                     }"
-                    class="flex flex-col gap-2"
+                    class="flex flex-col gap-1"
                 >
-                    <audio x-ref="audio" src="{{ $guide->url() }}" preload="metadata"></audio>
-                    <div class="flex items-center gap-3">
-                        <button type="button" class="kb-button flex-1" @click="toggle()" x-text="playing ? 'Pause' : 'Anhören'"></button>
-                        <button type="button" class="kb-button-secondary" @click="back()">15 s zurück</button>
-                        <button type="button" class="kb-button-secondary" @click="speed()" x-text="rate + '×'"></button>
+                    <audio x-ref="audio" src="{{ $guide->url() }}" preload="metadata" x-webkit-airplay="allow"></audio>
+                    <div class="flex items-center gap-2">
+                        <button type="button" class="kb-button w-auto flex-1 py-2" @click="toggle()" x-text="playing ? 'Pause' : 'Anhören'"></button>
+                        <button type="button" class="kb-button-secondary w-auto px-3 py-2 text-sm" @click="back()">15 s</button>
+                        <button type="button" class="kb-button-secondary w-auto px-3 py-2 text-sm" @click="speed()" x-text="rate + '×'"></button>
+                        <button type="button" class="kb-button-secondary w-auto px-3 py-2" @click="route()" x-show="canRoute" title="Ausgabe wählen (AirPods, Lautsprecher)" aria-label="Ausgabe wählen">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" /></svg>
+                        </button>
                     </div>
-                    <input type="range" min="0" :max="duration" step="1" :value="position" @input="seek($event)" class="w-full">
-                    <p class="text-xs text-stone-500"><span x-text="time(position)"></span> / <span x-text="time(duration)"></span></p>
+                    <div class="flex items-center gap-2 text-xs text-stone-500">
+                        <span x-text="time(position)" class="w-9"></span>
+                        <input type="range" min="0" :max="duration" step="1" :value="position" @input="seek($event)" class="flex-1">
+                        <span x-text="time(duration)" class="w-9 text-right"></span>
+                    </div>
                 </div>
             @elseif ($segments->isNotEmpty() && ! $capture->isRunning())
                 <div
                     x-data="{
-                        text: @js($segments->pluck('text')->implode(' ')),
-                        state: 'idle', rate: 1, supported: 'speechSynthesis' in window,
-                        voices: [], voiceUri: '', chunks: [], index: 0, keepAlive: null,
+                        chunks: @js(array_values(array_filter(preg_split('/(?<=[.!?])\s+/u', $segments->pluck('text')->implode(' ')) ?: [], fn ($c) => trim($c) !== ''))),
+                        state: 'idle', rate: 1, supported: 'speechSynthesis' in window, voices: [], voiceUri: '', index: 0, error: '', showVoices: false,
                         init() {
                             if (! this.supported) return;
                             try { this.voiceUri = localStorage.getItem('kb-voice') || '' } catch (e) {}
@@ -95,61 +111,62 @@
                             if (! this.voices.some(v => v.voiceURI === this.voiceUri)) this.voiceUri = this.voices[0]?.voiceURI || '';
                         },
                         voice() { return this.voices.find(v => v.voiceURI === this.voiceUri) || null },
-                        chooseVoice(uri) { this.voiceUri = uri; try { localStorage.setItem('kb-voice', uri) } catch (e) {} if (this.state !== 'idle') this.restart() },
-                        split(text) {
-                            // iOS bricht lange Texte nach etwa einer Minute ab: satzweise in die Warteschlange
-                            const parts = text.replace(/\s+/g, ' ').match(/[^.!?]+[.!?]+["»)]?\s*|[^.!?]+$/g) || [text];
-                            const out = []; let buffer = '';
-                            for (const p of parts) { if ((buffer + p).length > 180 && buffer) { out.push(buffer.trim()); buffer = '' } buffer += p }
-                            if (buffer.trim()) out.push(buffer.trim());
-                            return out;
-                        },
+                        chooseVoice(uri) { this.voiceUri = uri; try { localStorage.setItem('kb-voice', uri) } catch (e) {} if (this.state !== 'idle') this.playFrom(this.index) },
                         play() {
                             if (this.state === 'paused') { window.speechSynthesis.resume(); this.state = 'playing'; return }
-                            window.speechSynthesis.cancel();
-                            this.chunks = this.split(this.text); this.index = 0; this.state = 'playing';
-                            this.speakNext();
+                            this.playFrom(0);
                         },
-                        speakNext() {
-                            if (this.state !== 'playing') return;
-                            if (this.index >= this.chunks.length) { this.state = 'idle'; return }
-                            const u = new SpeechSynthesisUtterance(this.chunks[this.index++]);
-                            const v = this.voice(); if (v) { u.voice = v; u.lang = v.lang } else { u.lang = 'de-AT' }
-                            u.rate = this.rate;
-                            u.onend = () => this.speakNext();
-                            u.onerror = (e) => { if (e.error !== 'interrupted' && e.error !== 'canceled') this.speakNext() };
-                            window.speechSynthesis.speak(u);
+                        playFrom(start) {
+                            // Alle Saetze auf einmal in die Warteschlange (iOS bricht einzelne lange Texte nach etwa einer Minute ab)
+                            window.speechSynthesis.cancel();
+                            this.error = ''; this.state = 'playing'; this.index = start;
+                            const v = this.voice();
+                            this.chunks.slice(start).forEach((text, offset) => {
+                                const u = new SpeechSynthesisUtterance(text);
+                                if (v) { u.voice = v; u.lang = v.lang } else { u.lang = 'de-AT' }
+                                u.rate = this.rate;
+                                u.onstart = () => { this.index = start + offset };
+                                if (start + offset === this.chunks.length - 1) u.onend = () => { this.state = 'idle' };
+                                u.onerror = (e) => { if (e.error !== 'interrupted' && e.error !== 'canceled') { this.error = 'Vorlesen abgebrochen (' + e.error + ').'; this.state = 'idle' } };
+                                window.speechSynthesis.speak(u);
+                            });
                         },
                         pause() { window.speechSynthesis.pause(); this.state = 'paused' },
                         stop() { this.state = 'idle'; window.speechSynthesis.cancel() },
-                        restart() { const was = this.state; this.stop(); if (was !== 'idle') this.play() },
-                        back() { if (this.state === 'idle') return; this.state = 'idle'; window.speechSynthesis.cancel(); this.index = Math.max(0, this.index - 2); this.state = 'playing'; this.speakNext() },
-                        speed() { const rates = [0.8, 1, 1.2, 1.5]; this.rate = rates[(rates.indexOf(this.rate) + 1) % rates.length]; if (this.state === 'playing') { this.state = 'idle'; window.speechSynthesis.cancel(); this.index = Math.max(0, this.index - 1); this.state = 'playing'; this.speakNext() } },
+                        back() { if (this.state !== 'idle') this.playFrom(Math.max(0, this.index - 1)) },
+                        speed() { const rates = [0.8, 1, 1.2, 1.5]; this.rate = rates[(rates.indexOf(this.rate) + 1) % rates.length]; if (this.state === 'playing') this.playFrom(this.index) },
                         destroy() { window.speechSynthesis.cancel() }
                     }"
-                    class="flex flex-col gap-2"
+                    class="flex flex-col gap-1"
                 >
                     <template x-if="supported">
-                        <div class="flex flex-col gap-2">
-                            <div class="flex items-center gap-3">
-                                <button type="button" class="kb-button flex-1" @click="state === 'playing' ? pause() : play()" x-text="state === 'playing' ? 'Pause' : (state === 'paused' ? 'Weiter' : 'Vorlesen lassen')"></button>
-                                <button type="button" class="kb-button-secondary" @click="back()" x-show="state !== 'idle'">Satz zurück</button>
-                                <button type="button" class="kb-button-secondary" @click="speed()" x-text="rate + '×'"></button>
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="kb-button w-auto flex-1 py-2" @click="state === 'playing' ? pause() : play()" x-text="state === 'playing' ? 'Pause' : (state === 'paused' ? 'Weiter' : 'Vorlesen')"></button>
+                                <button type="button" class="kb-button-secondary w-auto px-3 py-2 text-sm" @click="back()" :disabled="state === 'idle'">Satz zurück</button>
+                                <button type="button" class="kb-button-secondary w-auto px-3 py-2 text-sm" @click="speed()" x-text="rate + '×'"></button>
+                                <button type="button" class="kb-button-secondary w-auto px-3 py-2 text-sm" @click="showVoices = ! showVoices" x-show="voices.length > 1" aria-label="Stimme wählen">Stimme</button>
                             </div>
-                            <select class="kb-input py-2 text-sm" :value="voiceUri" @change="chooseVoice($event.target.value)" x-show="voices.length > 1">
+                            <div class="flex items-center justify-between text-xs text-stone-500">
+                                <span x-text="state === 'idle' ? 'Handy-Stimme, Ausgabe wie in iOS eingestellt (AirPods, Lautsprecher)' : 'Satz ' + (index + 1) + ' von ' + chunks.length"></span>
+                                <span class="text-red-700" x-text="error"></span>
+                            </div>
+                            <select class="kb-input py-2 text-sm" :value="voiceUri" @change="chooseVoice($event.target.value)" x-show="showVoices" x-cloak>
                                 <template x-for="v in voices" :key="v.voiceURI">
                                     <option :value="v.voiceURI" :selected="v.voiceURI === voiceUri" x-text="v.name + ' (' + v.lang + ')'"></option>
                                 </template>
                             </select>
+                            <p class="text-xs text-stone-500" x-show="showVoices" x-cloak>Bessere Stimmen am iPhone: Einstellungen > Bedienungshilfen > Gesprochene Inhalte > Stimmen > Deutsch, eine Stimme mit "Erweitert" oder "Premium" laden, dann hier auswählen.</p>
                         </div>
                     </template>
-                    <p class="text-xs text-stone-500" x-show="supported">Handy-Stimme, ohne Kosten. Bessere Stimmen am iPhone: Einstellungen > Bedienungshilfen > Gesprochene Inhalte > Stimmen > Deutsch, dort eine Stimme mit "Erweitert" oder "Premium" laden, dann hier auswählen.</p>
-                    <p class="text-sm text-stone-600" x-show="! supported">Dieser Browser kann nicht vorlesen. Der Text steht unten zum Lesen.</p>
+                    <p class="text-sm text-stone-600" x-show="! supported">Dieser Browser kann nicht vorlesen. Der Text steht oben zum Lesen.</p>
                 </div>
             @else
-                <p class="text-sm text-stone-600">Noch kein Audio. {{ $capture->isRunning() ? 'Die Stimme kommt gleich.' : 'Der Text steht unten zum Lesen.' }}</p>
+                <p class="text-sm text-stone-600">Noch kein Audio. {{ $capture->isRunning() ? 'Die Stimme kommt gleich.' : 'Der Text steht oben zum Lesen.' }}</p>
             @endif
+            </div>
         </div>
+        <div class="h-28" aria-hidden="true"></div>
 
         <div class="kb-card">
             <div class="flex items-center justify-between gap-2 text-sm">
