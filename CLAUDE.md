@@ -38,6 +38,7 @@ Wenn eine Entscheidung fällt: `docs/konzept.md` im selben Commit aktualisieren.
 - Papierkorb: jedes Geschäftsdaten-Modell mit `SoftDeletes`, Eltern mit `CascadesSoftDeletes`; Resources mit `Trash::filter()`, `Trash::recordActions()`, `Trash::bulkActions()`
 - Änderungsprotokoll: `LogsChanges` an jedem Geschäftsdaten-Modell, `ActivitiesRelationManager` an jeder Bearbeiten-Seite, Aufbewahrung 2 Jahre
 - Datensicherungen: Seite Admin > Datensicherungen über `App\Support\Backup\BackupRestoreService`, nur mit `BACKUP_APP` in der `.env`
+- Schlüssel und Token nie direkt aus `config()` lesen, immer über `App\Support\Secrets` (Admin vor `.env`)
 
 ## Server und Deployment
 
@@ -50,7 +51,8 @@ Wenn eine Entscheidung fällt: `docs/konzept.md` im selben Commit aktualisieren.
 
 - Etappe 1 (Fundament) gebaut: Auth mit Passkeys, PWA-Hülle mit vier Reitern, Admin (Nutzer, Datensicherungen), Papierkorb, Verlauf, Datenmodell mit 18 Tabellen, Schnittstellen für KI, TTS und Ort mit Fakes, CI, deploy.sh, systemd-Vorlage. 53 Tests.
 - 05.10.2026: Etappe 1 auf `main`, Staging (art-staging.tourtool.app, Basic-Auth) und Live (art.tourtool.app) eingerichtet und deployt. Offen am Server: systemd-Dienste und app-register (Root, docs/betrieb.md Abschnitt 2). 
-- 05.10.2026: Etappe 2 gebaut (Besuch mit Standort und Places, Museum von Hand, Fotos verkleinern und hochladen, Aufnahme-Seite mit Fototypen, signierte Fotoauslieferung). 71 Tests. Offen: Google-Places-Schlüssel in die `.env`. Nächster Schritt: Etappe 3 (Pipeline).
+- 05.10.2026: Etappe 2 gebaut (Besuch mit Standort und Places, Museum von Hand, Fotos verkleinern und hochladen, Aufnahme-Seite mit Fototypen, signierte Fotoauslieferung). 71 Tests. Nächster Schritt: Etappe 3 (Pipeline).
+- 05.10.2026: Seite Admin > Einstellungen > Zugänge: API-Schlüssel verschlüsselt in der Datenbank (`App\Support\Secrets`), `.env` nur Rückfall, Anbieter `auto`.
 - Lokal PHP 8.5 nötig (php.new), Tests mit `vendor/bin/pest`, Stil mit `vendor/bin/pint`, CSS mit `bin/build-css`.
 
 ## Commits

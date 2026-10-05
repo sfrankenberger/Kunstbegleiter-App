@@ -69,9 +69,8 @@ Live genauso mit `art`, `main`, `kunst`, `kunst-queue`, `kunst-prod`, ohne `SEED
 | `REDIS_PORT`, `REDIS_DB`, `REDIS_CACHE_DB`, `REDIS_PREFIX` | `6380`, `6` (Staging `7`), gleich, `kunst_` (Staging `kunst_stg_`) |
 | `SESSION_LIFETIME` | `43200` (30 Tage) |
 | `PASSKEYS_RP_ID` | leer lassen (Host aus `APP_URL`) |
-| `ANTHROPIC_API_KEY` | ab Etappe 3 |
-| `MUSEUMGUIDE_PLACES`, `GOOGLE_PLACES_KEY` | `google` plus Schlüssel (Google Cloud: Places API (New) aktivieren, Schlüssel auf diese API und die Server-IP beschränken); ohne Schlüssel `fake` mit vier Wiener Museen |
-| `MUSEUMGUIDE_TTS` | ab Etappe 3, bis dahin `fake` |
+| `ANTHROPIC_API_KEY`, `GOOGLE_PLACES_KEY`, `ELEVENLABS_API_KEY`, `OPENAI_API_KEY` | nur Rückfall. Schlüssel werden unter Admin > Einstellungen > Zugänge eingetragen (verschlüsselt in der Datenbank, docs/konzept.md Abschnitt 9). Google Cloud: Places API (New) aktivieren, Schlüssel auf diese API beschränken |
+| `MUSEUMGUIDE_PLACES`, `MUSEUMGUIDE_TTS` | `auto` (Standard): echter Anbieter, sobald ein Schlüssel da ist, sonst Fake. `fake` erzwingt den Fake |
 | `MUSEUMGUIDE_MONTHLY_LIMIT_CENTS` | `3000` |
 | `BACKUP_APP` | `kunst-prod` / `kunst-staging` |
 | `MAIL_*` | ab Etappe 5 echter Versand (Kopplungs-Einladung) |

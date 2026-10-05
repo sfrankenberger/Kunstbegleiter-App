@@ -32,6 +32,7 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 |---|---|
 | Nutzer (Konto, Vorwissen, Limit, Kosten des Monats, Verlauf) | `App\Filament\Resources\Users\UserResource` |
 | Datensicherungen | `App\Filament\Pages\Backups`, `App\Support\Backup\BackupRestoreService`, `config/backup-restore.php` |
+| Zugänge (API-Schlüssel verschlüsselt, Herkunft, Prüfen) | `App\Filament\Pages\Zugaenge`, `App\Support\Secrets`, Modell `App\Models\Setting`, Tabelle `settings` |
 | Papierkorb-Bausteine | `App\Filament\Support\Trash` (filter, recordActions, bulkActions, query) |
 | Verlauf-Tab | `App\Filament\Support\ActivitiesRelationManager` |
 
