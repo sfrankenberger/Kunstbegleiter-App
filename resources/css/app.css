@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+[x-cloak] { display: none !important; }
 
 /* Blade-Vorlagen der Handy-Oberflaeche (nicht die Filament-Seiten, die bringen eigenes CSS mit) */
 @source '../views/**/*.blade.php';

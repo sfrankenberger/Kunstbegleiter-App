@@ -53,6 +53,7 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Pipeline-Schritte (Jobs) | `App\Jobs\{QuickGuide, QuickOverview, RecognizeArtwork, ResearchAndWrite, SynthesizeAudio, UpdateKnowledge, ResearchMuseum}`, Basis `App\Jobs\PipelineJob` |
 | Queue-Worker sofort anstoßen | `App\Support\QueueKick` |
 | Fortschritt, Rückfrage, Player, Fact Sheet, Rückmeldung | `App\Livewire\Pages\Aufnahme`, `Capture::isRunning()`, `Capture::progressLabel()` |
+| Icons im Fact Sheet | `resources/views/components/kb-icon.blade.php` (`<x-kb-icon name="user" />`) |
 | Audio ausliefern (signiert) | `App\Http\Controllers\AudioController`, `AudioGuide::url()`, Route `audio.show` |
 | Sicht auf Aufnahmen (Besitzer, Partner) | `App\Policies\CapturePolicy` |
 | Kopplung, Partner | `Pairing::between()`, `Pairing::partnerOf()`, `User::partner()` |

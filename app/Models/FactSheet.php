@@ -9,9 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['capture_id', 'key_facts', 'key_statements', 'guest_ideas', 'cross_references'])]
+#[Fillable(['capture_id', 'key_facts', 'key_statements', 'guest_ideas', 'cross_references', 'sections'])]
 /**
- * Bildschirm-Zusammenfassung je Aufnahme: Kurzfakten, Kernaussagen, "Fuer deine Gaeste", Querverweise.
+ * Bildschirm-Zusammenfassung je Aufnahme: Kurzfakten, Kernaussagen, "Fuer deine Gaeste", Querverweise und
+ * Abschnitte (Kuenstler, Provenienz, Deutung, Epoche, Zitat, Anekdote, Kuratorenstimme, Weiteres).
  */
 class FactSheet extends Model
 {
@@ -25,6 +26,7 @@ class FactSheet extends Model
             'key_statements' => 'array',
             'guest_ideas' => 'array',
             'cross_references' => 'array',
+            'sections' => 'array',
         ];
     }
 

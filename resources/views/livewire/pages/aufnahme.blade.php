@@ -46,7 +46,8 @@
 
     @if ($capture->audioGuide)
         @php($guide = $capture->audioGuide)
-        <div class="kb-card flex flex-col gap-3">
+        {{-- wire:ignore: Livewire zeichnet den Player nie neu, sonst stoppt die Wiedergabe beim Aufklappen --}}
+        <div class="kb-card flex flex-col gap-3" wire:ignore wire:key="player-{{ $guide->getKey() }}-{{ $guide->hasAudio() ? 'mp3' : 'browser' }}">
             @if ($guide->hasAudio())
                 <div
                     x-data="{
@@ -148,8 +149,10 @@
             @else
                 <p class="text-sm text-stone-600">Noch kein Audio. {{ $capture->isRunning() ? 'Die Stimme kommt gleich.' : 'Der Text steht unten zum Lesen.' }}</p>
             @endif
+        </div>
 
-            <div class="flex items-center justify-between gap-2 border-t border-stone-200 pt-3 text-sm">
+        <div class="kb-card">
+            <div class="flex items-center justify-between gap-2 text-sm">
                 <div class="flex gap-2">
                     <button type="button" class="rounded-full px-3 py-1 {{ $guide->feedback === 'up' ? 'bg-accent text-white' : 'bg-stone-100' }}" wire:click="feedback('up')" aria-label="Gut">👍</button>
                     <button type="button" class="rounded-full px-3 py-1 {{ $guide->feedback === 'down' ? 'bg-accent text-white' : 'bg-stone-100' }}" wire:click="feedback('down')" aria-label="Nicht gut">👎</button>
@@ -187,6 +190,55 @@
                     @endforeach
                 </dl>
             </div>
+        @endif
+        @php($sections = array_filter((array) ($sheet->sections ?? []), fn ($v) => filled($v)))
+        @if ($sections !== [])
+            @foreach ([
+                'artist' => ['Künstler', 'user'],
+                'provenance' => ['Provenienz', 'archive'],
+                'interpretation' => ['Deutung', 'bulb'],
+                'epoch' => ['Epoche', 'clock'],
+                'look' => ['Genau hinschauen', 'eye'],
+                'more' => ['Außerdem', 'plus'],
+            ] as $key => [$label, $icon])
+                @if (filled($sections[$key] ?? null))
+                    <div class="kb-card flex gap-3">
+                        <x-kb-icon :name="$icon" class="mt-0.5 h-5 w-5 text-accent" />
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-semibold text-stone-700">{{ $label }}</h2>
+                            <p class="mt-1 text-sm leading-relaxed">{{ $sections[$key] }}</p>
+                        </div>
+                    </div>
+                @endif
+            @endforeach
+            @if (filled($sections['quote_text'] ?? null))
+                <div class="kb-card flex gap-3 bg-accent-soft">
+                    <x-kb-icon name="quote" class="mt-0.5 h-5 w-5 text-accent" />
+                    <div class="min-w-0">
+                        <p class="text-sm italic leading-relaxed">„{{ $sections['quote_text'] }}“</p>
+                        <p class="mt-1 text-xs text-stone-600">{{ $sections['quote_speaker'] ?? '' }}{{ filled($sections['quote_context'] ?? null) ? ', '.$sections['quote_context'] : '' }}</p>
+                    </div>
+                </div>
+            @endif
+            @if (filled($sections['anecdote'] ?? null))
+                <div class="kb-card flex gap-3">
+                    <x-kb-icon name="sparkles" class="mt-0.5 h-5 w-5 text-accent" />
+                    <div class="min-w-0">
+                        <h2 class="text-sm font-semibold text-stone-700">Anekdote</h2>
+                        <p class="mt-1 text-sm leading-relaxed">{{ $sections['anecdote'] }}</p>
+                    </div>
+                </div>
+            @endif
+            @if (filled($sections['curator_text'] ?? null))
+                <div class="kb-card flex gap-3">
+                    <x-kb-icon name="academic" class="mt-0.5 h-5 w-5 text-accent" />
+                    <div class="min-w-0">
+                        <h2 class="text-sm font-semibold text-stone-700">Kuratorenstimme</h2>
+                        <p class="mt-1 text-sm italic leading-relaxed">„{{ $sections['curator_text'] }}“</p>
+                        @if (filled($sections['curator_name'] ?? null))<p class="mt-1 text-xs text-stone-600">{{ $sections['curator_name'] }}</p>@endif
+                    </div>
+                </div>
+            @endif
         @endif
         @if (filled($sheet->key_statements))
             <div class="kb-card">
@@ -231,18 +283,16 @@
     @endif
 
     @if ($segments->isNotEmpty())
-        <div class="kb-card">
-            <button type="button" class="flex w-full items-center justify-between text-sm font-semibold text-stone-700" wire:click="$toggle('showScript')">
+        <div class="kb-card" x-data="{ open: @js($showScript) }">
+            <button type="button" class="flex w-full items-center justify-between text-sm font-semibold text-stone-700" @click="open = ! open">
                 <span>Text zum Mitlesen</span>
-                <span class="text-stone-400">{{ $showScript ? 'Zu' : 'Auf' }}</span>
+                <span class="text-stone-400" x-text="open ? 'Zu' : 'Auf'"></span>
             </button>
-            @if ($showScript)
-                <div class="mt-3 flex flex-col gap-3 text-sm leading-relaxed">
+            <div class="mt-3 flex flex-col gap-3 text-sm leading-relaxed" x-show="open" x-cloak>
                     @foreach ($segments as $segment)
                         <p class="{{ ($segment['role'] ?? 'narrator') === 'quote' ? 'border-l-2 border-accent pl-3 italic' : '' }}">{{ $segment['text'] }}</p>
                     @endforeach
-                </div>
-            @endif
+            </div>
         </div>
     @endif
 
@@ -257,13 +307,12 @@
         </div>
     @endif
 
-    <div class="kb-card">
-        <button type="button" class="flex w-full items-center justify-between text-sm font-semibold text-stone-700" wire:click="$toggle('showPhotos')">
+    <div class="kb-card" x-data="{ open: @js($showPhotos) }">
+        <button type="button" class="flex w-full items-center justify-between text-sm font-semibold text-stone-700" @click="open = ! open">
             <span>Fotos ({{ $capture->photos->count() }})</span>
-            <span class="text-stone-400">{{ $showPhotos ? 'Zu' : 'Auf' }}</span>
+            <span class="text-stone-400" x-text="open ? 'Zu' : 'Auf'"></span>
         </button>
-        @if ($showPhotos)
-            <ul class="mt-3 flex flex-col gap-3">
+        <ul class="mt-3 flex flex-col gap-3" x-show="open" x-cloak>
                 @foreach ($capture->photos as $photo)
                     <li class="flex flex-col gap-2" wire:key="photo-{{ $photo->getKey() }}">
                         <img src="{{ $photo->url() }}" alt="" class="w-full rounded-xl object-contain" style="max-height: 60vh">
@@ -278,7 +327,6 @@
                     </li>
                 @endforeach
             </ul>
-        @endif
     </div>
 
     @if ($costCents > 0)

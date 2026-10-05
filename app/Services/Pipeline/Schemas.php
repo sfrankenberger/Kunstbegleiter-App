@@ -112,6 +112,21 @@ class Schemas
                     'vienna_link' => ['type' => 'string'],
                 ]),
                 'cross_references' => self::array(['type' => 'string']),
+                // Abschnitte fuer den Bildschirm mit Dingen, die im Audio nicht gesagt werden (Abschnitt 14)
+                'sections' => self::object([
+                    'artist' => self::nullableString(),
+                    'provenance' => self::nullableString(),
+                    'interpretation' => self::nullableString(),
+                    'epoch' => self::nullableString(),
+                    'look' => self::nullableString(),
+                    'quote_text' => self::nullableString(),
+                    'quote_speaker' => self::nullableString(),
+                    'quote_context' => self::nullableString(),
+                    'anecdote' => self::nullableString(),
+                    'curator_text' => self::nullableString(),
+                    'curator_name' => self::nullableString(),
+                    'more' => self::nullableString(),
+                ]),
             ]),
         ];
     }

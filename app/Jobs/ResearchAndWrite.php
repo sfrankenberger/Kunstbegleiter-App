@@ -104,6 +104,7 @@ class ResearchAndWrite extends PipelineJob
             'key_statements' => (array) ($sheet['key_statements'] ?? []),
             'guest_ideas' => (array) ($sheet['guest_ideas'] ?? []),
             'cross_references' => (array) ($sheet['cross_references'] ?? []),
+            'sections' => is_array($sheet['sections'] ?? null) ? $sheet['sections'] : null,
         ]);
 
         $capture->setRelation('audioGuide', $guide);

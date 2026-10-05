@@ -104,6 +104,11 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Worker sofort:** `App\Support\QueueKick` startet nach jedem Dispatch einen abgekoppelten `queue:work --stop-when-empty` (nohup, `KUNST_PHP` in der `.env`), höchstens einmal je 15 Sekunden. Der Cron bleibt als Netz. Mit systemd-Worker (Betrieb Abschnitt 2, Punkt 6) per `MUSEUMGUIDE_QUEUE_KICK=false` abschaltbar.
 - **Handy-Stimme:** iOS bricht lange Texte nach etwa einer Minute ab, deshalb wird satzweise in die Warteschlange gestellt (Stücke bis 180 Zeichen, Kette über `onend`). "Satz zurück" statt 15 Sekunden. Stimmenwahl im Player (deutsche Stimmen, bevorzugt Siri, Erweitert oder Premium, de-AT), Auswahl bleibt im Browser gespeichert. Die neuen Siri-Stimmen gibt Safari nur her, wenn sie am iPhone geladen sind (Einstellungen > Bedienungshilfen > Gesprochene Inhalte > Stimmen > Deutsch), der Hinweis steht im Player.
 
+## 14. Abschnitte im Fact Sheet und Player ohne Unterbrechung (Sebastian, 05.10.2026)
+
+- **Abbruch beim Aufklappen:** Livewire zeichnete beim Aufklappen (Text, Fotos) die Seite neu und ersetzte den Player, die Wiedergabe stoppte. Jetzt: Aufklappen rein im Browser (Alpine `x-show`), Player-Karte mit `wire:ignore` (Livewire fasst sie nie an), Rückmeldung (Daumen, Schwierigkeit) in eigener Karte.
+- **Abschnitte:** `fact_sheets.sections` (JSON) mit Künstler, Provenienz, Deutung, Epoche, Genau hinschauen, Außerdem, Zitat (Text, Sprecher, Anlass), Anekdote, Kuratorenstimme (Text, Name). Die Prompts verlangen Ergänzungen, die im Audio nicht gesagt werden, Unsicheres bleibt null. Anzeige als Karten mit Icons (`resources/views/components/kb-icon.blade.php`, Heroicons, Name `x-kb-icon`, weil `x-icon` von blade-icons belegt ist). Im ausführlichen Guide sollen belegtes Zitat, Anekdote und Kuratorenstimme auch im Audio vorkommen (Prompt `guide.md`).
+
 ## 8. Offen nach Etappe 3 (Stand 05.10.2026)
 
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.

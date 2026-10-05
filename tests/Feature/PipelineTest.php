@@ -79,6 +79,12 @@ function scriptJson(): array
             'key_statements' => ['Höhepunkt der Goldenen Periode.'],
             'guest_ideas' => ['opener' => 'Wer kennt das Bild von Postkarten?', 'question' => 'Wo endet der Kuss?', 'anecdote' => 'Der Staat kaufte es noch unfertig.', 'vienna_link' => 'Secession, nur zehn Gehminuten entfernt.'],
             'cross_references' => ['Egon Schiele, Umarmung'],
+            'sections' => [
+                'artist' => 'Klimt führte die Wiener Secession an.', 'provenance' => 'Vom Staat 1908 gekauft, seit 1908 im Belvedere.',
+                'interpretation' => 'Verschmelzung zweier Menschen in Gold.', 'epoch' => 'Jugendstil um 1900.', 'look' => 'Die Füße am Rand der Wiese.',
+                'quote_text' => 'Alle Kunst ist erotisch.', 'quote_speaker' => 'Gustav Klimt', 'quote_context' => 'zugeschrieben',
+                'anecdote' => 'Die Kaufsumme war die höchste je für ein lebendes Werk.', 'curator_text' => 'Das Bild ist ein Versprechen.', 'curator_name' => 'Kuratorin Belvedere', 'more' => null,
+            ],
         ],
     ];
 }
@@ -323,8 +329,9 @@ test('the finished capture page shows player, facts, guests, sources and takes f
         ->assertSee('Für deine Gäste')
         ->assertSee('Wo endet der Kuss?')
         ->assertSee('Belvedere: Der Kuss')
-        ->assertDontSee('Blattgold stammt')
-        ->set('showScript', true)
+        ->assertSee('Provenienz')
+        ->assertSee('Vom Staat 1908 gekauft')
+        ->assertSee('Kuratorenstimme')
         ->assertSee('Blattgold stammt')
         ->call('feedback', 'up')
         ->call('difficulty', 'too_hard');
