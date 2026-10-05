@@ -20,6 +20,7 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Hülle mit vier Reitern, PWA | `resources/views/components/layouts/app.blade.php`, `components/tab-bar.blade.php`, `public/manifest.webmanifest`, `public/sw.js`, Icons `public/branding/` |
 | Reiter Jetzt (Besuch starten, Museum wählen oder eintippen, Fotos aufnehmen und hochladen, Werke des Besuchs) | `App\Livewire\Pages\Jetzt`, `resources/views/livewire/pages/jetzt.blade.php` (Alpine: Geolocation, Bild verkleinern) |
 | Aufnahme-Seite (Fotos, Typ je Foto, Löschen) | `App\Livewire\Pages\Aufnahme`, Route `aufnahme` |
+| Sprechtext für die Stimme (Jahreszahlen, Daten, Jahrhunderte, Jahrzehnte deutsch ausgeschrieben, Abkürzungen aufgelöst) | `App\Services\Tts\SpeechText::normalize`, aufgerufen in `App\Services\Pipeline\Voice::synthesize` |
 | Titelbox der Detailseiten bleibt beim Scrollen unter der Kopfzeile stehen (Werk/Ort und Künstler) | Klasse `kb-title-card` in `resources/css/app.css`, genutzt in `aufnahme.blade.php` und `kuenstler-detail.blade.php` |
 | Fotos ausliefern (signiert, nur mit Sicht) | `App\Http\Controllers\PhotoController`, `CapturePhoto::url()`, Route `fotos.show` |
 | Reiter Archiv (fertige Aufnahmen, Suche) | `App\Livewire\Pages\Archiv` (`?q=`) |

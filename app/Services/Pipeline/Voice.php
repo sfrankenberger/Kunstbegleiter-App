@@ -9,6 +9,7 @@ use App\Models\AudioGuide;
 use App\Models\Capture;
 use App\Services\Ai\Pricing;
 use App\Services\Captures\CaptureService;
+use App\Services\Tts\SpeechText;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -37,7 +38,7 @@ class Voice
     {
         $segments = collect($guide->script ?? [])
             ->filter(fn (mixed $s): bool => is_array($s) && filled($s['text'] ?? null))
-            ->map(fn (array $s): array => ['text' => (string) $s['text'], 'voice' => self::voiceFor((string) ($s['role'] ?? 'narrator'))])
+            ->map(fn (array $s): array => ['text' => SpeechText::normalize((string) $s['text']), 'voice' => self::voiceFor((string) ($s['role'] ?? 'narrator'))])
             ->values()
             ->all();
         $characters = array_sum(array_map(fn (array $s): int => mb_strlen($s['text']), $segments));
