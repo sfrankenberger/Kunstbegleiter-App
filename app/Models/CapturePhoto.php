@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\URL;
 
 #[Fillable(['capture_id', 'path', 'type', 'width', 'height', 'ocr_text', 'sort_order'])]
 /**
@@ -30,5 +31,13 @@ class CapturePhoto extends Model
     public function capture(): BelongsTo
     {
         return $this->belongsTo(Capture::class);
+    }
+
+    /**
+     * Signierte Adresse fuer das Bild (60 Minuten), Auslieferung ueber PhotoController.
+     */
+    public function url(): string
+    {
+        return URL::temporarySignedRoute('fotos.show', now()->addHour(), ['photo' => $this->getKey()]);
     }
 }

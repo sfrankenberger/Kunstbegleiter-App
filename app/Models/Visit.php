@@ -96,6 +96,6 @@ class Visit extends Model
 
     public function remainingMinutes(): int
     {
-        return max(0, (int) now()->diffInMinutes($this->valid_until, false));
+        return max(0, (int) ceil(now()->diffInSeconds($this->valid_until, false) / 60));
     }
 }

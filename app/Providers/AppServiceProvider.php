@@ -6,6 +6,7 @@ use App\Contracts\PlacesClient;
 use App\Contracts\TtsProvider;
 use App\Models\Passkey;
 use App\Services\Places\FakePlacesClient;
+use App\Services\Places\GooglePlacesClient;
 use App\Services\Tts\FakeTtsProvider;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -23,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(PlacesClient::class, fn (): PlacesClient => match ((string) config('museumguide.places.provider')) {
+            'google' => new GooglePlacesClient,
             default => new FakePlacesClient,
         });
     }

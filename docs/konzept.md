@@ -51,9 +51,22 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - Live-Fortschritt vorerst per Polling (`wire:poll`), Reverb erst, wenn es stört.
 - Details Schritt für Schritt in `docs/betrieb.md`.
 
-## 7. Offen nach Etappe 1 (Stand 05.10.2026)
+## 7. Etappe 2: Besuch und Kamera (05.10.2026)
+
+- **Besuch starten:** Reiter Jetzt, Knopf "Besuch starten" holt den Standort aus dem Browser (`navigator.geolocation`), `VisitService::nearbyMuseums` fragt den `PlacesClient` im Umkreis `museumguide.places.radius_m` (Standard 300 m). Ein Treffer startet den Besuch sofort, mehrere zeigen eine Auswahl, keiner oder ein Fehler der Suche zeigen "Ich bin im ..." (Museum und Stadt von Hand) oder "Ohne Museum starten". Ein laufender Besuch ohne Museum bekommt es später über "Museum eintragen".
+- **Museum:** aus einem Places-Treffer per `place_id` einmal angelegt (auch aus dem Papierkorb geholt), Stadt aus der Adresse (Postleitzahl plus Name, Land AT/DE/CH aus dem Adressende). Von Hand eingetragene Museen werden über den Namen (ohne Groß/Klein) wiederverwendet und haben keine `place_id`.
+- **Ein aktiver Besuch je Nutzer:** `VisitService::start` beendet den vorigen (`valid_until` auf jetzt). "Beenden" im Kopf des Besuchs macht dasselbe. Standort nur am Besuch gespeichert (lat, lng, Genauigkeit), keine Spur.
+- **Google Places:** `GooglePlacesClient` (Places API New, `places:searchNearby`, Typen museum und art_gallery, Sprache de, nach Entfernung). Aktiv mit `MUSEUMGUIDE_PLACES=google` und `GOOGLE_PLACES_KEY` in der `.env`, sonst der Fake mit vier Wiener Museen.
+- **Fotos:** 1 bis 3 je Aufnahme, Kamera (`capture="environment"`) oder Fotos-Mediathek. Alpine verkleinert im Browser auf `museumguide.photos.max_edge` (2000 px) als JPEG 85 % und lädt über Livewire (`uploadMultiple`) hoch. Server prüft Bild und Größe (`museumguide.photos.max_bytes`). Dateien unter `storage/app/private/captures/{capture}/1.jpg` (Disk `local`), Auslieferung nur über signierte Adressen (`CapturePhoto::url`, 60 Minuten, Route `fotos.show`) und nur für Nutzer mit Sicht auf die Aufnahme (`CapturePolicy`: Besitzer oder Partner des geteilten Besuchs).
+- **Aufnahme:** `CaptureService::create` legt Capture (Status hochgeladen) und Fotos an, erstes Foto Typ Werk, weitere Werktext (die automatische Erkennung kommt in Etappe 3), und verlängert den Besuch. Seite `/aufnahme/{capture}`: Fotos, Typ je Foto korrigierbar, Löschen in den Papierkorb (Fotos gehen mit).
+- `Visit::remainingMinutes()` rundet auf (30 Sekunden vor Ablauf zeigt noch 1 Minute).
+
+## 8. Offen nach Etappe 2 (Stand 05.10.2026)
+
+- Google-Places-Schlüssel anlegen und in die `.env` (bis dahin Fake-Museen, nur Wien).
+- Etappe 3: Pipeline (Erkennung mit Typ-Erkennung der Fotos, Recherche, Skript, Faktencheck, Fact Sheet, Audio mit einer Stimme), Prompts in `resources/prompts/`, Preise in `museumguide.pricing`.
+- Museums-Recherche im Hintergrund beim Start eines Besuchs (Grundgerüst, "Beim Öffnen der App" Punkt 3) kommt mit der Pipeline.
 
 - Server: Staging und Live laufen (05.10.2026, Etappe 1 auf `main` gemergt und deployt). Offen sind die Root-Schritte systemd und app-register (docs/betrieb.md Abschnitt 2, Punkte 6 und 7).
-- Etappe 2: GPS, Museum über Places, Besuch starten, Fotos aufnehmen und hochladen.
 - Datei `claude/laravel-apps-betrieb.md` ins Repo legen, falls sie bei Sebastian liegt.
-- TTS-Anbieter wählen, Google-Places-Schlüssel anlegen, Martha ab Etappe 3.
+- TTS-Anbieter wählen, Martha ab Etappe 3.
