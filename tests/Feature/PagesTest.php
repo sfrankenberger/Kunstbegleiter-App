@@ -11,7 +11,7 @@ use Livewire\Livewire;
 test('every tab loads for a signed-in user', function (string $path, string $text) {
     $this->actingAs(User::factory()->create())->get($path)->assertOk()->assertSee($text);
 })->with([
-    ['/jetzt', 'Audioguide erstellen'],
+    ['/jetzt', 'Besuch starten'],
     ['/archiv', 'Noch keine Werke im Archiv'],
     ['/entdecken', 'Tipps in der Stadt'],
     ['/profil', 'Vorwissen'],

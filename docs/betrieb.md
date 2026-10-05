@@ -70,7 +70,8 @@ Live genauso mit `art`, `main`, `kunst`, `kunst-queue`, `kunst-prod`, ohne `SEED
 | `SESSION_LIFETIME` | `43200` (30 Tage) |
 | `PASSKEYS_RP_ID` | leer lassen (Host aus `APP_URL`) |
 | `ANTHROPIC_API_KEY` | ab Etappe 3 |
-| `MUSEUMGUIDE_TTS`, `MUSEUMGUIDE_PLACES`, `GOOGLE_PLACES_KEY` | ab Etappe 2 und 3, bis dahin `fake` |
+| `MUSEUMGUIDE_PLACES`, `GOOGLE_PLACES_KEY` | `google` plus Schlüssel (Google Cloud: Places API (New) aktivieren, Schlüssel auf diese API und die Server-IP beschränken); ohne Schlüssel `fake` mit vier Wiener Museen |
+| `MUSEUMGUIDE_TTS` | ab Etappe 3, bis dahin `fake` |
 | `MUSEUMGUIDE_MONTHLY_LIMIT_CENTS` | `3000` |
 | `BACKUP_APP` | `kunst-prod` / `kunst-staging` |
 | `MAIL_*` | ab Etappe 5 echter Versand (Kopplungs-Einladung) |
