@@ -27,6 +27,9 @@ test('the client sends the model of the purpose and logs the call', function () 
 
     expect($text)->toBe('Hallo');
     Http::assertSent(fn ($request) => $request['model'] === 'claude-haiku-4-5-20251001' && $request->hasHeader('x-api-key', 'test-key'));
+
+    app(ClaudeClient::class)->text(AiPurpose::Small, [['role' => 'user', 'content' => 'Nochmal']], ['effort' => 'low'], $user);
+    Http::assertSent(fn ($request) => $request['model'] === 'claude-haiku-4-5-20251001' && ! isset($request['output_config']['effort']));
     expect(AiCall::query()->whereBelongsTo($user)->where('purpose', 'small')->where('input_tokens', 10)->where('succeeded', true)->exists())->toBeTrue();
 });
 

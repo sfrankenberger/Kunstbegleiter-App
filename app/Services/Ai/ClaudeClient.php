@@ -156,7 +156,8 @@ class ClaudeClient
             'system' => $options['system'] ?? null,
             'tools' => $tools !== [] ? $tools : null,
             'output_config' => array_filter([
-                'effort' => $options['effort'] ?? null,
+                // Haiku 4.5 kennt keinen effort-Parameter (HTTP 400), nur Sonnet und Opus
+                'effort' => str_starts_with($model, 'claude-haiku') ? null : ($options['effort'] ?? null),
                 'format' => isset($options['schema']) ? ['type' => 'json_schema', 'schema' => $options['schema']] : null,
             ]) ?: null,
             'fallbacks' => self::supportsFallbacks($model) ? 'default' : null,
