@@ -8,14 +8,17 @@ use App\Models\Capture;
 use App\Models\CapturePhoto;
 use App\Models\User;
 use App\Models\Visit;
+use App\Services\Pipeline\Pipeline;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * Aufnahme anlegen (docs/grundgeruest.md, "Aufnahme"): 1 bis 3 Fotos auf die private Platte, Capture mit Status
  * "hochgeladen", Fototypen vorbelegen (erstes Foto Werk, weitere Werktext), Besuch um 30 Minuten verlaengern.
- * Die Pipeline (Erkennung, Recherche, Skript, Audio) haengt sich in Etappe 3 hier an.
+ * Danach startet die Pipeline (Erkennung, Recherche, Skript, Audio); ist das Monatslimit erreicht, bleibt die
+ * Aufnahme mit der Meldung stehen und kann spaeter mit "Erneut versuchen" nachgeholt werden.
  */
 class CaptureService
 {
@@ -52,8 +55,21 @@ class CaptureService
         }
 
         $visit->extend();
+        $this->startPipeline($capture);
 
         return $capture;
+    }
+
+    /**
+     * Pipeline anstossen. Das Monatslimit wird als Fehler an der Aufnahme festgehalten, nicht geworfen.
+     */
+    public function startPipeline(Capture $capture): void
+    {
+        try {
+            app(Pipeline::class)->start($capture);
+        } catch (RuntimeException $e) {
+            Pipeline::fail($capture, $e->getMessage());
+        }
     }
 
     /**

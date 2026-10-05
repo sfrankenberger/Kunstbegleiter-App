@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AudioController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\PhotoController;
 use App\Livewire\Auth\Login;
@@ -30,6 +31,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('jetzt', Jetzt::class)->name('jetzt');
     Route::get('aufnahme/{capture}', Aufnahme::class)->name('aufnahme');
     Route::get('fotos/{photo}', PhotoController::class)->middleware('signed')->name('fotos.show');
+    Route::get('audio/{guide}', AudioController::class)->middleware('signed')->name('audio.show');
     Route::get('archiv', Archiv::class)->name('archiv');
     Route::get('entdecken', Entdecken::class)->name('entdecken');
     Route::get('profil', Profil::class)->name('profil');

@@ -44,18 +44,25 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Änderungsprotokoll | `App\Models\Concerns\LogsChanges` (`changeLog()`), `activitylog:clean` in `routes/console.php` |
 | Aktiver Besuch, verlängern | `User::activeVisit()`, `Visit::extend()`, `Visit::remainingMinutes()`, `Visit::scopeActive()` |
 | Besuch starten, Museum aus Places oder von Hand, beenden, Stadt aus Adresse | `App\Services\Visits\VisitService` |
-| Aufnahme anlegen (Fotos speichern, Besuch verlängern), endgültig entfernen | `App\Services\Captures\CaptureService` |
+| Aufnahme anlegen (Fotos speichern, Besuch verlängern, Pipeline starten), endgültig entfernen | `App\Services\Captures\CaptureService` |
+| Pipeline starten, nach Bestätigung fortsetzen, erneut versuchen, Monatslimit prüfen | `App\Services\Pipeline\Pipeline` |
+| Werk und Künstler zuordnen oder anlegen | `App\Services\Pipeline\ArtworkMatcher` |
+| Kontext für das Skript (Vorwissen, Besuch, Lerngedächtnis, Quellen) | `App\Services\Pipeline\ContextBuilder` |
+| JSON-Schemas der KI-Antworten | `App\Services\Pipeline\Schemas` |
+| Pipeline-Schritte (Jobs) | `App\Jobs\{RecognizeArtwork, ResearchArtwork, WriteScript, CheckFacts, SynthesizeAudio, UpdateKnowledge, ResearchMuseum}`, Basis `App\Jobs\PipelineJob` |
+| Fortschritt, Rückfrage, Player, Fact Sheet, Rückmeldung | `App\Livewire\Pages\Aufnahme`, `Capture::isRunning()`, `Capture::progressLabel()` |
+| Audio ausliefern (signiert) | `App\Http\Controllers\AudioController`, `AudioGuide::url()`, Route `audio.show` |
 | Sicht auf Aufnahmen (Besitzer, Partner) | `App\Policies\CapturePolicy` |
 | Kopplung, Partner | `Pairing::between()`, `Pairing::partnerOf()`, `User::partner()` |
 | Kosten je Nutzer und Monat | `AiCall::monthCents()`, `User::monthlyLimitCents()` |
 | Epochen | `Database\Seeders\EpochSeeder` (läuft bei jedem Deploy) |
-| Enums | `App\Enums\{CaptureStatus, PhotoType, PairingStatus, GuideLength, TipKind, AiPurpose}` |
+| Enums | `App\Enums\{CaptureStatus, PipelineStep, PhotoType, PairingStatus, GuideLength, TipKind, AiPurpose}` |
 
 ## KI, Stimmen, Ort
 
 | Funktion | Wo |
 |---|---|
-| Anthropic-Aufruf (Text, JSON mit Wiederholung, Kostenprotokoll) | `App\Services\Ai\ClaudeClient`, `App\Services\Ai\Pricing`, `config/museumguide.php` |
-| Text-zu-Sprache | `App\Contracts\TtsProvider`, `App\Contracts\TtsResult`, `App\Services\Tts\FakeTtsProvider` |
+| Anthropic-Aufruf (Text, JSON nach Schema, Websuche, Rückfall, Kostenprotokoll) | `App\Services\Ai\ClaudeClient`, `App\Services\Ai\Pricing`, `config/museumguide.php` |
+| Text-zu-Sprache | `App\Contracts\TtsProvider`, `App\Contracts\TtsResult`, `App\Services\Tts\{FakeTtsProvider, ElevenLabsTtsProvider}` |
 | Museum in der Nähe | `App\Contracts\PlacesClient`, `App\Services\Places\FakePlacesClient`, `App\Services\Places\GooglePlacesClient` (Places API New) |
-| Prompts | `resources/prompts/` (ab Etappe 3) |
+| Prompts | `resources/prompts/*.md`, Platzhalter über `App\Support\Prompts::render` |

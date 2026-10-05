@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CaptureStatus;
 use App\Enums\GuideLength;
+use App\Enums\PipelineStep;
 use App\Models\Concerns\CascadesSoftDeletes;
 use App\Models\Concerns\LogsChanges;
 use Database\Factories\CaptureFactory;
@@ -35,6 +36,10 @@ class Capture extends Model
             'length' => GuideLength::class,
             'recognition' => 'array',
             'confirmed_at' => 'datetime',
+            'step' => PipelineStep::class,
+            'needs_confirmation' => 'boolean',
+            'premium' => 'boolean',
+            'finished_at' => 'datetime',
         ];
     }
 
@@ -95,5 +100,25 @@ class Capture extends Model
     public function isDone(): bool
     {
         return $this->status === CaptureStatus::Done;
+    }
+
+    /**
+     * Laeuft die Pipeline noch (Fortschritt pollen)? Nicht bei Fertig, Fehler oder waehrend der Rueckfrage.
+     */
+    public function isRunning(): bool
+    {
+        return $this->status->isRunning() && ! $this->needs_confirmation;
+    }
+
+    /**
+     * Was gerade angezeigt wird: der laufende Schritt oder der Status.
+     */
+    public function progressLabel(): string
+    {
+        if ($this->needs_confirmation) {
+            return PipelineStep::Confirming->label();
+        }
+
+        return $this->isRunning() && $this->step !== null ? $this->step->label() : $this->status->label();
     }
 }

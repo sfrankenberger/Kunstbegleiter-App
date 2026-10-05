@@ -100,7 +100,7 @@
                             @endif
                             <div class="min-w-0">
                                 <p class="truncate font-medium">{{ $capture->artwork?->title ?? 'Aufnahme von '.$capture->created_at->format('H:i') }}</p>
-                                <p class="text-sm text-stone-600">{{ $capture->artwork?->artist?->name ?? $capture->photos->count().' '.($capture->photos->count() === 1 ? 'Foto' : 'Fotos') }} · {{ $capture->status->label() }}</p>
+                                <p class="text-sm text-stone-600">{{ $capture->artwork?->artist?->name ?? $capture->photos->count().' '.($capture->photos->count() === 1 ? 'Foto' : 'Fotos') }} · {{ $capture->progressLabel() }}</p>
                             </div>
                         </a>
                     </li>
