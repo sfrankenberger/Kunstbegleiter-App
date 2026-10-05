@@ -29,6 +29,7 @@ use App\Services\Pipeline\Pipeline;
 use App\Services\Pipeline\Schemas;
 use App\Services\Tts\ElevenLabsTtsProvider;
 use App\Services\Tts\FakeTtsProvider;
+use App\Support\Secrets;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\File;
@@ -508,4 +509,19 @@ test('an artist profile is researched once and shown with life, works and recept
         ->assertSee('Mehr zum Künstler')
         ->assertSee('Zu diesem Werk')
         ->assertDontSee('Selbstbildnis im Pelzrock');
+});
+
+test('a schema the api rejects as too large falls back to plain json in the text', function () {
+    Secrets::set('anthropic_key', 'sk-test');
+    Http::fake([
+        'api.anthropic.com/v1/messages' => Http::sequence()
+            ->push(['error' => ['message' => 'The compiled grammar is too large, which would cause performance issues.']], 400)
+            ->push(['content' => [['type' => 'text', 'text' => "```json\n{\"artist_summary\": \"Maler\", \"epoch_summary\": \"\"}\n```"]], 'stop_reason' => 'end_turn', 'usage' => []]),
+    ]);
+
+    $result = app(ClaudeClient::class)->structured(AiPurpose::Small, [['role' => 'user', 'content' => 'x']], Schemas::knowledge(), ['system' => 'Test']);
+
+    expect($result)->toBe(['artist_summary' => 'Maler', 'epoch_summary' => null]);
+    Http::assertSentCount(2);
+    Http::assertSent(fn ($r) => ! isset($r['output_config']['format']) && str_contains((string) $r['system'], 'JSON-Schema'));
 });

@@ -77,14 +77,13 @@ class Schemas
             'facts' => self::array(self::object(['statement' => ['type' => 'string'], 'source_url' => ['type' => 'string']])),
             'quotes' => self::array(self::object([
                 'text' => ['type' => 'string'],
-                'original' => self::nullableString(),
                 'speaker' => ['type' => 'string'],
                 'context' => self::nullableString(),
                 'source_url' => ['type' => 'string'],
             ])),
+            // existing_guides und vienna_links entfernt (05.10.2026): die Grammatik aus Schema plus Websuche-Werkzeug
+            // wurde Anthropic zu gross ("compiled grammar is too large"), beide Felder wurden nie angezeigt
             'sources' => self::array($source),
-            'existing_guides' => self::array(self::object(['title' => ['type' => 'string'], 'url' => ['type' => 'string']])),
-            'vienna_links' => self::array(self::object(['title' => ['type' => 'string'], 'reason' => ['type' => 'string']])),
             'artist_born' => ['type' => 'integer', 'description' => '0, wenn unbekannt.'],
             'artist_died' => ['type' => 'integer', 'description' => '0, wenn unbekannt oder noch lebend.'],
             'wikidata_id' => self::nullableString(),

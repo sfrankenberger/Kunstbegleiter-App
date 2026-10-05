@@ -57,7 +57,19 @@ class ClaudeClient
         }
 
         foreach ([1, 2] as $attempt) {
-            $text = $this->text($purpose, $messages, $options, $user, $capture);
+            try {
+                $text = $this->text($purpose, $messages, $options, $user, $capture);
+            } catch (RuntimeException $e) {
+                if (! isset($options['schema']) || ! self::schemaRejected($e->getMessage())) {
+                    throw $e;
+                }
+
+                // Rueckfall ohne strukturierte Ausgabe: Schema in den Systemprompt, JSON aus dem Text lesen
+                $options['system'] = trim(($options['system'] ?? '')."\nAntworte ausschließlich mit einem gültigen JSON-Objekt genau nach diesem JSON-Schema, ohne Erklärung und ohne Markdown. Unbekannte Strings leer lassen, alle Felder ausfüllen:\n".json_encode($options['schema'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                unset($options['schema']);
+                $text = $this->text($purpose, $messages, $options, $user, $capture);
+            }
+
             $decoded = self::decodeJson($text);
 
             if ($decoded !== null) {
@@ -71,6 +83,14 @@ class ClaudeClient
         }
 
         throw new RuntimeException('Die KI-Antwort war zweimal kein gültiges JSON.');
+    }
+
+    /**
+     * Anthropic lehnt das Schema selbst ab (zu grosse Grammatik, zu viele Union-Typen): dann ohne Schema weiter.
+     */
+    public static function schemaRejected(string $message): bool
+    {
+        return str_contains($message, 'grammar is too large') || str_contains($message, 'union types');
     }
 
     /**
