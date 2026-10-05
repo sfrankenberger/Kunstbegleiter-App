@@ -23,7 +23,7 @@ class Archiv extends Component
         $captures = Capture::query()
             ->whereBelongsTo(auth()->user())
             ->whereNotNull('artwork_id')
-            ->with(['artwork.artist', 'artwork.museum', 'visit'])
+            ->with(['artwork.artist', 'artwork.museum', 'visit', 'photos'])
             ->when(trim($this->search) !== '', function ($query): void {
                 $term = '%'.trim($this->search).'%';
                 $query->whereHas('artwork', fn ($q) => $q->where('title', 'like', $term)

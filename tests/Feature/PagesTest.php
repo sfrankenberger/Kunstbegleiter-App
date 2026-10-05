@@ -35,6 +35,7 @@ test('archiv lists finished captures and searches by artist', function () {
 
     $this->actingAs($user)->get('/archiv')
         ->assertSee($capture->artwork->title)
+        ->assertSee(route('aufnahme', $capture))
         ->assertDontSee($other->artwork->title);
 
     $this->actingAs($user)->get('/archiv?q='.urlencode($capture->artwork->artist->name))->assertSee($capture->artwork->title);
