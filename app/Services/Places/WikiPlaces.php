@@ -17,7 +17,11 @@ class WikiPlaces
     public const SPARQL = 'https://query.wikidata.org/sparql';
 
     /** Wikidata-Klassen, die hier nicht gemeint sind (Strassen, Haltestellen, Verwaltung). */
-    private const EXCLUDE = ['Q79007', 'Q34442', 'Q548662', 'Q953806', 'Q2175765', 'Q55488', 'Q174782', 'Q4830453', 'Q3957', 'Q515', 'Q5', 'Q15284', 'Q486972', 'Q123705'];
+    private const EXCLUDE = [
+        'Q79007', 'Q34442', 'Q548662', 'Q953806', 'Q2175765', 'Q55488', 'Q174782', 'Q4830453', 'Q3957', 'Q515', 'Q5', 'Q15284', 'Q486972', 'Q123705',
+        // Ereignisse, Organisationen, Ausstellungen, Bezirke
+        'Q1190554', 'Q2223653', 'Q645883', 'Q175331', 'Q3839081', 'Q13418847', 'Q1656682', 'Q43229', 'Q31855', 'Q2385804', 'Q464980', 'Q3918', 'Q6881511', 'Q11691', 'Q1346164', 'Q13220204', 'Q252846', 'Q16917', 'Q3914', 'Q7278',
+    ];
 
     /** Zuordnung grober Klassen zu Place::KINDS (erste passende gewinnt). */
     private const KINDS = [
@@ -38,26 +42,49 @@ class WikiPlaces
      */
     public function nearby(float $lat, float $lng, int $radiusM = 300, int $limit = 25): array
     {
+        return $this->parse($this->run($this->query($lat, $lng, $radiusM)), $lat, $lng, $limit);
+    }
+
+    /**
+     * SPARQL fuer den Umkreis (auch fuer PlaceFinder, der Wikidata und OpenStreetMap parallel abfragt).
+     */
+    public function query(float $lat, float $lng, int $radiusM): string
+    {
         $km = max(0.05, $radiusM / 1000);
-        $query = <<<SPARQL
-SELECT ?item ?itemLabel ?itemDescription ?coord ?image ?architectLabel ?inception ?dewiki ?enwiki (GROUP_CONCAT(DISTINCT ?class; separator=",") AS ?classes) ?sitelinks WHERE {
+
+        return <<<SPARQL
+SELECT ?item ?itemLabel ?itemDescription ?coord ?image ?architectLabel ?inception ?dewiki ?enwiki ?collection (GROUP_CONCAT(DISTINCT ?class; separator=",") AS ?classes) ?sitelinks WHERE {
   SERVICE wikibase:around { ?item wdt:P625 ?coord . bd:serviceParam wikibase:center "Point({$lng} {$lat})"^^geo:wktLiteral ; wikibase:radius "{$km}" . }
   ?item wikibase:sitelinks ?sitelinks . FILTER(?sitelinks > 0)
   OPTIONAL { ?item wdt:P31 ?class . }
   OPTIONAL { ?item wdt:P18 ?image . }
   OPTIONAL { ?item wdt:P84 ?architect . }
   OPTIONAL { ?item wdt:P571 ?inception . }
+  OPTIONAL { ?item wdt:P195 ?collection . }
   OPTIONAL { ?dewiki schema:about ?item ; schema:isPartOf <https://de.wikipedia.org/> . }
   OPTIONAL { ?enwiki schema:about ?item ; schema:isPartOf <https://en.wikipedia.org/> . }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "de,en". }
-} GROUP BY ?item ?itemLabel ?itemDescription ?coord ?image ?architectLabel ?inception ?dewiki ?enwiki ?sitelinks ORDER BY DESC(?sitelinks) LIMIT 200
+} GROUP BY ?item ?itemLabel ?itemDescription ?coord ?image ?architectLabel ?inception ?dewiki ?enwiki ?collection ?sitelinks ORDER BY DESC(?sitelinks) LIMIT 200
 SPARQL;
+    }
 
-        $rows = $this->run($query);
+    /**
+     * Zeilen der SPARQL-Antwort in Treffer verwandeln: Strassen, Ereignisse, Organisationen und Museumsstuecke
+     * (Eigenschaft P195 Sammlung) fallen weg.
+     *
+     * @param  list<array<string, array{value: string}>>  $rows
+     * @return list<array<string, mixed>>
+     */
+    public function parse(array $rows, float $lat, float $lng, int $limit): array
+    {
         $places = [];
 
         foreach ($rows as $row) {
             $classes = array_values(array_filter(array_map(fn (string $c): string => basename($c), explode(',', (string) ($row['classes']['value'] ?? '')))));
+
+            if (filled($row['collection']['value'] ?? null)) {
+                continue;
+            }
 
             if (array_intersect($classes, self::EXCLUDE) !== [] && array_intersect($classes, array_merge(...array_values(self::KINDS))) === []) {
                 continue;
@@ -237,6 +264,14 @@ SPARQL);
         $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
 
         return 2 * $r * atan2(sqrt($a), sqrt(1 - $a));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function headers(): array
+    {
+        return ['User-Agent' => 'Kunstbegleiter/1.0 (mail@sfrankenberger.com)', 'Accept' => 'application/sparql-results+json'];
     }
 
     /**

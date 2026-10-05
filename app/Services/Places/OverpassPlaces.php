@@ -20,8 +20,29 @@ class OverpassPlaces
      */
     public function nearby(float $lat, float $lng, int $radiusM = 300, int $limit = 40): array
     {
+        try {
+            $response = Http::withHeaders(['User-Agent' => 'Kunstbegleiter/1.0 (mail@sfrankenberger.com)'])
+                ->timeout((int) config('museumguide.places.overpass_timeout', 12))
+                ->asForm()
+                ->post(self::ENDPOINT, ['data' => $this->query($lat, $lng, $radiusM)]);
+            $elements = $response->successful() ? (array) ($response->json('elements') ?? []) : [];
+        } catch (Throwable $e) {
+            report($e);
+
+            return [];
+        }
+
+        return $this->parse($elements, $lat, $lng, $limit);
+    }
+
+    /**
+     * Overpass-QL fuer den Umkreis (auch fuer PlaceFinder).
+     */
+    public function query(float $lat, float $lng, int $radiusM): string
+    {
         $around = "(around:{$radiusM},{$lat},{$lng})";
-        $query = <<<QL
+
+        return <<<QL
 [out:json][timeout:10];
 (
   nwr["name"]["tourism"~"^(artwork|attraction|viewpoint)$"]{$around};
@@ -35,19 +56,14 @@ class OverpassPlaces
 );
 out center tags 120;
 QL;
+    }
 
-        try {
-            $response = Http::withHeaders(['User-Agent' => 'Kunstbegleiter/1.0 (mail@sfrankenberger.com)'])
-                ->timeout((int) config('museumguide.places.overpass_timeout', 12))
-                ->asForm()
-                ->post(self::ENDPOINT, ['data' => $query]);
-            $elements = $response->successful() ? (array) ($response->json('elements') ?? []) : [];
-        } catch (Throwable $e) {
-            report($e);
-
-            return [];
-        }
-
+    /**
+     * @param  list<array<string, mixed>>  $elements
+     * @return list<array<string, mixed>>
+     */
+    public function parse(array $elements, float $lat, float $lng, int $limit): array
+    {
         $places = [];
 
         foreach ($elements as $el) {

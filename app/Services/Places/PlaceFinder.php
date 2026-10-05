@@ -5,6 +5,9 @@ namespace App\Services\Places;
 use App\Models\Place;
 use App\Services\Pipeline\PlaceMatcher;
 use App\Support\Secrets;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -24,12 +27,26 @@ class PlaceFinder
     public function nearby(float $lat, float $lng, int $radiusM = 400, int $limit = 30): array
     {
         $hits = [];
+        $rows = [];
+        $elements = [];
 
-        foreach ($this->wiki->nearby($lat, $lng, $radiusM, 60) as $hit) {
+        // Wikidata und OpenStreetMap gleichzeitig abfragen (zusammen sonst 5 bis 7 Sekunden)
+        try {
+            $responses = Http::pool(fn (Pool $pool) => [
+                $pool->as('wiki')->withHeaders(WikiPlaces::headers())->timeout((int) config('museumguide.places.wikidata_timeout', 12))->get(WikiPlaces::SPARQL, ['query' => $this->wiki->query($lat, $lng, $radiusM), 'format' => 'json']),
+                $pool->as('osm')->withHeaders(['User-Agent' => 'Kunstbegleiter/1.0 (mail@sfrankenberger.com)'])->timeout((int) config('museumguide.places.overpass_timeout', 12))->asForm()->post(OverpassPlaces::ENDPOINT, ['data' => $this->osm->query($lat, $lng, $radiusM)]),
+            ]);
+            $rows = $responses['wiki'] instanceof Response && $responses['wiki']->successful() ? (array) ($responses['wiki']->json('results.bindings') ?? []) : [];
+            $elements = $responses['osm'] instanceof Response && $responses['osm']->successful() ? (array) ($responses['osm']->json('elements') ?? []) : [];
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        foreach ($this->wiki->parse($rows, $lat, $lng, 60) as $hit) {
             $hits[] = $hit + ['osm_id' => null, 'place_id' => null, 'address' => null, 'source' => 'wikidata'];
         }
 
-        foreach ($this->osm->nearby($lat, $lng, $radiusM, 60) as $hit) {
+        foreach ($this->osm->parse($elements, $lat, $lng, 60) as $hit) {
             $this->merge($hits, $hit + ['place_id' => null, 'source' => 'osm']);
         }
 
