@@ -480,3 +480,22 @@ test('the mixer joins segments with ffmpeg and lays music underneath, the bed is
 
     File::deleteDirectory($dir);
 });
+
+test('elevenlabs synthesizes in groups below the concurrency limit and retries once on 429', function () {
+    config()->set('museumguide.tts.elevenlabs_key', 'el-key');
+    config()->set('museumguide.tts.elevenlabs.concurrency', 5);
+    config()->set('museumguide.tts.elevenlabs.retry_seconds', 0);
+    $calls = 0;
+    Http::fake(['api.elevenlabs.io/*' => function () use (&$calls) {
+        $calls++;
+
+        return $calls === 3 ? Http::response(['detail' => ['code' => 'concurrent_limit_exceeded']], 429) : Http::response('MP3'.$calls, 200);
+    }]);
+
+    $segments = array_map(fn (int $i) => ['text' => 'Satz '.$i, 'voice' => $i % 2 ? 'second' : 'narrator'], range(1, 12));
+    $results = (new ElevenLabsTtsProvider)->synthesizeMany($segments);
+
+    expect($results)->toHaveCount(12)
+        ->and($calls)->toBe(17)
+        ->and($results[0]->characters)->toBe(6);
+});

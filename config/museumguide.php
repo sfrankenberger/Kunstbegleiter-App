@@ -75,6 +75,9 @@ return [
         'elevenlabs' => [
             // eleven_flash_v2_5 ist deutlich schneller als eleven_multilingual_v2 (Ziel: Guide in 45 Sekunden)
             'model' => env('ELEVENLABS_MODEL', 'eleven_flash_v2_5'),
+            // Gleichzeitige Anfragen (Tarif Free 4, Starter 6, Creator 10; wir bleiben darunter), Pause vor dem Wiederholen bei 429
+            'concurrency' => (int) env('ELEVENLABS_CONCURRENCY', 5),
+            'retry_seconds' => 3,
             // Stimmen je Rolle (Voice-IDs aus Sebastians ElevenLabs-Bibliothek, 05.10.2026): narrator "Christian,
             // warm and captivating" (deutscher Dokumentarsprecher), second und quote "Alexander, deep TV narrator".
             // Etappe 3 nutzt nur narrator.

@@ -38,7 +38,9 @@ class ElevenLabsTtsProvider implements TtsProvider
     }
 
     /**
-     * Alle Segmente gleichzeitig anfragen (Http::pool), damit zwei Sprecher nicht laenger dauern als einer.
+     * Segmente parallel anfragen, aber hoechstens `concurrency` auf einmal (ElevenLabs erlaubt je Tarif 4 bis 10
+     * gleichzeitige Anfragen, sonst HTTP 429 concurrent_limit_exceeded). Bei 429 wird die Gruppe nach kurzer
+     * Pause einmal wiederholt.
      */
     public function synthesizeMany(array $segments): array
     {
@@ -48,30 +50,66 @@ class ElevenLabsTtsProvider implements TtsProvider
             throw new RuntimeException('Kein ElevenLabs-Schlüssel: unter Admin > Einstellungen > Zugänge eintragen.');
         }
 
-        $responses = Http::pool(fn (Pool $pool) => array_map(
-            fn (array $s, int $i) => $pool->as((string) $i)
-                ->withHeaders(['xi-api-key' => $key, 'Accept' => 'audio/mpeg'])
-                ->timeout(180)
-                ->post(self::BASE.'/text-to-speech/'.$this->voiceId($s['voice']).'?output_format=mp3_44100_128', $this->body($s['text'])),
-            $segments,
-            array_keys($segments),
-        ));
-
         $results = [];
 
-        foreach ($segments as $i => $segment) {
-            $response = $responses[(string) $i] ?? null;
-
-            if (! $response instanceof Response || ! $response->successful()) {
-                $status = $response instanceof Response ? 'HTTP '.$response->status().': '.mb_substr((string) $response->body(), 0, 200) : 'keine Antwort';
-
-                throw new RuntimeException('ElevenLabs antwortet mit '.$status);
+        foreach (array_chunk($segments, max(1, (int) config('museumguide.tts.elevenlabs.concurrency', 5)), true) as $chunk) {
+            foreach ($this->chunk($key, $chunk) as $i => $result) {
+                $results[$i] = $result;
             }
-
-            $results[] = new TtsResult(audio: (string) $response->body(), characters: mb_strlen($segment['text']));
         }
 
-        return $results;
+        ksort($results);
+
+        return array_values($results);
+    }
+
+    /**
+     * @param  array<int, array{text: string, voice: string}>  $chunk
+     * @return array<int, TtsResult>
+     */
+    private function chunk(string $key, array $chunk): array
+    {
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            $responses = Http::pool(fn (Pool $pool) => array_map(
+                fn (array $s, int $i) => $pool->as((string) $i)
+                    ->withHeaders(['xi-api-key' => $key, 'Accept' => 'audio/mpeg'])
+                    ->timeout(180)
+                    ->post(self::BASE.'/text-to-speech/'.$this->voiceId($s['voice']).'?output_format=mp3_44100_128', $this->body($s['text'])),
+                $chunk,
+                array_keys($chunk),
+            ));
+
+            $results = [];
+            $rateLimited = false;
+            $status = '';
+
+            foreach ($chunk as $i => $segment) {
+                $response = $responses[(string) $i] ?? null;
+
+                if ($response instanceof Response && $response->successful()) {
+                    $results[$i] = new TtsResult(audio: (string) $response->body(), characters: mb_strlen($segment['text']));
+
+                    continue;
+                }
+
+                $status = $response instanceof Response ? 'HTTP '.$response->status().': '.mb_substr((string) $response->body(), 0, 200) : 'keine Antwort';
+                $rateLimited = $rateLimited || ($response instanceof Response && $response->status() === 429);
+            }
+
+            if (count($results) === count($chunk)) {
+                return $results;
+            }
+
+            if ($rateLimited && $attempt === 1) {
+                sleep((int) config('museumguide.tts.elevenlabs.retry_seconds', 3));
+
+                continue;
+            }
+
+            throw new RuntimeException('ElevenLabs antwortet mit '.$status);
+        }
+
+        throw new RuntimeException('ElevenLabs antwortet nicht.');
     }
 
     private function voiceId(string $voice): string
