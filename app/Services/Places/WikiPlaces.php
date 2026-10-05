@@ -40,15 +40,17 @@ class WikiPlaces
     {
         $km = max(0.05, $radiusM / 1000);
         $query = <<<SPARQL
-SELECT ?item ?itemLabel ?itemDescription ?coord ?image ?architectLabel ?inception (GROUP_CONCAT(DISTINCT ?class; separator=",") AS ?classes) ?sitelinks WHERE {
+SELECT ?item ?itemLabel ?itemDescription ?coord ?image ?architectLabel ?inception ?dewiki ?enwiki (GROUP_CONCAT(DISTINCT ?class; separator=",") AS ?classes) ?sitelinks WHERE {
   SERVICE wikibase:around { ?item wdt:P625 ?coord . bd:serviceParam wikibase:center "Point({$lng} {$lat})"^^geo:wktLiteral ; wikibase:radius "{$km}" . }
   ?item wikibase:sitelinks ?sitelinks . FILTER(?sitelinks > 0)
   OPTIONAL { ?item wdt:P31 ?class . }
   OPTIONAL { ?item wdt:P18 ?image . }
   OPTIONAL { ?item wdt:P84 ?architect . }
   OPTIONAL { ?item wdt:P571 ?inception . }
+  OPTIONAL { ?dewiki schema:about ?item ; schema:isPartOf <https://de.wikipedia.org/> . }
+  OPTIONAL { ?enwiki schema:about ?item ; schema:isPartOf <https://en.wikipedia.org/> . }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "de,en". }
-} GROUP BY ?item ?itemLabel ?itemDescription ?coord ?image ?architectLabel ?inception ?sitelinks LIMIT 120
+} GROUP BY ?item ?itemLabel ?itemDescription ?coord ?image ?architectLabel ?inception ?dewiki ?enwiki ?sitelinks LIMIT 150
 SPARQL;
 
         $rows = $this->run($query);
@@ -85,13 +87,14 @@ SPARQL;
                 'architect' => filled($row['architectLabel']['value'] ?? null) ? (string) $row['architectLabel']['value'] : null,
                 'built' => filled($row['inception']['value'] ?? null) ? substr((string) $row['inception']['value'], 0, 4) : null,
                 'distance_m' => (int) round(self::distance($lat, $lng, $plat, $plng)),
-                'sitelinks' => (int) ($row['sitelinks']['value'] ?? 0),
+                // Bekannte Orte zuerst: Wikipedia-Artikel (de oder en) oder Bild; reine Denkmallisten-Eintraege danach
+                'notable' => filled($row['dewiki']['value'] ?? null) || filled($row['enwiki']['value'] ?? null) || filled($row['image']['value'] ?? null) ? 1 : 0,
             ];
         }
 
-        usort($places, fn (array $a, array $b): int => $a['distance_m'] <=> $b['distance_m']);
+        usort($places, fn (array $a, array $b): int => [$b['notable'], $a['distance_m']] <=> [$a['notable'], $b['distance_m']]);
 
-        return array_values(array_map(fn (array $p): array => array_diff_key($p, ['sitelinks' => 1]), array_slice($places, 0, $limit)));
+        return array_values(array_map(fn (array $p): array => array_diff_key($p, ['notable' => 1]), array_slice($places, 0, $limit)));
     }
 
     /**
