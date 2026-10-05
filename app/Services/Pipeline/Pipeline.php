@@ -31,6 +31,13 @@ class Pipeline
         $this->assertBudget($capture);
         $capture->forceFill(['status' => CaptureStatus::Uploaded, 'step' => PipelineStep::Recognizing, 'error_message' => null, 'needs_confirmation' => false])->save();
 
+        if ($capture->isPlace() && $capture->photos()->doesntExist()) {
+            // Ort aus der Liste gewaehlt: nichts zu erkennen
+            $this->continueAfterRecognition($capture);
+
+            return;
+        }
+
         if ($capture->isQuick()) {
             Bus::dispatchSync(new QuickGuide($capture->getKey()));
 
@@ -63,7 +70,7 @@ class Pipeline
     {
         $this->assertBudget($capture);
 
-        if ($capture->artwork_id === null) {
+        if ($capture->artwork_id === null && $capture->place_id === null) {
             throw new RuntimeException('Zuerst das Werk bestätigen.');
         }
 
@@ -78,7 +85,7 @@ class Pipeline
     {
         $this->assertBudget($capture);
 
-        if ($capture->artwork_id === null) {
+        if ($capture->artwork_id === null && $capture->place_id === null) {
             $this->start($capture);
 
             return;

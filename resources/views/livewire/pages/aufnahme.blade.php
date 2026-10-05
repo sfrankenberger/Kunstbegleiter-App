@@ -2,9 +2,11 @@
     @php($bullets = fn (mixed $v): array => is_array($v) ? array_values(array_filter(array_map(fn ($x) => is_array($x) ? ($x['text'] ?? '') : (string) $x, $v), 'filled')) : array_values(array_filter(preg_split('/(?<=[.!?])\s+/u', (string) $v) ?: [], 'filled')))
     <div class="kb-card flex gap-3">
         <div class="min-w-0 flex-1">
-            <p class="text-xs uppercase tracking-wide text-stone-500">{{ $capture->visit?->museum?->name ?? 'Ohne Museum' }} · {{ $capture->created_at->format('d.m.Y H:i') }}</p>
-            <p class="mt-1 text-lg font-semibold">{{ $capture->artwork?->title ?? ($capture->recognition['title'] ?? 'Werk wird erkannt') }}</p>
-            @if ($capture->artwork?->artist)
+            <p class="text-xs uppercase tracking-wide text-stone-500">{{ $capture->place ? $capture->place->kindLabel().($capture->place->city ? ', '.$capture->place->city->name : '') : ($capture->visit?->museum?->name ?? ($capture->visit_id === null ? 'Stadt' : 'Ohne Museum')) }} · {{ $capture->created_at->format('d.m.Y H:i') }}</p>
+            <p class="mt-1 text-lg font-semibold">{{ $capture->place?->name ?? $capture->artwork?->title ?? ($capture->recognition['title'] ?? ($capture->visit_id === null ? 'Ort wird erkannt' : 'Werk wird erkannt')) }}</p>
+            @if ($capture->place && ($capture->place->architect || $capture->place->built))
+                <p class="text-sm text-stone-600">{{ $capture->place->architect }}{{ $capture->place->architect && $capture->place->built ? ', ' : '' }}{{ $capture->place->built }}</p>
+            @elseif ($capture->artwork?->artist)
                 <p class="text-sm text-stone-600">{{ $capture->artwork->artist->name }}{{ $capture->artwork->dating ? ', '.$capture->artwork->dating : '' }}</p>
             @elseif (filled($capture->recognition['artist'] ?? null))
                 <p class="text-sm text-stone-600">{{ $capture->recognition['artist'] }}</p>
@@ -28,6 +30,8 @@
         </div>
         @if ($capture->photos->first())
             <img src="{{ $capture->photos->first()->url() }}" alt="" class="h-24 w-24 shrink-0 rounded-xl object-cover">
+        @elseif ($capture->place?->image_url)
+            <img src="{{ $capture->place->image_url }}" alt="" class="h-24 w-24 shrink-0 rounded-xl bg-stone-100 object-cover" title="{{ $capture->place->image_credit }}">
         @endif
     </div>
 
@@ -165,7 +169,14 @@
         @endif
         @php($sections = array_filter((array) ($sheet->sections ?? []), fn ($v) => filled($v)))
         @if ($sections !== [])
-            @foreach ([
+            @foreach ($capture->place ? [
+                'artist' => ['Architekt und Bauherr', 'user'],
+                'provenance' => ['Baugeschichte', 'archive'],
+                'interpretation' => ['Umbauten und Restaurierungen', 'bulb'],
+                'epoch' => ['Zeit und Stil', 'clock'],
+                'look' => ['Vor Ort hinschauen', 'eye'],
+                'more' => ['Nutzung und Anekdoten', 'plus'],
+            ] : [
                 'artist' => ['Künstler', 'user'],
                 'provenance' => ['Provenienz', 'archive'],
                 'interpretation' => ['Deutung', 'bulb'],
@@ -205,11 +216,11 @@
                     </div>
                 @endif
             @endforeach
-            @if ($capture->artwork?->relatedWorks?->isNotEmpty())
+            @if ($related->isNotEmpty())
                 <div class="kb-card">
-                    <h2 class="text-sm font-semibold text-stone-700">Vergleichswerke</h2>
+                    <h2 class="text-sm font-semibold text-stone-700">{{ $capture->place ? 'Vergleichsbauten' : 'Vergleichswerke' }}</h2>
                     <div class="-mx-4 mt-2 flex gap-3 overflow-x-auto px-4 pb-1">
-                        @foreach ($capture->artwork->relatedWorks as $work)
+                        @foreach ($related as $work)
                             <div class="w-40 shrink-0">
                                 @if ($work->image_url)
                                     <img src="{{ $work->image_url }}" alt="" class="h-40 w-40 rounded-lg bg-stone-100 object-cover" loading="lazy" title="{{ $work->image_credit }}">
@@ -316,7 +327,7 @@
             </ul>
     </div>
 
-    @if ($capture->isQuick() && $capture->isDone() && $capture->artwork_id)
+    @if ($capture->isQuick() && $capture->isDone() && ($capture->artwork_id || $capture->place_id))
         <div class="kb-card flex flex-col gap-2">
             <p class="font-semibold">Mehr zu diesem Werk?</p>
             <p class="text-sm text-stone-600">Der ausführliche Guide recherchiert im Netz, prüft die Fakten und wird von der Studio-Stimme gesprochen. Dauert einige Minuten, kostet etwa 20 bis 40 Cent.</p>

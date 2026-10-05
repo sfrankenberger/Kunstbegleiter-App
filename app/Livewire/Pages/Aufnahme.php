@@ -9,6 +9,7 @@ use App\Models\CapturePhoto;
 use App\Services\Pipeline\ArtworkMatcher;
 use App\Services\Pipeline\ContextBuilder;
 use App\Services\Pipeline\Pipeline;
+use App\Services\Pipeline\PlaceMatcher;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -153,12 +154,13 @@ class Aufnahme extends Component
 
     public function render(): View
     {
-        $this->capture->refresh()->load(['photos', 'artwork.artist', 'artwork.epoch', 'artwork.research', 'artwork.relatedWorks', 'visit.museum', 'audioGuide', 'factSheet']);
-        $research = $this->capture->artwork?->research;
+        $this->capture->refresh()->load(['photos', 'artwork.artist', 'artwork.epoch', 'artwork.research', 'artwork.relatedWorks', 'place.city', 'place.research', 'place.relatedWorks', 'visit.museum', 'audioGuide', 'factSheet']);
+        $research = $this->capture->place?->research ?? $this->capture->artwork?->research;
 
         return view('livewire.pages.aufnahme', [
             'photoTypes' => PhotoType::cases(),
             'sources' => $research !== null ? ContextBuilder::sources($research) : [],
+            'related' => $this->capture->place?->relatedWorks ?? $this->capture->artwork?->relatedWorks ?? collect(),
             'imagesPending' => $this->capture->isDone() && $this->capture->artwork !== null && $this->capture->finished_at?->gt(now()->subMinutes(3)) && (
                 ((bool) config('museumguide.images.enabled', true) && $this->capture->artwork->image_checked_at === null)
                 || ((bool) config('museumguide.artist_profile.enabled', true) && $this->capture->artwork->artist !== null && $this->capture->artwork->artist->profile_checked_at === null)
@@ -173,7 +175,11 @@ class Aufnahme extends Component
     private function startWith(array $recognition): void
     {
         $this->capture->forceFill(['recognition' => $recognition])->save();
-        app(ArtworkMatcher::class)->attach($this->capture, $recognition);
+        if ($this->capture->visit_id === null) {
+            app(PlaceMatcher::class)->attach($this->capture, $recognition);
+        } else {
+            app(ArtworkMatcher::class)->attach($this->capture, $recognition);
+        }
 
         try {
             app(Pipeline::class)->continueAfterRecognition($this->capture);

@@ -24,26 +24,42 @@ class ResearchAndWrite extends PipelineJob
     protected function run(Capture $capture): void
     {
         $artwork = $capture->artwork;
+        $place = $capture->place;
 
-        if ($artwork === null) {
+        if ($artwork === null && $place === null) {
             throw new \RuntimeException('Kein Werk an der Aufnahme.');
         }
 
-        $existing = $artwork->research;
+        $existing = $place !== null ? $place->research : $artwork->research;
         $capture->forceFill(['step' => $existing !== null ? PipelineStep::Writing : PipelineStep::Researching])->save();
         $context = app(ContextBuilder::class)->build($capture);
-        $museum = $capture->visit?->museum ?? $artwork->museum;
+        $museum = $capture->visit?->museum ?? $artwork?->museum;
         $labelText = $capture->photos->filter(fn ($p) => $p->type !== PhotoType::Artwork)->pluck('ocr_text')->filter()->implode("\n");
         $words = ($capture->length ?? GuideLength::Normal)->words();
         $maxSearches = (int) config('museumguide.research.max_searches', 4);
 
         $result = app(ClaudeClient::class)->structured(AiPurpose::Script, [['role' => 'user', 'content' => 'Recherchiere, schreibe Skript und Fact Sheet und liefere alles als JSON.']], Schemas::guide(), [
-            'system' => Prompts::render('guide', [
+            'system' => $place !== null ? Prompts::render('place-guide', [
                 'max_searches' => $existing !== null ? 0 : $maxSearches,
-                'title' => $artwork->title,
-                'artist' => $artwork->artist?->name ?? 'unbekannt',
-                'dating' => $artwork->dating ?? 'ohne Datierung',
-                'technique' => $artwork->technique ?? '',
+                'name' => $place->name,
+                'kind' => $place->kindLabel(),
+                'city' => $place->city?->name ?? 'Wien',
+                'address' => $place->address ? ', '.$place->address : '',
+                'architect' => $place->architect ?? 'unbekannt',
+                'built' => $place->built ?? 'unbekannt',
+                'description' => $place->description ?? 'keine',
+                'label_text' => $labelText !== '' ? $labelText : 'nichts',
+                'research' => $existing !== null ? ContextBuilder::researchText($existing) : 'keine',
+                'knowledge_profile' => $context['knowledge_profile'],
+                'knowledge_context' => $context['knowledge_context'],
+                'words_min' => $words['min'],
+                'words_max' => $words['max'],
+            ]) : Prompts::render('guide', [
+                'max_searches' => $existing !== null ? 0 : $maxSearches,
+                'title' => $artwork?->title ?? '',
+                'artist' => $artwork?->artist?->name ?? 'unbekannt',
+                'dating' => $artwork?->dating ?? 'ohne Datierung',
+                'technique' => $artwork?->technique ?? '',
                 'museum' => $museum?->name ?? '',
                 'city' => $museum?->city?->name ?? '',
                 'label_text' => $labelText !== '' ? $labelText : 'nichts',
@@ -66,7 +82,8 @@ class ResearchAndWrite extends PipelineJob
 
         if ($existing === null) {
             Research::query()->create([
-                'artwork_id' => $artwork->getKey(),
+                'artwork_id' => $artwork?->getKey(),
+                'place_id' => $place?->getKey(),
                 'summary' => (string) ($result['summary'] ?? ''),
                 'sources' => array_values(array_merge((array) ($result['sources'] ?? []), [['_facts' => $result['facts'] ?? []], ['_quotes' => $result['quotes'] ?? []], ['_vienna' => $result['vienna_links'] ?? []]])),
                 'existing_guides' => (array) ($result['existing_guides'] ?? []),
@@ -76,13 +93,13 @@ class ResearchAndWrite extends PipelineJob
                 'cost_cents' => (int) ($call?->cost_cents ?? 0),
             ]);
 
-            $artwork->fill(array_filter([
+            ($artwork ?? $place)->fill(array_filter([
                 'facts' => (array) ($result['facts'] ?? []),
-                'sources' => (array) ($result['sources'] ?? []),
-                'wikidata_id' => $result['wikidata_id'] ?? null,
+                'sources' => $artwork !== null ? (array) ($result['sources'] ?? []) : null,
+                'wikidata_id' => $artwork !== null ? ($result['wikidata_id'] ?? null) : null,
             ], fn (mixed $v): bool => $v !== null))->save();
 
-            if ($artwork->artist && ($artwork->artist->born_year === null || $artwork->artist->died_year === null)) {
+            if ($artwork?->artist && ($artwork->artist->born_year === null || $artwork->artist->died_year === null)) {
                 $artwork->artist->fill(array_filter(['born_year' => $result['artist_born'] ?? null, 'died_year' => $result['artist_died'] ?? null]))->save();
             }
         }

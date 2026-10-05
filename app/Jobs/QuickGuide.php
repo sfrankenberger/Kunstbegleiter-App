@@ -10,6 +10,7 @@ use App\Models\Epoch;
 use App\Services\Ai\ClaudeClient;
 use App\Services\Pipeline\Pipeline;
 use App\Services\Pipeline\Schemas;
+use App\Services\Places\WikiPlaces;
 use App\Support\Prompts;
 
 /**
@@ -34,12 +35,30 @@ class QuickGuide extends PipelineJob
         $content[] = ['type' => 'text', 'text' => 'Erkenne das Werk (Foto-Index beginnt bei 0) und schreibe gleich den Überblick als JSON.'];
         $words = (array) config('museumguide.quick.words', ['min' => 100, 'max' => 160]);
 
+        $profile = filled($capture->user->knowledge_profile) ? (string) $capture->user->knowledge_profile : 'Austria Guide in Wien, breites Vorwissen zur Kunstgeschichte.';
+        $placeMode = $capture->visit_id === null;
+        $nearby = 'keine';
+
+        if ($placeMode && $capture->lat !== null && $capture->lng !== null) {
+            $nearby = collect(app(WikiPlaces::class)->nearby((float) $capture->lat, (float) $capture->lng, (int) config('museumguide.places.poi_radius_m', 400), 25))
+                ->map(fn (array $p): string => $p['name'].' ('.$p['distance_m'].' m'.($p['architect'] ? ', '.$p['architect'] : '').($p['built'] ? ', '.$p['built'] : '').')')
+                ->implode('; ') ?: 'keine';
+        }
+
         $result = app(ClaudeClient::class)->structured(AiPurpose::Quick, [['role' => 'user', 'content' => $content]], Schemas::quickGuide(), [
-            'system' => Prompts::render('quick', [
+            'system' => $placeMode ? Prompts::render('place-quick', [
+                'city' => 'Wien',
+                'location' => $capture->lat !== null ? round((float) $capture->lat, 4).', '.round((float) $capture->lng, 4) : 'unbekannt',
+                'nearby' => $nearby,
+                'knowledge_profile' => $profile,
+                'epochs' => Epoch::query()->orderBy('sort_order')->pluck('name')->implode(', '),
+                'words_min' => $words['min'] ?? 100,
+                'words_max' => $words['max'] ?? 160,
+            ]) : Prompts::render('quick', [
                 'museum' => $museum?->name ?? 'unbekannt',
                 'city' => $capture->visit?->city?->name ?? $museum?->city?->name ?? 'unbekannt',
                 'museum_notes' => RecognizeArtwork::museumNotes($museum?->research),
-                'knowledge_profile' => filled($capture->user->knowledge_profile) ? (string) $capture->user->knowledge_profile : 'Austria Guide in Wien, breites Vorwissen zur Kunstgeschichte.',
+                'knowledge_profile' => $profile,
                 'epochs' => Epoch::query()->orderBy('sort_order')->pluck('name')->implode(', '),
                 'words_min' => $words['min'] ?? 100,
                 'words_max' => $words['max'] ?? 160,

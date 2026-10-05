@@ -7,6 +7,7 @@ use App\Enums\GuideMode;
 use App\Enums\PhotoType;
 use App\Models\Capture;
 use App\Models\CapturePhoto;
+use App\Models\Place;
 use App\Models\User;
 use App\Models\Visit;
 use App\Services\Pipeline\Pipeline;
@@ -60,6 +61,73 @@ class CaptureService
         $this->startPipeline($capture);
 
         return $capture;
+    }
+
+    /**
+     * Ort aus der Liste (Reiter Stadt): Aufnahme ohne Fotos und ohne Besuch, Pipeline startet gleich.
+     */
+    public function createForPlace(User $user, Place $place, ?GuideMode $mode = null, ?float $lat = null, ?float $lng = null): Capture
+    {
+        $capture = Capture::query()->create([
+            'user_id' => $user->getKey(),
+            'place_id' => $place->getKey(),
+            'status' => CaptureStatus::Uploaded,
+            'length' => $user->preferred_length?->value ?? 'normal',
+            'mode' => $mode ?? $user->default_mode ?? GuideMode::Quick,
+            'lat' => $lat ?? $place->lat,
+            'lng' => $lng ?? $place->lng,
+        ]);
+
+        $this->startPipeline($capture);
+
+        return $capture;
+    }
+
+    /**
+     * Foto in der Stadt (Reiter Stadt): Aufnahme ohne Besuch, Erkennung ordnet den Ort zu (PlaceMatcher).
+     *
+     * @param  list<UploadedFile>  $files
+     */
+    public function createForPlacePhoto(User $user, array $files, ?float $lat, ?float $lng, ?GuideMode $mode = null): Capture
+    {
+        $max = (int) config('museumguide.photos.max_per_capture', 3);
+
+        if ($files === [] || count($files) > $max) {
+            throw new InvalidArgumentException('Bitte 1 bis '.$max.' Fotos auswählen.');
+        }
+
+        $capture = Capture::query()->create([
+            'user_id' => $user->getKey(),
+            'status' => CaptureStatus::Uploaded,
+            'length' => $user->preferred_length?->value ?? 'normal',
+            'mode' => $mode ?? $user->default_mode ?? GuideMode::Quick,
+            'lat' => $lat,
+            'lng' => $lng,
+        ]);
+
+        $this->storePhotos($capture, $files);
+        $this->startPipeline($capture);
+
+        return $capture;
+    }
+
+    /**
+     * @param  list<UploadedFile>  $files
+     */
+    private function storePhotos(Capture $capture, array $files): void
+    {
+        foreach (array_values($files) as $index => $file) {
+            $path = $file->storeAs('captures/'.$capture->getKey(), ($index + 1).'.'.($file->guessExtension() ?: 'jpg'), self::DISK);
+            [$width, $height] = $this->dimensions($file);
+
+            $capture->photos()->create([
+                'path' => (string) $path,
+                'type' => $index === 0 ? PhotoType::Artwork : PhotoType::Label,
+                'width' => $width,
+                'height' => $height,
+                'sort_order' => $index,
+            ]);
+        }
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Livewire\Pages\Jetzt;
 use App\Livewire\Pages\Kuenstler;
 use App\Livewire\Pages\KuenstlerDetail;
 use App\Livewire\Pages\Profil;
+use App\Livewire\Pages\Stadt;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -36,6 +37,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('archiv', Archiv::class)->name('archiv');
     Route::get('kuenstler', Kuenstler::class)->name('kuenstler');
     Route::get('kuenstler/{artist}', KuenstlerDetail::class)->name('kuenstler.show');
+    Route::get('stadt', Stadt::class)->name('stadt');
     Route::get('profil', Profil::class)->name('profil');
     Route::post('abmelden', LogoutController::class)->name('logout');
 });

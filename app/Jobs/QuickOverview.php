@@ -23,23 +23,35 @@ class QuickOverview extends PipelineJob
     protected function run(Capture $capture): void
     {
         $artwork = $capture->artwork;
+        $place = $capture->place;
 
-        if ($artwork === null) {
+        if ($artwork === null && $place === null) {
             throw new \RuntimeException('Kein Werk an der Aufnahme.');
         }
 
         $capture->forceFill(['step' => PipelineStep::Writing])->save();
-        $museum = $capture->visit?->museum ?? $artwork->museum;
+        $museum = $capture->visit?->museum ?? $artwork?->museum;
         $labelText = $capture->photos->filter(fn ($p) => $p->type !== PhotoType::Artwork)->pluck('ocr_text')->filter()->implode("\n");
         $words = (array) config('museumguide.quick.words', ['min' => 100, 'max' => 160]);
+        $profile = filled($capture->user->knowledge_profile) ? (string) $capture->user->knowledge_profile : 'Austria Guide in Wien, breites Vorwissen zur Kunstgeschichte.';
 
         $result = app(ClaudeClient::class)->structured(AiPurpose::Quick, [['role' => 'user', 'content' => 'Schreibe jetzt Kurztext und Fact Sheet als JSON.']], Schemas::script(), [
-            'system' => Prompts::render('quick-text', [
-                'knowledge_profile' => filled($capture->user->knowledge_profile) ? (string) $capture->user->knowledge_profile : 'Austria Guide in Wien, breites Vorwissen zur Kunstgeschichte.',
-                'title' => $artwork->title,
-                'artist' => $artwork->artist?->name ?? 'unbekannt',
-                'dating' => $artwork->dating ?? 'ohne Datierung',
-                'technique' => $artwork->technique ?? '',
+            'system' => $place !== null ? Prompts::render('place-quick-text', [
+                'knowledge_profile' => $profile,
+                'name' => $place->name,
+                'kind' => $place->kindLabel(),
+                'city' => $place->city?->name ?? 'Wien',
+                'architect' => $place->architect ?? 'unbekannt',
+                'built' => $place->built ?? 'unbekannt',
+                'description' => $place->description ?? 'keine',
+                'words_min' => $words['min'] ?? 100,
+                'words_max' => $words['max'] ?? 160,
+            ]) : Prompts::render('quick-text', [
+                'knowledge_profile' => $profile,
+                'title' => $artwork?->title ?? '',
+                'artist' => $artwork?->artist?->name ?? 'unbekannt',
+                'dating' => $artwork?->dating ?? 'ohne Datierung',
+                'technique' => $artwork?->technique ?? '',
                 'museum' => $museum?->name ?? '',
                 'city' => $museum?->city?->name ?? '',
                 'label_text' => $labelText !== '' ? $labelText : 'keine',
@@ -63,12 +75,12 @@ class QuickOverview extends PipelineJob
      */
     public static function fetchImages(Capture $capture, array $sheet): void
     {
-        if ($capture->artwork_id === null) {
+        if ($capture->artwork_id === null && $capture->place_id === null) {
             return;
         }
 
         if ((bool) config('museumguide.images.enabled', true)) {
-            FetchImages::dispatch((int) $capture->artwork_id, array_values(array_filter((array) ($sheet['sections']['related_works'] ?? []), 'is_array')));
+            FetchImages::dispatch($capture->artwork_id !== null ? (int) $capture->artwork_id : null, array_values(array_filter((array) ($sheet['sections']['related_works'] ?? []), 'is_array')), $capture->place_id !== null ? (int) $capture->place_id : null);
         }
 
         $artist = $capture->artwork?->artist;

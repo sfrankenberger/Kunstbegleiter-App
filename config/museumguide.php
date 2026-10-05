@@ -132,6 +132,9 @@ return [
     // auto: google, wenn ein Schluessel da ist (Admin > Zugaenge oder .env), sonst fake.
     'places' => [
         'provider' => env('MUSEUMGUIDE_PLACES', 'auto'),
+        // Reiter Stadt: Umkreis fuer Orte aus Wikidata (Meter) und Zeitlimit der SPARQL-Abfrage
+        'poi_radius_m' => (int) env('MUSEUMGUIDE_POI_RADIUS', 400),
+        'wikidata_timeout' => 12,
         'key' => env('GOOGLE_PLACES_KEY'),
         'radius_m' => (int) env('MUSEUMGUIDE_PLACES_RADIUS', 300),
     ],

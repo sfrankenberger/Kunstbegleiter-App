@@ -13,6 +13,7 @@ use App\Services\Ai\ClaudeClient;
 use App\Services\Captures\CaptureService;
 use App\Services\Pipeline\ArtworkMatcher;
 use App\Services\Pipeline\Pipeline;
+use App\Services\Pipeline\PlaceMatcher;
 use App\Services\Pipeline\Schemas;
 use App\Support\Prompts;
 
@@ -106,7 +107,11 @@ class RecognizeArtwork extends PipelineJob
             return false;
         }
 
-        app(ArtworkMatcher::class)->attach($capture, $recognition);
+        if ($capture->visit_id === null) {
+            app(PlaceMatcher::class)->attach($capture, $recognition);
+        } else {
+            app(ArtworkMatcher::class)->attach($capture, $recognition);
+        }
 
         return true;
     }

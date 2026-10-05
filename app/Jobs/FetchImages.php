@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Artwork;
+use App\Models\Place;
 use App\Models\RelatedWork;
 use App\Services\Images\WikiImages;
 use Illuminate\Bus\Queueable;
@@ -27,7 +28,53 @@ class FetchImages implements ShouldQueue
     /**
      * @param  list<array<string, mixed>>  $relatedWorks
      */
-    public function __construct(public readonly int $artworkId, public readonly array $relatedWorks = []) {}
+    public function __construct(public readonly ?int $artworkId, public readonly array $relatedWorks = [], public readonly ?int $placeId = null) {}
+
+    /**
+     * Ort: Bild nachholen, wenn keines da ist, und Vergleichsbauten mit Bild.
+     */
+    private function handlePlace(WikiImages $images): void
+    {
+        $place = Place::query()->find($this->placeId);
+
+        if ($place === null) {
+            return;
+        }
+
+        if ($place->image_url === null) {
+            $found = $images->find($place->name, $place->wikidata_id, null);
+            $place->forceFill(['image_url' => $found['url'] ?? null, 'image_credit' => $found['credit'] ?? null, 'wikidata_id' => $place->wikidata_id ?: ($found['wikidata_id'] ?? null)])->save();
+        }
+
+        if ($this->relatedWorks === []) {
+            return;
+        }
+
+        $place->relatedWorks()->delete();
+
+        foreach (array_slice($this->relatedWorks, 0, (int) config('museumguide.images.max_related', 6)) as $i => $work) {
+            $title = trim((string) ($work['title'] ?? ''));
+
+            if ($title === '') {
+                continue;
+            }
+
+            $who = trim((string) ($work['artist'] ?? ''));
+            $found = $images->find($title, null, $who !== '' ? self::surname($who) : null);
+
+            RelatedWork::query()->create([
+                'place_id' => $place->getKey(),
+                'title' => $title,
+                'artist' => $who !== '' ? $who : null,
+                'year' => filled($work['year'] ?? null) ? mb_substr((string) $work['year'], 0, 40) : null,
+                'reason' => filled($work['reason'] ?? null) ? mb_substr((string) $work['reason'], 0, 500) : null,
+                'wikidata_id' => $found['wikidata_id'] ?? null,
+                'image_url' => $found['url'] ?? null,
+                'image_credit' => $found['credit'] ?? null,
+                'sort_order' => $i,
+            ]);
+        }
+    }
 
     /**
      * Nachname fuer den Abgleich mit der Wikidata-Beschreibung ("Gemaelde von Gustav Klimt").
@@ -41,6 +88,12 @@ class FetchImages implements ShouldQueue
 
     public function handle(WikiImages $images): void
     {
+        if ($this->placeId !== null) {
+            $this->handlePlace($images);
+
+            return;
+        }
+
         $artwork = Artwork::query()->with('artist')->find($this->artworkId);
 
         if ($artwork === null) {
