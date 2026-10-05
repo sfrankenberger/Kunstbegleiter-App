@@ -1,6 +1,6 @@
 <div class="flex flex-col gap-4" @if ($capture->isRunning()) wire:poll.4s @elseif ($imagesPending) wire:poll.5s @endif>
     @php($bullets = fn (mixed $v): array => is_array($v) ? array_values(array_filter(array_map(fn ($x) => is_array($x) ? ($x['text'] ?? '') : (string) $x, $v), 'filled')) : array_values(array_filter(preg_split('/(?<=[.!?])\s+/u', (string) $v) ?: [], 'filled')))
-    <div class="kb-card flex gap-3">
+    <div class="kb-card kb-title-card flex gap-3">
         <div class="min-w-0 flex-1">
             <p class="text-xs uppercase tracking-wide text-stone-500">{{ $capture->place ? $capture->place->kindLabel().($capture->place->city ? ', '.$capture->place->city->name : '') : ($capture->visit?->museum?->name ?? ($capture->visit_id === null ? 'Stadt' : 'Ohne Museum')) }} · {{ $capture->created_at->format('d.m.Y H:i') }}</p>
             <p class="mt-1 text-lg font-semibold">{{ $capture->place?->name ?? $capture->artwork?->title ?? ($capture->recognition['title'] ?? ($capture->visit_id === null ? 'Ort wird erkannt' : 'Werk wird erkannt')) }}</p>

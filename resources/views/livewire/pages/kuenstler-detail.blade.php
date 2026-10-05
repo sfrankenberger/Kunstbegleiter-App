@@ -1,6 +1,6 @@
 <div class="flex flex-col gap-4">
     @php($bullets = fn (mixed $v): array => is_array($v) ? array_values(array_filter(array_map(fn ($x) => is_array($x) ? ($x['text'] ?? '') : (string) $x, $v), 'filled')) : array_values(array_filter(preg_split('/(?<=[.!?])\s+/u', (string) $v) ?: [], 'filled')))
-    <div class="kb-card flex gap-3">
+    <div class="kb-card kb-title-card flex gap-3">
         @if ($artist->portrait_url)
             <img src="{{ $artist->portrait_url }}" alt="" class="h-28 w-24 shrink-0 rounded-xl bg-stone-100 object-cover" title="{{ $artist->portrait_credit }}">
         @endif
