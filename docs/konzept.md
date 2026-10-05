@@ -45,14 +45,15 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 
 - Eigene Plesk-Sites im Abo tourtool.app: `art.tourtool.app` (Verzeichnis `/var/www/vhosts/tourtool.app/art.tourtool.app`, Document Root `.../public`) und `art-staging.tourtool.app` (Basic-Auth). Datenbanken `kunst` und `kunst_staging`.
 - Redis Instanz 6380, DB 6 live, DB 7 staging, Präfix `kunst_` bzw. `kunst_stg_`. Cache, Session und Queue über Redis (lokal und in Tests database bzw. array).
-- Queue-Worker als systemd-Dienst (`deploy/kunst-queue.service`), Neustart im `deploy.sh` per sudoers (`deploy/sudoers-kunst`). Scheduler per Cron.
+- Queue-Worker als systemd-Dienst (`deploy/kunst-queue.service`), Neustart nach dem Deploy über `kunst-queue-reload.path` (wie Tourtool, kein sudo). Bis Root die Dienste anlegt, läuft der Worker per Cron mit `--stop-when-empty`. Scheduler per Cron.
+- PHP-Handler `plesk-php85-fastcgi` (LiteSpeed), nicht FPM (05.10.2026, Abschnitt 2 in docs/betrieb.md).
 - Datensicherung über `app-register` und die Seite Admin > Datensicherungen (`BackupRestoreService`, nur mit `BACKUP_APP`). Fotos und MP3 in `storage/app/private` liegen im restic-Backup.
 - Live-Fortschritt vorerst per Polling (`wire:poll`), Reverb erst, wenn es stört.
 - Details Schritt für Schritt in `docs/betrieb.md`.
 
-## 7. Offen nach Etappe 1
+## 7. Offen nach Etappe 1 (Stand 05.10.2026)
 
-- Server einrichten (docs/betrieb.md Abschnitt 2), Staging zuerst.
+- Server: Staging und Live laufen (05.10.2026, Etappe 1 auf `main` gemergt und deployt). Offen sind die Root-Schritte systemd und app-register (docs/betrieb.md Abschnitt 2, Punkte 6 und 7).
 - Etappe 2: GPS, Museum über Places, Besuch starten, Fotos aufnehmen und hochladen.
 - Datei `claude/laravel-apps-betrieb.md` ins Repo legen, falls sie bei Sebastian liegt.
 - TTS-Anbieter wählen, Google-Places-Schlüssel anlegen, Martha ab Etappe 3.

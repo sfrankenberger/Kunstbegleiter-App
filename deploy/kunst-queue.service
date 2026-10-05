@@ -1,20 +1,23 @@
-# Queue-Worker fuer Kunstbegleiter (live). Vorlage nach tourtool-queue-*.service, docs/betrieb.md.
+# Queue-Worker fuer Kunstbegleiter (live), Vorlage nach tourtool-queue-prod.service (docs/betrieb.md Abschnitt 2).
 # Installieren (als root):
 #   cp deploy/kunst-queue.service /etc/systemd/system/kunst-queue.service
-#   systemctl daemon-reload && systemctl enable --now kunst-queue
-# Staging: Datei kopieren als kunst-staging-queue.service, WorkingDirectory auf art-staging.tourtool.app aendern.
+#   cp deploy/kunst-queue-reload.path /etc/systemd/system/ && cp deploy/kunst-queue-reload.service /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now kunst-queue kunst-queue-reload.path
+# Staging: dieselben drei Dateien mit "kunst-staging-queue" im Namen und art-staging.tourtool.app im Pfad.
+# Danach die Cron-Zeile "queue:work --stop-when-empty" der jeweiligen Site aus der Crontab nehmen.
 [Unit]
-Description=Kunstbegleiter queue worker
-After=network.target redis-server.service mariadb.service
+Description=Kunstbegleiter Queue-Worker (prod)
+After=network.target mariadb.service redis-server@laravel.service
+Wants=redis-server@laravel.service
 
 [Service]
-Type=simple
-User=tourtool
+User=tourtool.app_fo1m7ym28n
 Group=psacln
 WorkingDirectory=/var/www/vhosts/tourtool.app/art.tourtool.app
-ExecStart=/opt/plesk/php/8.5/bin/php artisan queue:work --sleep=2 --tries=3 --max-time=3600 --timeout=300
+ExecStart=/opt/plesk/php/8.5/bin/php artisan queue:work --sleep=2 --tries=3 --max-time=3600 --timeout=300 --memory=256
 Restart=always
 RestartSec=5
+Nice=10
 StandardOutput=append:/var/www/vhosts/tourtool.app/art.tourtool.app/storage/logs/queue.log
 StandardError=append:/var/www/vhosts/tourtool.app/art.tourtool.app/storage/logs/queue.log
 

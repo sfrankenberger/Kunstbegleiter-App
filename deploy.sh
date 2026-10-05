@@ -3,8 +3,10 @@
 # Laeuft jede Minute per Cron. Deployt nur, wenn der Remote-Branch neuer ist als der Server-Stand.
 # Manuell erzwingen: $APP_DIR/deploy.sh --force
 #
-# Live:     APP_DIR=/var/www/vhosts/tourtool.app/art.tourtool.app BRANCH=main QUEUE_SERVICE=kunst-queue ./deploy.sh
-# Staging:  APP_DIR=/var/www/vhosts/tourtool.app/art-staging.tourtool.app BRANCH=staging QUEUE_SERVICE=kunst-staging-queue SEED_AFTER_MIGRATE=1 ./deploy.sh
+# Live:     APP_DIR=/var/www/vhosts/tourtool.app/art.tourtool.app BRANCH=main ./deploy.sh
+# Staging:  APP_DIR=/var/www/vhosts/tourtool.app/art-staging.tourtool.app BRANCH=staging SEED_AFTER_MIGRATE=1 ./deploy.sh
+# Der Queue-Worker (systemd) startet sich ueber kunst-queue-reload.path selbst neu, sobald "optimize" die
+# Datei bootstrap/cache/config.php schreibt (deploy/kunst-queue-reload.path). Kein sudo noetig.
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-$(cd "$(dirname "$0")" && pwd)}"
@@ -13,7 +15,6 @@ PHP="${PHP:-/opt/plesk/php/8.5/bin/php}"
 COMPOSER="${COMPOSER:-/opt/psa/var/modules/composer/composer.phar}"
 LOCK_FILE="${DEPLOY_LOCK:-$HOME/.deploy-$(basename "$APP_DIR").lock}"
 SEED_AFTER_MIGRATE="${SEED_AFTER_MIGRATE:-0}"
-QUEUE_SERVICE="${QUEUE_SERVICE:-}"
 
 cd "$APP_DIR"
 exec 9>"$LOCK_FILE"
@@ -38,10 +39,5 @@ $PHP artisan migrate --force
 $PHP artisan db:seed --force
 $PHP artisan optimize:clear
 $PHP artisan optimize
-
-# Queue-Worker (systemd) neu starten, damit er den neuen Code nimmt (sudoers-Eintrag, docs/betrieb.md)
-if [ -n "$QUEUE_SERVICE" ]; then
-  sudo -n systemctl restart "$QUEUE_SERVICE" || echo "WARN: $QUEUE_SERVICE konnte nicht neu gestartet werden"
-fi
 
 echo "=== $(date '+%F %T') fertig ==="

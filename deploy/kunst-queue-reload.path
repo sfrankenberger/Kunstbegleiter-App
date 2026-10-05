@@ -1,0 +1,11 @@
+# Startet den Queue-Worker nach jedem Deploy neu (deploy.sh schreibt bootstrap/cache/config.php bei "optimize").
+# Kein sudo noetig, gleiche Loesung wie bei Tourtool.
+[Unit]
+Description=Kunstbegleiter Queue-Worker (prod) nach Deploy neu starten
+
+[Path]
+PathChanged=/var/www/vhosts/tourtool.app/art.tourtool.app/bootstrap/cache/config.php
+Unit=kunst-queue-reload.service
+
+[Install]
+WantedBy=multi-user.target

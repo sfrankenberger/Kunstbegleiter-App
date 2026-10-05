@@ -13,13 +13,24 @@ Stand: 04.10.2026. Keine Passwörter in dieser Datei, die stehen nur in den `.en
 | Document Root | `.../art.tourtool.app/public` | `.../art-staging.tourtool.app/public` |
 | Datenbank | `kunst` (Benutzer `kunst_app`) | `kunst_staging` (Benutzer `kunst_stg`) |
 | Redis | 127.0.0.1:6380, DB 6, Präfix `kunst_` | 127.0.0.1:6380, DB 7, Präfix `kunst_stg_` |
-| Queue-Dienst | `kunst-queue.service` | `kunst-staging-queue.service` |
+| Queue-Worker | bis zur systemd-Einrichtung per Cron (`queue:work --stop-when-empty`), danach `kunst-queue.service` | wie live, danach `kunst-staging-queue.service` |
+| Basic-Auth | keine | Benutzer `kunst` (Plesk > Passwortgeschützte Verzeichnisse) |
+| PHP-Handler | `plesk-php85-fastcgi` (LiteSpeed, wie alle Sites am Server; mit `plesk-php85-fpm` antwortet LiteSpeed 403) | gleich |
 | Backup-App | `BACKUP_APP=kunst-prod` | `BACKUP_APP=kunst-staging` |
 | Deploy-Log | `~/logs/deploy-kunst.log` | `~/logs/deploy-kunst-staging.log` |
 
 Beide Sites laufen im Plesk-Abo `tourtool.app` auf srv.iksf.de, PHP 8.5 (FPM), Composer `/opt/psa/var/modules/composer/composer.phar`, DNS bei Cloudflare.
 
 ## 2. Einrichtung (einmalig, Staging zuerst)
+
+**Stand 05.10.2026:** Schritte 1 bis 5 und 8 sind für Staging und Live erledigt (Claude über die Plesk- und Cloudflare-Anbindung). Offen sind nur die Root-Schritte 6 und 7 (systemd, app-register), bis dahin laufen die Queue-Worker per Cron. Beide Sites antworten unter https://art-staging.tourtool.app (Basic-Auth) und https://art.tourtool.app; Sebastian hat je Umgebung einen Admin-Zugang (Passwort beim Anlegen ausgegeben, ändern oder Passkey anlegen).
+
+Besonderheiten, die beim Einrichten aufgefallen sind:
+
+- Der Deploy-Key `~/.ssh/github_deploy` gehört nur zum Tourtool-Repo. Für Kunstbegleiter nutzt der Server den Benutzer-Schlüssel `~/.ssh/id_rsa` über den SSH-Alias `github-kunst` in `~/.ssh/config` (`git@github-kunst:sfrankenberger/Kunstbegleiter-App.git`).
+- Der Redis-Server auf 6380 braucht ein Passwort; es steht in der `.env` von Tourtool (`REDIS_PASSWORD`) und wurde übernommen.
+- LiteSpeed liefert mit dem Handler `plesk-php85-fpm` nur 403 ("MIME type application/x-httpd-php does not allow serving as static file"); alle Sites am Server laufen mit `plesk-php85-fastcgi`.
+- Plesk legt `.htaccess`-Basic-Auth über "Passwortgeschützte Verzeichnisse" an (`plesk bin protdir`).
 
 1. **Plesk:** Websites und Domains > tourtool.app > Subdomain hinzufügen `art-staging` (später `art`), Document Root `art-staging.tourtool.app/public`, PHP 8.5 FPM. Staging: Passwortgeschützte Verzeichnisse auf `/`. Zertifikat über Let's Encrypt in Plesk.
 2. **DNS (Cloudflare, Zone tourtool.app):** `art-staging` und `art` als A auf 85.214.17.182 (Proxy an; zum ersten Ausstellen des Zertifikats kurz aus).
@@ -38,10 +49,11 @@ Beide Sites laufen im Plesk-Abo `tourtool.app` auf srv.iksf.de, PHP 8.5 (FPM), C
    ```
 5. **Cron (Abo-Benutzer, Shell `/bin/bash`):**
    ```
-   * * * * * APP_DIR=/var/www/vhosts/tourtool.app/art-staging.tourtool.app BRANCH=staging QUEUE_SERVICE=kunst-staging-queue SEED_AFTER_MIGRATE=1 /var/www/vhosts/tourtool.app/art-staging.tourtool.app/deploy.sh >> /var/www/vhosts/tourtool.app/logs/deploy-kunst-staging.log 2>&1
+   * * * * * APP_DIR=/var/www/vhosts/tourtool.app/art-staging.tourtool.app BRANCH=staging SEED_AFTER_MIGRATE=1 /var/www/vhosts/tourtool.app/art-staging.tourtool.app/deploy.sh >> /var/www/vhosts/tourtool.app/logs/deploy-kunst-staging.log 2>&1
    * * * * * cd /var/www/vhosts/tourtool.app/art-staging.tourtool.app && /opt/plesk/php/8.5/bin/php artisan schedule:run >> /dev/null 2>&1
+   * * * * * cd /var/www/vhosts/tourtool.app/art-staging.tourtool.app && /opt/plesk/php/8.5/bin/php artisan queue:work --stop-when-empty --max-time=50 --tries=3 >> /dev/null 2>&1   # bis systemd läuft
    ```
-6. **Queue-Worker (root):** `deploy/kunst-queue.service` nach `/etc/systemd/system/kunst-staging-queue.service` kopieren, `WorkingDirectory` und Log-Pfad auf `art-staging.tourtool.app` ändern, `systemctl daemon-reload && systemctl enable --now kunst-staging-queue`. Sudoers aus `deploy/sudoers-kunst` nach `/etc/sudoers.d/kunst` (Rechte 0440).
+6. **Queue-Worker (root):** die drei Dateien aus `deploy/` (`kunst-queue.service`, `kunst-queue-reload.path`, `kunst-queue-reload.service`) nach `/etc/systemd/system/` kopieren, für Staging als `kunst-staging-queue*` mit Pfad `art-staging.tourtool.app`, dann `systemctl daemon-reload && systemctl enable --now kunst-queue kunst-queue-reload.path` (bzw. staging). Der `.path`-Dienst startet den Worker nach jedem Deploy neu, wie bei Tourtool, ohne sudo. Danach die Cron-Zeile `queue:work --stop-when-empty` der Site aus der Crontab nehmen. Sudoers aus `deploy/sudoers-kunst` nach `/etc/sudoers.d/kunst` (Rechte 0440, nur für `app-restore`).
 7. **Backup (root):** `app-register add kunst-staging ...` (Verzeichnis und Datenbank), dann `BACKUP_APP=kunst-staging` in die `.env`. Wiederherstellungen werden nur auf Staging geprobt.
 8. **Prüfen:** `curl -sI https://art-staging.tourtool.app/up` antwortet 200, `/anmelden` zeigt die Anmeldung, `/manifest.webmanifest` den Namen Kunstbegleiter, `systemctl status kunst-staging-queue` läuft.
 
@@ -63,7 +75,7 @@ Live genauso mit `art`, `main`, `kunst`, `kunst-queue`, `kunst-prod`, ohne `SEED
 | `BACKUP_APP` | `kunst-prod` / `kunst-staging` |
 | `MAIL_*` | ab Etappe 5 echter Versand (Kopplungs-Einladung) |
 
-Nach `.env`-Änderungen: `/opt/plesk/php/8.5/bin/php artisan optimize:clear && ... artisan optimize`, danach `sudo systemctl restart kunst-queue`.
+Nach `.env`-Änderungen: `/opt/plesk/php/8.5/bin/php artisan optimize:clear && ... artisan optimize`; der Queue-Worker startet über den `.path`-Dienst von selbst neu.
 
 ## 4. Ablauf einer Änderung
 

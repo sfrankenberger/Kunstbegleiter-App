@@ -1,0 +1,6 @@
+[Unit]
+Description=Kunstbegleiter Queue-Worker (prod) neu starten
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl try-restart kunst-queue.service

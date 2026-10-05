@@ -49,7 +49,7 @@ Wenn eine Entscheidung fällt: `docs/konzept.md` im selben Commit aktualisieren.
 ## Stand (04.10.2026)
 
 - Etappe 1 (Fundament) gebaut: Auth mit Passkeys, PWA-Hülle mit vier Reitern, Admin (Nutzer, Datensicherungen), Papierkorb, Verlauf, Datenmodell mit 18 Tabellen, Schnittstellen für KI, TTS und Ort mit Fakes, CI, deploy.sh, systemd-Vorlage. 53 Tests.
-- Offen: Server einrichten (docs/betrieb.md Abschnitt 2), dann Etappe 2 (GPS, Museum über Places, Besuch, Fotos).
+- 05.10.2026: Etappe 1 auf `main`, Staging (art-staging.tourtool.app, Basic-Auth) und Live (art.tourtool.app) eingerichtet und deployt. Offen am Server: systemd-Dienste und app-register (Root, docs/betrieb.md Abschnitt 2). Nächster Schritt: Etappe 2 (GPS, Museum über Places, Besuch, Fotos).
 - Lokal PHP 8.5 nötig (php.new), Tests mit `vendor/bin/pest`, Stil mit `vendor/bin/pint`, CSS mit `bin/build-css`.
 
 ## Commits
