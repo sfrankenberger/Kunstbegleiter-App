@@ -159,6 +159,16 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 
 
 
+## 23. Reiter Stadt: Begleiter unterwegs (Sebastian, 05.10.2026: "Ja")
+
+- Fünfter Reiter Stadt (`/stadt`, `App\Livewire\Pages\Stadt`), Reihenfolge Jetzt, Archiv, Künstler, Stadt, Profil. Drei Wege von Anfang an: "Orte in der Nähe suchen" (GPS), "Ort eingeben", "Foto machen", dazu der Schalter "Gleich ausführlich". Kein Archiv, nur "Zuletzt angesehen" (letzte zehn Ort-Aufnahmen).
+- **Orte aus Wikidata** (`App\Services\Places\WikiPlaces`, kostenlos, ohne Schlüssel): SPARQL-Umkreissuche (`wikibase:around`, Radius `museumguide.places.poi_radius_m` = 400 m) nach Einträgen mit Koordinaten und mindestens einem Wikipedia-Artikel; Straßen, Haltestellen, Verwaltungseinheiten und Personen fallen weg; Art (Statue, Denkmal, Gebäude, Kirche, Platz, Brücke, Brunnen, Park) aus den Wikidata-Klassen, dazu Bild (P18), Architekt (P84), Baujahr (P571), Beschreibung, Entfernung. Namenssuche über `wbsearchentities` plus Detailabfrage. Orte liegen in `places` (Schlüssel Wikidata-ID, Stadt Wien innerhalb der Stadtgrenzen automatisch), mit Recherche (`research.place_id`) und Vergleichsbauten (`related_works.place_id`).
+- **Guide über die bestehende Pipeline:** Eine Aufnahme kann auf einen Ort zeigen (`captures.place_id`, `visit_id` dann leer, `lat`/`lng` am Capture). Ort aus der Liste: keine Erkennung, schnell = `QuickOverview` mit Prompt `place-quick-text.md`, ausführlich = `ResearchAndWrite` mit `place-guide.md` (Websuche in Wien Geschichte Wiki, Bundesdenkmalamt, Architektenlexikon), dann Stimmen, Musik, Bilder, Vergleichsbauten wie beim Werk. Foto in der Stadt: `QuickGuide` mit `place-quick.md` bekommt die Wikidata-Treffer im Umkreis als Hilfe, `PlaceMatcher` ordnet den erkannten Namen dem nächsten Treffer zu (Umlaute und Zusätze tolerant), sonst Namenssuche, sonst Ort nur mit Namen.
+- **Ort-Seite** ist die Werk-Seite mit anderen Beschriftungen: Kopf mit Art, Stadt, Architekt und Baujahr und dem Wikidata-Bild (oder dem eigenen Foto), Abschnitte Architekt und Bauherr, Baugeschichte, Umbauten und Restaurierungen, Zeit und Stil, Vor Ort hinschauen, Nutzung und Anekdoten, Vergleichsbauten. Kein "Mehr zum Künstler" (Architektenprofile später).
+- Offen für Schritt 2: historische Karten (Kulturgut Wien), Architektenprofile im Reiter Künstler, Google Places als Ergänzung für Orte ohne Wikidata-Eintrag.
+
+## 8. Offen nach Etappe 3 (Stand 05.10.2026)
+
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.
 - Stimmen-IDs in `config/museumguide.php` (`tts.elevenlabs.voices`) auf echte Stimmen setzen.
 - Entscheidung schnell/ausführlich (Abschnitt 10, letzter Punkt).
