@@ -8,6 +8,7 @@
             <p class="text-sm text-stone-600">{{ $capture->recognition['artist'] }}</p>
         @endif
         <div class="mt-2 flex items-center gap-2">
+            <span class="rounded-full bg-stone-100 px-2 py-1 text-xs text-stone-600">{{ $capture->mode?->short() ?? 'Schnell' }}</span>
             @if ($capture->isRunning())
                 <span class="inline-block h-3 w-3 animate-pulse rounded-full bg-accent"></span>
             @endif
@@ -73,6 +74,40 @@
                     <input type="range" min="0" :max="duration" step="1" :value="position" @input="seek($event)" class="w-full">
                     <p class="text-xs text-stone-500"><span x-text="time(position)"></span> / <span x-text="time(duration)"></span></p>
                 </div>
+            @elseif ($segments->isNotEmpty() && ! $capture->isRunning())
+                <div
+                    x-data="{
+                        text: @js($segments->pluck('text')->implode(' ')),
+                        state: 'idle', rate: 1, supported: 'speechSynthesis' in window,
+                        voice() {
+                            const voices = window.speechSynthesis.getVoices();
+                            return voices.find(v => v.lang === 'de-AT') || voices.find(v => v.lang.startsWith('de')) || null;
+                        },
+                        play() {
+                            if (this.state === 'paused') { window.speechSynthesis.resume(); this.state = 'playing'; return; }
+                            window.speechSynthesis.cancel();
+                            const u = new SpeechSynthesisUtterance(this.text);
+                            u.lang = 'de-AT'; u.rate = this.rate; const v = this.voice(); if (v) u.voice = v;
+                            u.onend = () => { this.state = 'idle' }; u.onerror = () => { this.state = 'idle' };
+                            window.speechSynthesis.speak(u); this.state = 'playing';
+                        },
+                        pause() { window.speechSynthesis.pause(); this.state = 'paused' },
+                        stop() { window.speechSynthesis.cancel(); this.state = 'idle' },
+                        speed() { const rates = [0.8, 1, 1.2, 1.5]; this.rate = rates[(rates.indexOf(this.rate) + 1) % rates.length]; if (this.state === 'playing') this.play() },
+                        destroy() { window.speechSynthesis.cancel() }
+                    }"
+                    class="flex flex-col gap-2"
+                >
+                    <template x-if="supported">
+                        <div class="flex items-center gap-3">
+                            <button type="button" class="kb-button flex-1" @click="state === 'playing' ? pause() : play()" x-text="state === 'playing' ? 'Pause' : (state === 'paused' ? 'Weiter' : 'Vorlesen lassen')"></button>
+                            <button type="button" class="kb-button-secondary" @click="stop()" x-show="state !== 'idle'">Von vorn</button>
+                            <button type="button" class="kb-button-secondary" @click="speed()" x-text="rate + '×'"></button>
+                        </div>
+                    </template>
+                    <p class="text-xs text-stone-500" x-show="supported">Handy-Stimme (am iPhone Siri), ohne Kosten. Für die Studio-Stimme unten den ausführlichen Guide erstellen.</p>
+                    <p class="text-sm text-stone-600" x-show="! supported">Dieser Browser kann nicht vorlesen. Der Text steht unten zum Lesen.</p>
+                </div>
             @else
                 <p class="text-sm text-stone-600">Noch kein Audio. {{ $capture->isRunning() ? 'Die Stimme kommt gleich.' : 'Der Text steht unten zum Lesen.' }}</p>
             @endif
@@ -88,6 +123,14 @@
                     @endforeach
                 </div>
             </div>
+        </div>
+    @endif
+
+    @if ($capture->isQuick() && $capture->isDone() && $capture->artwork_id)
+        <div class="kb-card flex flex-col gap-2">
+            <p class="font-semibold">Mehr zu diesem Werk?</p>
+            <p class="text-sm text-stone-600">Der ausführliche Guide recherchiert im Netz, prüft die Fakten und wird von der Studio-Stimme gesprochen. Dauert einige Minuten, kostet etwa 20 bis 40 Cent.</p>
+            <button type="button" class="kb-button" wire:click="upgrade" wire:loading.attr="disabled">Ausführlichen Guide erstellen</button>
         </div>
     @endif
 

@@ -40,6 +40,7 @@ class Aufnahme extends Component
         $this->authorize('view', $capture);
         $this->capture = $capture;
         $this->showPhotos = ! $capture->isDone();
+        $this->showScript = $capture->isQuick();
     }
 
     /**
@@ -82,6 +83,21 @@ class Aufnahme extends Component
 
         $recognition = array_merge((array) ($this->capture->recognition ?? []), ['title' => $title, 'artist' => trim($this->manualArtist) !== '' ? trim($this->manualArtist) : null]);
         $this->startWith($recognition);
+    }
+
+    /**
+     * Aus der Schnellstufe den ausfuehrlichen Guide nachbestellen.
+     */
+    public function upgrade(): void
+    {
+        $this->authorize('update', $this->capture);
+
+        try {
+            app(Pipeline::class)->upgrade($this->capture);
+            $this->notice = '';
+        } catch (RuntimeException $e) {
+            $this->notice = $e->getMessage();
+        }
     }
 
     public function retry(): void

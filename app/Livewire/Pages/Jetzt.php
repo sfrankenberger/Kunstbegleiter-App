@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages;
 
+use App\Enums\GuideMode;
 use App\Enums\PhotoType;
 use App\Models\Museum;
 use App\Models\User;
@@ -50,6 +51,14 @@ class Jetzt extends Component
     public array $photos = [];
 
     public string $uploadError = '';
+
+    /** Ausfuehrlichen Guide gleich erstellen (sonst Schnellstufe, Standard aus dem Profil). */
+    public bool $full = false;
+
+    public function mount(): void
+    {
+        $this->full = $this->user()->default_mode === GuideMode::Full;
+    }
 
     /**
      * Standort vom Browser: Museen in der Naehe suchen. Genau ein Treffer startet den Besuch sofort.
@@ -155,7 +164,7 @@ class Jetzt extends Component
         }
 
         try {
-            $capture = app(CaptureService::class)->create($this->user(), $visit, $this->photos);
+            $capture = app(CaptureService::class)->create($this->user(), $visit, $this->photos, $this->full ? GuideMode::Full : GuideMode::Quick);
         } catch (InvalidArgumentException $e) {
             $this->uploadError = $e->getMessage();
 

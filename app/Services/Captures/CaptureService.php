@@ -3,6 +3,7 @@
 namespace App\Services\Captures;
 
 use App\Enums\CaptureStatus;
+use App\Enums\GuideMode;
 use App\Enums\PhotoType;
 use App\Models\Capture;
 use App\Models\CapturePhoto;
@@ -27,7 +28,7 @@ class CaptureService
     /**
      * @param  list<UploadedFile>  $files
      */
-    public function create(User $user, Visit $visit, array $files): Capture
+    public function create(User $user, Visit $visit, array $files, ?GuideMode $mode = null): Capture
     {
         $max = (int) config('museumguide.photos.max_per_capture', 3);
 
@@ -39,6 +40,7 @@ class CaptureService
             'user_id' => $user->getKey(),
             'status' => CaptureStatus::Uploaded,
             'length' => $user->preferred_length?->value ?? 'normal',
+            'mode' => $mode ?? $user->default_mode ?? GuideMode::Quick,
         ]);
 
         foreach (array_values($files) as $index => $file) {

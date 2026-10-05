@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\GuideLength;
+use App\Enums\GuideMode;
 use App\Models\Concerns\LogsChanges;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -16,7 +17,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Passkeys\Contracts\PasskeyUser;
 use Laravel\Passkeys\PasskeyAuthenticatable;
 
-#[Fillable(['name', 'email', 'password', 'knowledge_profile', 'focus_areas', 'preferred_length', 'voice_preferences', 'monthly_budget_cents', 'is_admin'])]
+#[Fillable(['name', 'email', 'password', 'knowledge_profile', 'focus_areas', 'preferred_length', 'default_mode', 'voice_preferences', 'monthly_budget_cents', 'is_admin'])]
 #[Hidden(['password', 'remember_token'])]
 /**
  * Ein Nutzer (Sebastian, Martha) mit eigenem Vorwissen-Profil und eigenem Lerngedaechtnis (docs/grundgeruest.md).
@@ -38,6 +39,7 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
             'focus_areas' => 'array',
             'voice_preferences' => 'array',
             'preferred_length' => GuideLength::class,
+            'default_mode' => GuideMode::class,
             'is_admin' => 'boolean',
         ];
     }

@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages;
 
 use App\Enums\GuideLength;
+use App\Enums\GuideMode;
 use App\Models\AiCall;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -21,6 +22,8 @@ class Profil extends Component
 
     public string $preferred_length = 'normal';
 
+    public string $default_mode = 'quick';
+
     public bool $saved = false;
 
     public function mount(): void
@@ -28,6 +31,7 @@ class Profil extends Component
         $user = $this->user();
         $this->knowledge_profile = (string) $user->knowledge_profile;
         $this->preferred_length = $user->preferred_length?->value ?? GuideLength::Normal->value;
+        $this->default_mode = $user->default_mode?->value ?? GuideMode::Quick->value;
     }
 
     public function save(): void
@@ -35,6 +39,7 @@ class Profil extends Component
         $data = $this->validate([
             'knowledge_profile' => ['nullable', 'string', 'max:2000'],
             'preferred_length' => ['required', Rule::enum(GuideLength::class)],
+            'default_mode' => ['required', Rule::enum(GuideMode::class)],
         ]);
 
         $this->user()->fill($data)->save();
@@ -50,6 +55,7 @@ class Profil extends Component
         return view('livewire.pages.profil', [
             'user' => $user,
             'lengths' => GuideLength::cases(),
+            'modes' => GuideMode::cases(),
             'spentCents' => $spent,
             'limitCents' => $limit,
             'percent' => $limit > 0 ? min(100, (int) round($spent / $limit * 100)) : 0,

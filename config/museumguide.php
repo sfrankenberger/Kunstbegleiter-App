@@ -19,6 +19,7 @@ return [
         'default' => env('MUSEUMGUIDE_MODEL_DEFAULT', 'claude-sonnet-5-5'),
         'recognize' => env('MUSEUMGUIDE_MODEL_RECOGNIZE', 'claude-sonnet-5-5'),
         'research' => env('MUSEUMGUIDE_MODEL_RESEARCH', 'claude-sonnet-5-5'),
+        'quick' => env('MUSEUMGUIDE_MODEL_QUICK', 'claude-sonnet-5-5'),
         'script' => env('MUSEUMGUIDE_MODEL_SCRIPT', 'claude-sonnet-5-5'),
         'script_premium' => env('MUSEUMGUIDE_MODEL_SCRIPT_PREMIUM', 'claude-opus-5-5'),
         'check' => env('MUSEUMGUIDE_MODEL_CHECK', 'claude-sonnet-5-5'),
@@ -103,6 +104,11 @@ return [
     ],
 
     // Skript: Woerter je Laenge (App\Enums\GuideLength), Rueckbezuege je Guide
+    // Schnellstufe: Kurztext ohne Websuche, vom Handy vorgelesen (docs/konzept.md Abschnitt 11)
+    'quick' => [
+        'words' => ['min' => 150, 'max' => 250],
+    ],
+
     'script' => [
         'words' => [
             'short' => ['min' => 200, 'max' => 260],

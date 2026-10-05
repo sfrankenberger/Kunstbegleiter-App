@@ -83,7 +83,14 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Claude-API-Regeln** (aus der Doku, Stand 05.10.2026): Modell-IDs ohne Datum (`claude-sonnet-5-5`, `claude-opus-5-5`, `claude-haiku-4-5`), strukturierte Ausgabe über `output_config.format` (JSON-Schema mit `additionalProperties: false`, alle Felder required), Anstrengung über `output_config.effort`, Server-Rückfall `fallbacks: default` mit Beta-Header nur für Sonnet 5.5 und Opus 5.5, `stop_reason refusal` wird als Fehler gemeldet, nie `tool_choice` erzwingen.
 - **Seite Aufnahme:** Fortschritt, Rückfrage, Player (Anhören, 15 Sekunden zurück, Tempo 0,8 bis 1,5), Daumen und Schwierigkeit (`audio_guides.feedback`, `difficulty_feedback`), Kurzfakten, Kernaussagen, Für deine Gäste, Querverweise, Text zum Mitlesen (zugeklappt), Quellen, Fotos (zugeklappt, sobald fertig), Kosten der Aufnahme, "Erneut versuchen" (`Pipeline::retry` setzt ab dem letzten erreichten Stand fort).
 - **Tests:** `tests/Feature/PipelineTest.php` mit `Http::fake`-Sequenzen (Queue in Tests synchron, eine Kette läuft sofort durch). Keine echten Aufrufe in Tests.
-- **Idee (Sebastian, 05.10.2026, noch nicht entschieden):** zwei Stufen je Aufnahme. "Schnell": Erkennung plus Kurzübersicht ohne Websuche, vorgelesen vom Handy (Web Speech API, auf dem iPhone die Siri-Stimmen, kostenlos, sofort). "Ausführlich": die ganze Kette mit Recherche, Faktencheck und ElevenLabs, auf Knopfdruck aus der Schnellstufe heraus. Vorschlag in der Sitzung vom 05.10.2026, Bau nach Sebastians Ja.
+- Zwei Stufen je Aufnahme: siehe Abschnitt 11.
+
+## 11. Schnell oder ausführlich (Sebastian, 05.10.2026: "ja baue das alles so")
+
+- **Warum:** Sebastian will oft nur einen kurzen Überblick vor einem Bild, manchmal den guten Guide. Zwei Stufen je Aufnahme (`captures.mode`, Enum `GuideMode`: quick, full), Standard je Nutzer (`users.default_mode`, im Profil einstellbar, Vorgabe schnell), beim Fotografieren per Schalter "Gleich ausführlich" umschaltbar.
+- **Schnell:** Erkennung wie gehabt (mit Rückfrage), dann ein einziger Aufruf `QuickOverview` (Sonnet 5.5, geringe Anstrengung, keine Websuche, Prompt `quick.md`, 150 bis 250 Wörter nach `museumguide.quick.words`, nur was das Modell sicher weiß). Ergebnis: Kurztext als Audioguide ohne MP3 (`tts_provider` browser) und Fact Sheet. Vorgelesen vom Handy über die Web Speech API (`speechSynthesis`, Sprache de-AT, am iPhone die Siri-Stimmen): Vorlesen, Pause, Von vorn, Tempo. Kein Rückspulen um 15 Sekunden (kann die Browser-Stimme nicht). Dauer etwa 20 bis 40 Sekunden, Kosten wenige Cent. Keine Recherche, kein Lerngedächtnis.
+- **Ausführlich:** die Kette aus Abschnitt 10. Aus der Schnellstufe heraus über "Ausführlichen Guide erstellen" (`Pipeline::upgrade`): Werk und Erkennung bleiben, es läuft Recherche bis Merken; der neue Audioguide ersetzt den Kurztext in der Anzeige (`latestOfMany`), der alte bleibt in der Datenbank.
+- "Erneut versuchen" kennt die Stufe: schnell wiederholt den einen Aufruf, ausführlich setzt beim letzten Stand fort.
 
 ## 8. Offen nach Etappe 3 (Stand 05.10.2026)
 

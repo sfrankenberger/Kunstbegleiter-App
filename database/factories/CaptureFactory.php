@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\CaptureStatus;
 use App\Enums\GuideLength;
+use App\Enums\GuideMode;
 use App\Models\Artwork;
 use App\Models\Capture;
 use App\Models\User;
@@ -23,6 +24,7 @@ class CaptureFactory extends Factory
             'artwork_id' => null,
             'status' => CaptureStatus::Uploaded,
             'length' => GuideLength::Normal,
+            'mode' => GuideMode::Full,
             'recognition' => null,
         ];
     }

@@ -3,9 +3,12 @@
 use App\Contracts\TtsProvider;
 use App\Enums\AiPurpose;
 use App\Enums\CaptureStatus;
+use App\Enums\GuideMode;
 use App\Enums\PipelineStep;
 use App\Jobs\SynthesizeAudio;
 use App\Livewire\Pages\Aufnahme;
+use App\Livewire\Pages\Jetzt;
+use App\Livewire\Pages\Profil;
 use App\Models\AiCall;
 use App\Models\Artwork;
 use App\Models\Capture;
@@ -19,6 +22,7 @@ use App\Services\Captures\CaptureService;
 use App\Services\Pipeline\Pipeline;
 use App\Services\Tts\ElevenLabsTtsProvider;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -89,12 +93,72 @@ function knowledgeJson(): array
     return ['artist_summary' => 'Goldene Periode, Blattgold, Staatskauf 1908.', 'epoch_summary' => 'Jugendstil als Gesamtkunstwerk.'];
 }
 
-function captureWithPhotos(User $user, ?Museum $museum = null): Capture
+function captureWithPhotos(User $user, ?Museum $museum = null, GuideMode $mode = GuideMode::Full): Capture
 {
     $visit = Visit::factory()->for($user)->create(['museum_id' => $museum?->getKey()]);
 
-    return app(CaptureService::class)->create($user, $visit, [UploadedFile::fake()->image('werk.jpg', 600, 400), UploadedFile::fake()->image('schild.jpg', 400, 300)]);
+    return app(CaptureService::class)->create($user, $visit, [UploadedFile::fake()->image('werk.jpg', 600, 400), UploadedFile::fake()->image('schild.jpg', 400, 300)], $mode);
 }
+
+test('the quick mode needs one call after recognition, no web search, no mp3, and can be upgraded', function () {
+    Http::fake(['api.anthropic.com/*' => Http::sequence()
+        ->push(claudeJson(recognitionJson()))
+        ->push(claudeJson(scriptJson()))
+        ->push(claudeJson(researchJson()))
+        ->push(claudeJson(scriptJson()))
+        ->push(claudeJson(checkJson()))
+        ->push(claudeJson(knowledgeJson())),
+    ]);
+    $user = User::factory()->create();
+
+    $capture = captureWithPhotos($user, null, GuideMode::Quick)->fresh();
+
+    expect($capture->mode)->toBe(GuideMode::Quick)
+        ->and($capture->status)->toBe(CaptureStatus::Done)
+        ->and($capture->artwork->title)->toBe('Der Kuss')
+        ->and($capture->artwork->research)->toBeNull()
+        ->and($capture->audioGuide->audio_path)->toBeNull()
+        ->and($capture->audioGuide->tts_provider)->toBe('browser')
+        ->and($capture->factSheet->key_statements)->toHaveCount(1)
+        ->and(AiCall::query()->where('capture_id', $capture->getKey())->count())->toBe(2)
+        ->and(AiCall::query()->where('purpose', AiPurpose::Quick)->exists())->toBeTrue();
+    Http::assertSent(fn ($request) => ! isset($request['tools']) && str_contains((string) $request['system'], 'schnellen Überblick'));
+
+    Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])
+        ->assertSee('Vorlesen lassen')
+        ->assertSee('Ausführlichen Guide erstellen')
+        ->assertSee('Vor dir hängt')
+        ->call('upgrade');
+
+    $capture->refresh();
+    expect($capture->mode)->toBe(GuideMode::Full)
+        ->and($capture->status)->toBe(CaptureStatus::Done)
+        ->and($capture->artwork->research)->not->toBeNull()
+        ->and($capture->audioGuides()->count())->toBe(2)
+        ->and($capture->audioGuide->audio_path)->not->toBeNull()
+        ->and($capture->audioGuide->tts_provider)->toBe('fake');
+});
+
+test('the profile default and the switch on jetzt decide the mode', function () {
+    Bus::fake();
+    $user = User::factory()->create(['default_mode' => GuideMode::Full]);
+    Visit::factory()->for($user)->create();
+
+    Livewire::actingAs($user)->test(Profil::class)
+        ->assertSet('default_mode', 'full')
+        ->set('default_mode', 'quick')
+        ->call('save');
+    expect($user->fresh()->default_mode)->toBe(GuideMode::Quick);
+
+    Livewire::actingAs($user)->test(Jetzt::class)
+        ->assertSet('full', false)
+        ->set('full', true)
+        ->set('photos', [UploadedFile::fake()->image('werk.jpg')])
+        ->assertSee('Ausführlichen Guide erstellen')
+        ->call('createCapture');
+
+    expect(Capture::query()->first()->mode)->toBe(GuideMode::Full);
+});
 
 test('a capture runs through the whole chain to a finished guide', function () {
     Http::fake(['api.anthropic.com/*' => Http::sequence()

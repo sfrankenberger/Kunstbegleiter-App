@@ -45,7 +45,8 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Aktiver Besuch, verlängern | `User::activeVisit()`, `Visit::extend()`, `Visit::remainingMinutes()`, `Visit::scopeActive()` |
 | Besuch starten, Museum aus Places oder von Hand, beenden, Stadt aus Adresse | `App\Services\Visits\VisitService` |
 | Aufnahme anlegen (Fotos speichern, Besuch verlängern, Pipeline starten), endgültig entfernen | `App\Services\Captures\CaptureService` |
-| Pipeline starten, nach Bestätigung fortsetzen, erneut versuchen, Monatslimit prüfen | `App\Services\Pipeline\Pipeline` |
+| Pipeline starten, nach Bestätigung fortsetzen (schnell oder ausführlich), ausführlich nachbestellen, erneut versuchen, Monatslimit prüfen | `App\Services\Pipeline\Pipeline` |
+| Schnellstufe (ein Aufruf, Kurztext und Fact Sheet, Handy liest vor) | `App\Jobs\QuickOverview`, `resources/prompts/quick.md`, Browser-Stimme in `resources/views/livewire/pages/aufnahme.blade.php` |
 | Werk und Künstler zuordnen oder anlegen | `App\Services\Pipeline\ArtworkMatcher` |
 | Kontext für das Skript (Vorwissen, Besuch, Lerngedächtnis, Quellen) | `App\Services\Pipeline\ContextBuilder` |
 | JSON-Schemas der KI-Antworten | `App\Services\Pipeline\Schemas` |
@@ -56,7 +57,7 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Kopplung, Partner | `Pairing::between()`, `Pairing::partnerOf()`, `User::partner()` |
 | Kosten je Nutzer und Monat | `AiCall::monthCents()`, `User::monthlyLimitCents()` |
 | Epochen | `Database\Seeders\EpochSeeder` (läuft bei jedem Deploy) |
-| Enums | `App\Enums\{CaptureStatus, PipelineStep, PhotoType, PairingStatus, GuideLength, TipKind, AiPurpose}` |
+| Enums | `App\Enums\{CaptureStatus, PipelineStep, PhotoType, PairingStatus, GuideLength, GuideMode, TipKind, AiPurpose}` |
 
 ## KI, Stimmen, Ort
 
