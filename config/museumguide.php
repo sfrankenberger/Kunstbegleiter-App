@@ -117,6 +117,7 @@ return [
         'width' => 640,
         'timeout' => 8,
         'max_related' => 6,
+        'search_limit' => 10,
     ],
 
     // Ort: Google Places hinter App\Contracts\PlacesClient (auto, fake, google). Etappe 2.

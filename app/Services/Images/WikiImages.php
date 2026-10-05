@@ -53,7 +53,7 @@ class WikiImages
     private function searchEntity(string $search, ?string $mustContain): ?string
     {
         foreach (['de', 'en'] as $language) {
-            $hits = (array) $this->get(self::WIKIDATA, ['action' => 'wbsearchentities', 'search' => $search, 'language' => $language, 'uselang' => 'de', 'type' => 'item', 'limit' => 5, 'format' => 'json'])['search'] ?? [];
+            $hits = (array) $this->get(self::WIKIDATA, ['action' => 'wbsearchentities', 'search' => $search, 'language' => $language, 'uselang' => 'de', 'type' => 'item', 'limit' => (int) config('museumguide.images.search_limit', 10), 'format' => 'json'])['search'] ?? [];
 
             foreach ($hits as $hit) {
                 $haystack = mb_strtolower(($hit['label'] ?? '').' '.($hit['description'] ?? ''));
