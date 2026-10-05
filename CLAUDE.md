@@ -18,7 +18,8 @@ Wenn eine Entscheidung fällt: `docs/konzept.md` im selben Commit aktualisieren.
 - Sebastian Frankenberger, kommuniziert auf Deutsch. Antworten und UI-Texte auf Deutsch (österreichisch), Code, Bezeichner und Commit-Messages auf Englisch.
 - **Niemals den langen Gedankenstrich (Em-Dash) verwenden**, weder in Texten, UI, Doku noch Antworten.
 - Erst prüfen, dann vorschlagen, dann bauen. Etappen (Grundgerüst, Abschnitt Etappen) erst nach Sebastians OK bauen.
-- Alles über das Repo, am Server nichts von Hand ändern. Erst `staging`, dann `main`.
+- Alles über das Repo, am Server nichts von Hand ändern.
+- **Bauphase (Sebastian, 05.10.2026: "direkt auf der App, kein Staging"):** Die App ist nur für Sebastian, nichts Verkauftes. Darum direkt auf `main` pushen, kein PR, kein Staging. CI läuft auf main und meldet Rot, dann sofort nachbessern. Lokal vor dem Push Pint und die Tests der geänderten Bereiche. Ausnahme: Migrationen, die bestehende Daten verändern oder löschen, vorher ankündigen. Die Site art-staging.tourtool.app bleibt bestehen, wird aber nicht mehr bespielt (Branch `staging` ruht).
 - Pest-Tests für alles Neue. KI- und TTS-Aufrufe in Tests immer mit Fakes (`Http::fake()`), nie echte Kosten.
 - Alle Prompts in `resources/prompts/`, alle Modellnamen und Limits in `config/museumguide.php`.
 - KI-Antworten als JSON mit Schema anfordern und validieren, kaputte Antworten einmal neu anfragen.
@@ -42,7 +43,7 @@ Wenn eine Entscheidung fällt: `docs/konzept.md` im selben Commit aktualisieren.
 
 ## Server und Deployment
 
-- Plesk-Server srv.iksf.de, Abo tourtool.app, Sites art.tourtool.app (`main`) und art-staging.tourtool.app (`staging`, Basic-Auth)
+- Plesk-Server srv.iksf.de, Abo tourtool.app, Site art.tourtool.app (`main`). art-staging.tourtool.app (`staging`, Basic-Auth) ruht seit 05.10.2026.
 - PHP-Binary `/opt/plesk/php/8.5/bin/php`, Composer `/opt/psa/var/modules/composer/composer.phar`
 - `deploy.sh` per Cron jede Minute; `.env` nur am Server, nie committen
 - Details in `docs/betrieb.md`

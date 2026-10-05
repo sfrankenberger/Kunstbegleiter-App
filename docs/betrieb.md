@@ -81,10 +81,14 @@ Nach `.env`-Änderungen: `/opt/plesk/php/8.5/bin/php artisan optimize:clear && .
 
 ## 4. Ablauf einer Änderung
 
-1. Feature-Branch, lokal Pint und die Tests der geänderten Bereiche, bei Oberflächen ein Screenshot je Seite bei 390 px.
-2. Nach `staging` mergen und pushen, der Server holt den Stand innerhalb einer Minute (`deploy.sh`), auf dem iPhone in Safari prüfen.
-3. Passt es: nach `main` mergen (Pull Request mit grüner CI). Live-Deploy innerhalb einer Minute, kurze Wartungsseite während `composer install` und `migrate`.
-4. Nach jedem Merge das Deploy-Log auf FAIL prüfen, bei Zweifel `php artisan migrate:status` am Server.
+**Bauphase (Sebastian, 05.10.2026):** direkt auf `main`, kein PR, kein Staging. Die App ist nur für Sebastian.
+
+1. Lokal Pint und die Tests der geänderten Bereiche, bei Oberflächen ein Screenshot je Seite bei 390 px.
+2. Auf `main` pushen. Der Server holt den Stand innerhalb einer Minute (`deploy.sh`), kurze Wartungsseite während `composer install` und `migrate`. Auf dem iPhone in Safari prüfen.
+3. Nach jedem Push das Deploy-Log auf FAIL prüfen, bei Zweifel `php artisan migrate:status` am Server. Meldet CI Rot: sofort nachbessern.
+4. Migrationen, die bestehende Daten verändern oder löschen, vorher ankündigen.
+
+Staging (art-staging.tourtool.app, Branch `staging`) bleibt eingerichtet, wird aber nicht mehr bespielt. Wenn später Martha oder Kunden mitarbeiten: Staging wieder bespielen, PR mit grüner CI vor dem Deploy.
 
 ## 5. Lokal
 

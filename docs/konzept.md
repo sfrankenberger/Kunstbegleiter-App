@@ -92,6 +92,10 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Ausführlich:** die Kette aus Abschnitt 10. Aus der Schnellstufe heraus über "Ausführlichen Guide erstellen" (`Pipeline::upgrade`): Werk und Erkennung bleiben, es läuft Recherche bis Merken; der neue Audioguide ersetzt den Kurztext in der Anzeige (`latestOfMany`), der alte bleibt in der Datenbank.
 - "Erneut versuchen" kennt die Stufe: schnell wiederholt den einen Aufruf, ausführlich setzt beim letzten Stand fort.
 
+## 12. Arbeitsweise in der Bauphase (Sebastian, 05.10.2026)
+
+- "Können wir das direkt auf der App machen, bei der kleinen App brauche ich kein Staging." Entscheidung: direkt auf `main`, kein PR, kein Staging, solange nur Sebastian die App nutzt. Details in `CLAUDE.md` und `docs/betrieb.md` Abschnitt 4. PR #5 (Etappe 3) wurde so direkt gemergt.
+
 ## 8. Offen nach Etappe 3 (Stand 05.10.2026)
 
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.
