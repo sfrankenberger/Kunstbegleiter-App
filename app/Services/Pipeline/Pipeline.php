@@ -32,8 +32,15 @@ class Pipeline
         $capture->forceFill(['status' => CaptureStatus::Uploaded, 'step' => PipelineStep::Recognizing, 'error_message' => null, 'needs_confirmation' => false])->save();
 
         if ($capture->isPlace() && $capture->photos()->doesntExist()) {
-            // Ort aus der Liste gewaehlt: nichts zu erkennen
-            $this->continueAfterRecognition($capture);
+            // Ort aus der Liste gewaehlt: nichts zu erkennen. Ueber die Queue, damit die Seite sofort wechselt
+            // und den Fortschritt zeigt (Sebastian, 05.10.2026: "dauert ewig, keine Klick-Animation")
+            $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => $capture->isQuick() ? PipelineStep::Writing : PipelineStep::Researching, 'needs_confirmation' => false])->save();
+
+            if ($capture->isQuick()) {
+                $this->queue([new QuickOverview($capture->getKey())]);
+            } else {
+                $this->queue([new ResearchAndWrite($capture->getKey()), new SynthesizeAudio($capture->getKey()), new UpdateKnowledge($capture->getKey())]);
+            }
 
             return;
         }

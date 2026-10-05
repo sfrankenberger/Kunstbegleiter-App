@@ -39,7 +39,7 @@
         <div class="kb-card flex flex-col gap-2">
             <p class="font-semibold">In der Nähe</p>
             @foreach ($nearby as $place)
-                <button type="button" class="flex items-center gap-3 rounded-xl border border-stone-200 p-2 text-left" wire:click="choose('{{ \App\Services\Places\PlaceFinder::key($place) }}')" wire:loading.attr="disabled">
+                <button type="button" class="flex items-center gap-3 rounded-xl border border-stone-200 p-2 text-left active:bg-accent-soft" wire:click="choose('{{ \App\Services\Places\PlaceFinder::key($place) }}')" wire:loading.attr="disabled" wire:loading.class="opacity-40" wire:target="choose">
                     @if ($place['image'])
                         <img src="{{ $place['image'] }}" alt="" class="h-16 w-16 shrink-0 rounded-lg bg-stone-100 object-cover" loading="lazy">
                     @else
@@ -52,7 +52,7 @@
                     </span>
                 </button>
             @endforeach
-            <div wire:loading wire:target="choose" class="text-sm text-stone-600">{{ $full ? 'Erkenne den Ort ...' : 'Schreibe den Überblick ...' }}</div>
+            <div wire:loading wire:target="choose" class="flex items-center gap-2 text-sm text-stone-600"><span class="inline-block h-3 w-3 animate-pulse rounded-full bg-accent"></span> Ort wird angelegt ...</div>
         </div>
     @endif
 
