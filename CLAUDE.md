@@ -5,9 +5,11 @@ Kunstbegleiter (Arbeitstitel, art.tourtool.app) erzeugt im Museum aus 1 bis 3 Fo
 ## Vor jeder Arbeit lesen
 
 1. `docs/grundgeruest.md` - fachliches Grundgerüst (Ziel, Datenmodell, Pipeline, Dramaturgie, Etappen)
-2. `docs/plan-etappe-1.md` - Plan und Entscheidungen für das Fundament
-3. `docs/konzept.md` - Entscheidungen und Projektstand (wird ab Etappe 1 geführt)
-4. `docs/funktionen.md` - Funktionsinventar (vor jeder Arbeit prüfen, nach jeder Arbeit ergänzen)
+2. `docs/konzept.md` - Entscheidungen und Projektstand (die Wahrheit für fachliche und technische Fragen)
+3. `docs/funktionen.md` - Funktionsinventar (vor jeder Arbeit prüfen, nach jeder Arbeit ergänzen)
+4. `docs/betrieb.md` - Server, Umgebungen, Einrichtung, lokale Entwicklung
+5. `docs/plan-etappe-1.md` - der Plan, nach dem das Fundament gebaut wurde
+6. `AGENTS.md` - Laravel-Richtlinien (Boost)
 
 Wenn eine Entscheidung fällt: `docs/konzept.md` im selben Commit aktualisieren.
 
@@ -42,7 +44,13 @@ Wenn eine Entscheidung fällt: `docs/konzept.md` im selben Commit aktualisieren.
 - Plesk-Server srv.iksf.de, Abo tourtool.app, Sites art.tourtool.app (`main`) und art-staging.tourtool.app (`staging`, Basic-Auth)
 - PHP-Binary `/opt/plesk/php/8.5/bin/php`, Composer `/opt/psa/var/modules/composer/composer.phar`
 - `deploy.sh` per Cron jede Minute; `.env` nur am Server, nie committen
-- Details in `docs/betrieb.md` (ab Etappe 1)
+- Details in `docs/betrieb.md`
+
+## Stand (04.10.2026)
+
+- Etappe 1 (Fundament) gebaut: Auth mit Passkeys, PWA-Hülle mit vier Reitern, Admin (Nutzer, Datensicherungen), Papierkorb, Verlauf, Datenmodell mit 18 Tabellen, Schnittstellen für KI, TTS und Ort mit Fakes, CI, deploy.sh, systemd-Vorlage. 53 Tests.
+- Offen: Server einrichten (docs/betrieb.md Abschnitt 2), dann Etappe 2 (GPS, Museum über Places, Besuch, Fotos).
+- Lokal PHP 8.5 nötig (php.new), Tests mit `vendor/bin/pest`, Stil mit `vendor/bin/pint`, CSS mit `bin/build-css`.
 
 ## Commits
 

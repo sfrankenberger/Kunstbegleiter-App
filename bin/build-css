@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Tailwind-CSS der Handy-Oberflaeche bauen und einchecken (kein Node am Server, docs/betrieb.md).
+# Aufruf lokal: bin/build-css   (braucht einmal `npm install`)
+set -euo pipefail
+cd "$(dirname "$0")/.."
+npx @tailwindcss/cli -i resources/css/app.css -o public/css/app.css --minify
+echo "public/css/app.css gebaut, bitte mit einchecken."
