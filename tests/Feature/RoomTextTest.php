@@ -1,7 +1,9 @@
 <?php
 
 use App\Enums\GuideMode;
+use App\Enums\PhotoType;
 use App\Livewire\Pages\Jetzt;
+use App\Models\Capture;
 use App\Models\RoomText;
 use App\Models\User;
 use App\Models\Visit;
@@ -54,4 +56,19 @@ test('a room text is scanned, kept in the archive and used as context for the ne
     $foreign = RoomText::factory()->create(['text' => 'fremd']);
     $other = app(CaptureService::class)->create($user, $visit, [UploadedFile::fake()->image('w.jpg')], GuideMode::Quick, $foreign);
     expect($other->room_text_id)->toBeNull();
+});
+
+test('a room text photographed first is dropped and the artwork photo stays', function () {
+    $user = User::factory()->create();
+    $visit = Visit::factory()->for($user)->create();
+    $capture = Capture::factory()->for($visit)->for($user)->create();
+    Storage::disk('local')->put('captures/x/1.jpg', 'A');
+    Storage::disk('local')->put('captures/x/2.jpg', 'B');
+    $capture->photos()->create(['path' => 'captures/x/1.jpg', 'type' => PhotoType::RoomText, 'ocr_text' => 'Saal 3', 'sort_order' => 0]);
+    $capture->photos()->create(['path' => 'captures/x/2.jpg', 'type' => PhotoType::Artwork, 'sort_order' => 1]);
+
+    expect(app(CaptureService::class)->dropTextPhotos($capture->load('photos')))->toBe(1)
+        ->and($capture->fresh()->label_text)->toBe('Saal 3')
+        ->and($capture->fresh()->photos->pluck('path')->all())->toBe(['captures/x/2.jpg']);
+    Storage::disk('local')->assertMissing('captures/x/1.jpg');
 });

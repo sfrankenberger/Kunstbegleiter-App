@@ -156,7 +156,7 @@ class CaptureService
 
     /**
      * Fotos von Werk- und Raumtexten nach dem Ablesen loeschen, der Text wandert nach captures.label_text
-     * (Sebastian, 07.10.2026). Das erste Foto bleibt immer (das Werk). Liefert die Zahl der geloeschten Fotos.
+     * (Sebastian, 07.10.2026). Werkfotos bleiben, ohne Werkfoto das erste. Liefert die Zahl der geloeschten Fotos.
      */
     public function dropTextPhotos(Capture $capture): int
     {
@@ -164,6 +164,7 @@ class CaptureService
         $texts = [];
 
         $seen = [];
+        $hasArtwork = $capture->photos->contains(fn ($p) => $p->type === PhotoType::Artwork);
 
         foreach ($capture->photos->sortBy('sort_order')->values() as $index => $photo) {
             // Dasselbe Foto zweimal (Bestand vor dem 07.10.2026): nur einmal behalten
@@ -171,7 +172,8 @@ class CaptureService
             $duplicate = $hash !== null && in_array($hash, $seen, true);
             $seen[] = $hash;
 
-            if (! $duplicate && ($index === 0 || $photo->type === PhotoType::Artwork)) {
+            // Werkfotos bleiben; das erste Foto nur, wenn es gar kein Werkfoto gibt (Raumtext zuerst fotografiert)
+            if (! $duplicate && ($photo->type === PhotoType::Artwork || (! $hasArtwork && $index === 0))) {
                 continue;
             }
 
