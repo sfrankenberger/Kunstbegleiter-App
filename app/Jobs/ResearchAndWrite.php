@@ -5,7 +5,6 @@ namespace App\Jobs;
 use App\Enums\AiPurpose;
 use App\Enums\CaptureStatus;
 use App\Enums\GuideLength;
-use App\Enums\PhotoType;
 use App\Enums\PipelineStep;
 use App\Models\Capture;
 use App\Models\Research;
@@ -34,7 +33,7 @@ class ResearchAndWrite extends PipelineJob
         $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => $existing !== null ? PipelineStep::Writing : PipelineStep::Researching])->save();
         $context = app(ContextBuilder::class)->build($capture);
         $museum = $capture->visit?->museum ?? $artwork?->museum;
-        $labelText = $capture->photos->filter(fn ($p) => $p->type !== PhotoType::Artwork)->pluck('ocr_text')->filter()->implode("\n");
+        $labelText = $capture->labelText();
         $words = ($capture->length ?? GuideLength::Normal)->words();
         $maxSearches = (int) config('museumguide.research.max_searches', 4);
 
@@ -48,7 +47,7 @@ class ResearchAndWrite extends PipelineJob
                 'architect' => $place->architect ?? 'unbekannt',
                 'built' => $place->built ?? 'unbekannt',
                 'description' => $place->description ?? 'keine',
-                'label_text' => $labelText !== '' ? $labelText : 'nichts',
+                'label_text' => $labelText,
                 'research' => $existing !== null ? ContextBuilder::researchText($existing) : 'keine',
                 'knowledge_profile' => $context['knowledge_profile'],
                 'knowledge_context' => $context['knowledge_context'],
@@ -62,7 +61,7 @@ class ResearchAndWrite extends PipelineJob
                 'technique' => $artwork?->technique ?? '',
                 'museum' => $museum?->name ?? '',
                 'city' => $museum?->city?->name ?? '',
-                'label_text' => $labelText !== '' ? $labelText : 'nichts',
+                'label_text' => $labelText,
                 'museum_notes' => RecognizeArtwork::museumNotes($museum?->research),
                 'research' => $existing !== null ? $context['research'] : 'keine',
                 'knowledge_profile' => $context['knowledge_profile'],

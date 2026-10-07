@@ -58,17 +58,26 @@ class RecognizeArtwork extends PipelineJob
      */
     public static function imageBlock(CapturePhoto $photo): array
     {
-        $path = app(CaptureService::class)->photoPath($photo);
+        return self::imageBlockFromFile(app(CaptureService::class)->photoPath($photo), (int) $photo->width, (int) $photo->height);
+    }
+
+    /**
+     * Bildblock aus einer Datei (auch fuer Raumtexte).
+     *
+     * @return array<string, mixed>
+     */
+    public static function imageBlockFromFile(string $path, int $width, int $height): array
+    {
         $mime = (string) (mime_content_type($path) ?: 'image/jpeg');
         $edge = (int) config('museumguide.vision_edge', 1024);
         $data = (string) file_get_contents($path);
 
         // Verkleinern spart Zeit (weniger Bytes hochladen, weniger Bildtokens), GD ist am Server da
-        if ($edge > 0 && function_exists('imagecreatefromstring') && max((int) $photo->width, (int) $photo->height) > $edge) {
+        if ($edge > 0 && function_exists('imagecreatefromstring') && max($width, $height) > $edge) {
             $image = @imagecreatefromstring($data);
 
             if ($image !== false) {
-                $scaled = imagescale($image, (int) $photo->width >= (int) $photo->height ? $edge : -1, (int) $photo->width >= (int) $photo->height ? -1 : $edge);
+                $scaled = imagescale($image, $width >= $height ? $edge : -1, $width >= $height ? -1 : $edge);
 
                 if ($scaled !== false) {
                     ob_start();

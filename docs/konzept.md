@@ -101,6 +101,12 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Anzeige:** Umschalter Schnell / Vertiefend über dem Player, sobald beide da sind oder der vertiefende läuft. Standard ist der vertiefende, sobald er Audio hat, sonst die Schnellstufe (`Aufnahme::selectedGuide`). Kurzfakten und Abschnitte folgen dem gewählten Guide, Rückmeldung ebenso. Der Player bekommt je Guide einen eigenen Schlüssel, der globale Player wechselt die Quelle.
 - **Nachbestellen:** "Ausführlichen Guide erstellen" aus der Schnellstufe legt den vertiefenden dazu (Modus wird full), die Schnellstufe bleibt. "Erneut versuchen" überspringt die Schnellstufe, wenn sie schon da ist.
 
+## 11b. Raumtexte (Sebastian, 07.10.2026: "nur Raumtext scannen und es passiert nichts")
+
+- **Was:** Auf Jetzt gibt es "Raumtext scannen": ein Foto der Saaltafel, ein Vision-Aufruf (Sonnet, Prompt `room-text.md`, Schema `Schemas::roomText`) liest Überschrift und Text wortgetreu ab. Kein Guide, keine Pipeline. Tabelle `room_texts` (Nutzer, Besuch, Museum, Foto unter `room-texts/`, Titel, Text, Fehler, Kosten), Papierkorb und Änderungsprotokoll wie bei allen Geschäftsdaten.
+- **Verwenden:** Der frisch gescannte Raumtext ist für die nächsten Aufnahmen vorgewählt; unter dem Foto-Knopf stehen die Raumtexte des Besuchs als Chips, einer ist wählbar (Tipp = an oder aus). Beim Anlegen landet er in `captures.room_text_id`. `Capture::labelText()` hängt ihn an die abgelesenen Schildtexte an, bei der Schnellstufe geht er zusätzlich als Textblock zu den Fotos (Erkennung und Einordnung).
+- **Nachlesen:** Archiv listet Raumtexte unter den Werken (Suche über Titel und Text), Seite `raumtext/{id}` zeigt Text, Foto und die Werke, die ihn genutzt haben, mit Löschen. Foto nur signiert und nur für den Besitzer (`RoomTextPolicy`).
+
 ## 12. Arbeitsweise in der Bauphase (Sebastian, 05.10.2026)
 
 - "Können wir das direkt auf der App machen, bei der kleinen App brauche ich kein Staging." Entscheidung: direkt auf `main`, kein PR, kein Staging, solange nur Sebastian die App nutzt. Details in `CLAUDE.md` und `docs/betrieb.md` Abschnitt 4. PR #5 (Etappe 3) wurde so direkt gemergt.

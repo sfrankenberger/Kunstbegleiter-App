@@ -5,9 +5,11 @@ namespace App\Livewire\Pages;
 use App\Enums\GuideMode;
 use App\Enums\PhotoType;
 use App\Models\Museum;
+use App\Models\RoomText;
 use App\Models\User;
 use App\Models\Visit;
 use App\Services\Captures\CaptureService;
+use App\Services\Captures\RoomTextService;
 use App\Services\Visits\VisitService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
@@ -54,6 +56,14 @@ class Jetzt extends Component
 
     /** Ausfuehrlichen Guide gleich erstellen (sonst Schnellstufe, Standard aus dem Profil). */
     public bool $full = false;
+
+    /** Foto eines Raumtexts (nur ablesen, kein Guide), Sebastian 07.10.2026 */
+    public ?TemporaryUploadedFile $roomPhoto = null;
+
+    /** Gewaehlter Raumtext als Kontext fuer die naechsten Aufnahmen (null = keiner) */
+    public ?int $roomTextId = null;
+
+    public string $roomTextError = '';
 
     public function mount(): void
     {
@@ -147,6 +157,38 @@ class Jetzt extends Component
         }
     }
 
+    /**
+     * Raumtext scannen: Foto ablesen und merken, als Kontext fuer die naechsten Aufnahmen vorwaehlen.
+     */
+    public function scanRoomText(): void
+    {
+        $visit = $this->user()->activeVisit();
+        $this->roomTextError = '';
+
+        if ($this->roomPhoto === null) {
+            return;
+        }
+
+        try {
+            $this->validate(['roomPhoto' => ['image', 'max:'.(int) ((int) config('museumguide.photos.max_bytes', 8 * 1024 * 1024) / 1024)]], ['roomPhoto.image' => 'Nur Bilder sind erlaubt.', 'roomPhoto.max' => 'Das Foto ist zu groß.']);
+        } catch (ValidationException $e) {
+            $this->roomPhoto = null;
+            $this->roomTextError = $e->validator->errors()->first();
+
+            return;
+        }
+
+        $roomText = app(RoomTextService::class)->create($this->user(), $visit, $this->roomPhoto);
+        $this->roomPhoto = null;
+        $this->roomTextId = $roomText->getKey();
+        $this->roomTextError = (string) ($roomText->error ?? '');
+    }
+
+    public function toggleRoomText(int $id): void
+    {
+        $this->roomTextId = $this->roomTextId === $id ? null : $id;
+    }
+
     public function createCapture(): void
     {
         $visit = $this->user()->activeVisit();
@@ -164,7 +206,8 @@ class Jetzt extends Component
         }
 
         try {
-            $capture = app(CaptureService::class)->create($this->user(), $visit, $this->photos, $this->full ? GuideMode::Full : GuideMode::Quick);
+            $roomText = $this->roomTextId !== null ? RoomText::query()->whereBelongsTo($this->user())->find($this->roomTextId) : null;
+            $capture = app(CaptureService::class)->create($this->user(), $visit, $this->photos, $this->full ? GuideMode::Full : GuideMode::Quick, $roomText);
         } catch (InvalidArgumentException $e) {
             $this->uploadError = $e->getMessage();
 
@@ -184,6 +227,7 @@ class Jetzt extends Component
         return view('livewire.pages.jetzt', [
             'visit' => $visit,
             'captures' => $visit?->captures()->with(['artwork.artist', 'photos'])->latest()->get() ?? collect(),
+            'roomTexts' => $visit?->roomTexts()->latest()->limit(8)->get() ?? collect(),
             'photoTypes' => PhotoType::cases(),
             'maxPhotos' => (int) config('museumguide.photos.max_per_capture', 3),
             'maxEdge' => (int) config('museumguide.photos.max_edge', 2000),

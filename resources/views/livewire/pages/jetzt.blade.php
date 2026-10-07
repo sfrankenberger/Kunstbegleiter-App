@@ -62,6 +62,21 @@
                     });
                 },
                 clear() { this.blobs = []; this.previews = []; $wire.set('photos', []); },
+                async pickRoom(event) {
+                    const file = (event.target.files || [])[0];
+                    event.target.value = '';
+                    if (!file) return;
+                    this.busy = true;
+                    try {
+                        const blob = await this.shrink(file);
+                        await new Promise((resolve, reject) => $wire.upload('roomPhoto', blob, resolve, reject));
+                        await $wire.scanRoomText();
+                    } catch (e) {
+                        $wire.set('roomTextError', 'Das Foto konnte nicht verarbeitet werden.');
+                    } finally {
+                        this.busy = false;
+                    }
+                },
             }"
         >
             <input type="file" accept="image/*" capture="environment" multiple class="hidden" x-ref="camera" x-on:change="pick($event)">
@@ -82,7 +97,23 @@
                 <button type="button" class="kb-button-secondary" x-on:click="$refs.camera.click()" x-bind:disabled="busy || blobs.length >= max" x-text="blobs.length ? 'Weiteres Foto' : 'Foto aufnehmen'"></button>
                 <button type="button" class="kb-button-secondary" x-on:click="$refs.library.click()" x-bind:disabled="busy || blobs.length >= max">Aus Fotos wählen</button>
             </div>
-            <p class="text-xs text-stone-500">1 bis {{ $maxPhotos }} Fotos: das Werk, dazu Werktext oder Raumtext.</p>
+            <p class="text-xs text-stone-500">1 bis {{ $maxPhotos }} Fotos: das Werk, dazu der Werktext. Den Raumtext einmal eigens scannen, er gilt dann für die nächsten Werke.</p>
+
+            {{-- Raumtext: nur ablesen und merken (Sebastian, 07.10.2026), Auswahl als Kontext fuer die naechsten Aufnahmen --}}
+            <input type="file" accept="image/*" capture="environment" class="hidden" x-ref="room" x-on:change="pickRoom($event)">
+            <div class="flex flex-wrap items-center gap-2 border-t border-stone-200 pt-3">
+                <button type="button" class="kb-button-secondary w-auto px-3 py-2 text-sm" x-on:click="$refs.room.click()" x-bind:disabled="busy" wire:loading.attr="disabled" wire:target="scanRoomText, roomPhoto">Raumtext scannen</button>
+                <span class="text-xs text-stone-500" wire:loading wire:target="scanRoomText, roomPhoto">Raumtext wird abgelesen ...</span>
+                @foreach ($roomTexts as $roomText)
+                    <button type="button" class="rounded-full px-3 py-1 text-xs {{ $roomTextId === $roomText->getKey() ? 'bg-accent text-white' : 'bg-stone-100 text-stone-700' }}" wire:click="toggleRoomText({{ $roomText->getKey() }})" wire:key="room-{{ $roomText->getKey() }}" title="{{ $roomText->excerpt() }}">{{ $roomTextId === $roomText->getKey() ? '✓ ' : '' }}{{ \Illuminate\Support\Str::limit($roomText->label(), 28) }}</button>
+                @endforeach
+            </div>
+            @if ($roomTexts->isNotEmpty())
+                <p class="text-xs text-stone-500">{{ $roomTextId ? 'Der markierte Raumtext fließt in die nächsten Aufnahmen ein.' : 'Raumtext antippen, damit er in die nächsten Aufnahmen einfließt.' }} Nachlesen im <a href="{{ route('archiv') }}" wire:navigate class="text-accent">Archiv</a>.</p>
+            @endif
+            @if ($roomTextError !== '')
+                <p class="text-sm text-red-700">{{ $roomTextError }}</p>
+            @endif
 
             <div wire:loading wire:target="photos" class="text-sm text-stone-600">Fotos werden hochgeladen ...</div>
             <p x-show="busy" x-cloak class="text-sm text-stone-600">Fotos werden verkleinert ...</p>

@@ -33,6 +33,10 @@ class QuickGuide extends PipelineJob
             $content[] = RecognizeArtwork::imageBlock($photo);
         }
 
+        if (filled($capture->roomText?->promptText())) {
+            $content[] = ['type' => 'text', 'text' => 'Raumtext aus dem Saal (zuvor gescannt, gilt für mehrere Werke, hilft bei Zuordnung und Einordnung):'."\n".$capture->roomText->promptText()];
+        }
+
         $content[] = ['type' => 'text', 'text' => 'Erkenne das Werk (Foto-Index beginnt bei 0) und schreibe gleich den Überblick als JSON.'];
         $words = (array) config('museumguide.quick.words', ['min' => 100, 'max' => 160]);
 

@@ -8,6 +8,7 @@ use App\Enums\PhotoType;
 use App\Models\Capture;
 use App\Models\CapturePhoto;
 use App\Models\Place;
+use App\Models\RoomText;
 use App\Models\User;
 use App\Models\Visit;
 use App\Services\Pipeline\Pipeline;
@@ -29,7 +30,7 @@ class CaptureService
     /**
      * @param  list<UploadedFile>  $files
      */
-    public function create(User $user, Visit $visit, array $files, ?GuideMode $mode = null): Capture
+    public function create(User $user, Visit $visit, array $files, ?GuideMode $mode = null, ?RoomText $roomText = null): Capture
     {
         $max = (int) config('museumguide.photos.max_per_capture', 3);
 
@@ -42,6 +43,7 @@ class CaptureService
             'status' => CaptureStatus::Uploaded,
             'length' => $user->preferred_length?->value ?? 'normal',
             'mode' => $mode ?? $user->default_mode ?? GuideMode::Quick,
+            'room_text_id' => $roomText !== null && (int) $roomText->user_id === (int) $user->getKey() ? $roomText->getKey() : null,
         ]);
 
         foreach (array_values($files) as $index => $file) {
@@ -160,7 +162,7 @@ class CaptureService
     /**
      * @return array{0: ?int, 1: ?int}
      */
-    private function dimensions(UploadedFile $file): array
+    public function dimensions(UploadedFile $file): array
     {
         $size = @getimagesize($file->getRealPath());
 

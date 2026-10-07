@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\CaptureStatus;
 use App\Enums\GuideLength;
 use App\Enums\GuideMode;
+use App\Enums\PhotoType;
 use App\Enums\PipelineStep;
 use App\Models\Concerns\CascadesSoftDeletes;
 use App\Models\Concerns\LogsChanges;
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['visit_id', 'user_id', 'artwork_id', 'place_id', 'lat', 'lng', 'status', 'length', 'mode', 'recognition', 'confirmed_at', 'error_message'])]
+#[Fillable(['visit_id', 'user_id', 'artwork_id', 'place_id', 'room_text_id', 'lat', 'lng', 'status', 'length', 'mode', 'recognition', 'confirmed_at', 'error_message'])]
 /**
  * Eine Analyse aus 1 bis 3 Fotos: Erkennung, Recherche, Skript, Audio (Etappe 3). Papierkorb mit Kaskade auf
  * Fotos, Audioguide und Fact Sheet.
@@ -72,6 +73,27 @@ class Capture extends Model
     public function artwork(): BelongsTo
     {
         return $this->belongsTo(Artwork::class);
+    }
+
+    /** @return BelongsTo<RoomText, $this> */
+    public function roomText(): BelongsTo
+    {
+        return $this->belongsTo(RoomText::class);
+    }
+
+    /**
+     * Abgelesene Schild- und Raumtexte fuer die Prompts: Werktext-Fotos dieser Aufnahme plus der gewaehlte Raumtext.
+     */
+    public function labelText(string $empty = 'nichts'): string
+    {
+        $parts = $this->photos->filter(fn ($p) => $p->type !== PhotoType::Artwork)->pluck('ocr_text')->filter()->all();
+        $room = $this->roomText?->promptText();
+
+        if (filled($room)) {
+            $parts[] = 'Raumtext aus dem Saal (zuvor gescannt, gilt für mehrere Werke):'."\n".$room;
+        }
+
+        return $parts === [] ? $empty : implode("\n", $parts);
     }
 
     /** @return HasMany<CapturePhoto, $this> */

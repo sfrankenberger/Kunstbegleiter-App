@@ -60,6 +60,12 @@ class Visit extends Model
         return $this->belongsTo(City::class);
     }
 
+    /** @return HasMany<RoomText, $this> */
+    public function roomTexts(): HasMany
+    {
+        return $this->hasMany(RoomText::class);
+    }
+
     /** @return HasMany<Capture, $this> */
     public function captures(): HasMany
     {

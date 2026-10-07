@@ -158,6 +158,12 @@ class Schemas
         ]);
     }
 
+    /** Raumtext ablesen (RoomTextService). */
+    public static function roomText(): array
+    {
+        return self::object(['title' => self::nullableString(), 'text' => ['type' => 'string']]);
+    }
+
     /** @return array<string, mixed> */
     public static function museum(): array
     {

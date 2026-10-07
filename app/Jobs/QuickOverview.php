@@ -4,7 +4,6 @@ namespace App\Jobs;
 
 use App\Enums\AiPurpose;
 use App\Enums\CaptureStatus;
-use App\Enums\PhotoType;
 use App\Enums\PipelineStep;
 use App\Models\Capture;
 use App\Services\Ai\ClaudeClient;
@@ -31,7 +30,7 @@ class QuickOverview extends PipelineJob
 
         $capture->forceFill(['step' => PipelineStep::Writing])->save();
         $museum = $capture->visit?->museum ?? $artwork?->museum;
-        $labelText = $capture->photos->filter(fn ($p) => $p->type !== PhotoType::Artwork)->pluck('ocr_text')->filter()->implode("\n");
+        $labelText = $capture->labelText('keine');
         $words = (array) config('museumguide.quick.words', ['min' => 100, 'max' => 160]);
         $profile = filled($capture->user->knowledge_profile) ? (string) $capture->user->knowledge_profile : 'Austria Guide in Wien, breites Vorwissen zur Kunstgeschichte.';
 
@@ -54,7 +53,7 @@ class QuickOverview extends PipelineJob
                 'technique' => $artwork?->technique ?? '',
                 'museum' => $museum?->name ?? '',
                 'city' => $museum?->city?->name ?? '',
-                'label_text' => $labelText !== '' ? $labelText : 'keine',
+                'label_text' => $labelText,
                 'museum_notes' => RecognizeArtwork::museumNotes($museum?->research),
                 'words_min' => $words['min'] ?? 100,
                 'words_max' => $words['max'] ?? 160,

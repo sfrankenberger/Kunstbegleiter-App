@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages;
 
 use App\Models\Capture;
+use App\Models\RoomText;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -33,6 +34,18 @@ class Archiv extends Component
             ->limit(100)
             ->get();
 
-        return view('livewire.pages.archiv', ['captures' => $captures]);
+        // Raumtexte (07.10.2026): zum Nachlesen, Suche ueber Titel und Text
+        $roomTexts = RoomText::query()
+            ->whereBelongsTo(auth()->user())
+            ->with('museum')
+            ->when(trim($this->search) !== '', function ($query): void {
+                $term = '%'.trim($this->search).'%';
+                $query->where(fn ($q) => $q->where('title', 'like', $term)->orWhere('text', 'like', $term));
+            })
+            ->latest()
+            ->limit(50)
+            ->get();
+
+        return view('livewire.pages.archiv', ['captures' => $captures, 'roomTexts' => $roomTexts]);
     }
 }
