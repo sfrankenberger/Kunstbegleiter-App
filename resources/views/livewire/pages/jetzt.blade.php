@@ -26,23 +26,34 @@
                     if (!files.length) return;
                     this.busy = true;
                     try {
-                        for (const file of files) this.blobs.push(await this.shrink(file));
-                        await this.sync();
+                        const fresh = [];
+                        for (const file of files) fresh.push(await this.shrink(file));
+                        this.blobs.push(...fresh);
+                        this.refreshPreviews();
+                        // uploadMultiple haengt an (Livewire append = true): nur die neuen Dateien schicken, sonst
+                        // landet jedes Foto doppelt (Sebastian, 07.10.2026: "Bild immer 2 mal angezeigt")
+                        await new Promise((resolve, reject) => $wire.uploadMultiple('photos', fresh, resolve, reject));
                     } catch (e) {
                         $wire.set('uploadError', 'Das Foto konnte nicht verarbeitet werden.');
                     } finally {
                         this.busy = false;
                     }
                 },
-                remove(i) {
+                async remove(i) {
                     this.blobs.splice(i, 1);
-                    this.sync();
+                    this.refreshPreviews();
+                    this.busy = true;
+                    try {
+                        // Liste am Server neu aufbauen: leeren, dann die verbliebenen Fotos wieder hochladen
+                        await $wire.set('photos', []);
+                        if (this.blobs.length) await new Promise((resolve, reject) => $wire.uploadMultiple('photos', this.blobs, resolve, reject));
+                    } finally {
+                        this.busy = false;
+                    }
                 },
-                async sync() {
+                refreshPreviews() {
                     this.previews.forEach(u => URL.revokeObjectURL(u));
                     this.previews = this.blobs.map(b => URL.createObjectURL(b));
-                    if (!this.blobs.length) { $wire.set('photos', []); return; }
-                    await new Promise((resolve, reject) => $wire.uploadMultiple('photos', this.blobs, resolve, reject));
                 },
                 shrink(file) {
                     return new Promise((resolve, reject) => {
