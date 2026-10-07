@@ -18,22 +18,31 @@
         <div
             class="kb-card flex flex-col gap-3"
             x-data="{
-                busy: false, previews: [], max: {{ $maxPhotos }}, edge: {{ $maxEdge }},
+                busy: false, previews: [], blobs: [], max: {{ $maxPhotos }}, edge: {{ $maxEdge }},
+                // Die Kamera liefert je Ausloesung ein Foto: neue Fotos kommen zu den bisherigen dazu (bis max)
                 async pick(event) {
-                    const files = Array.from(event.target.files || []).slice(0, this.max);
+                    const files = Array.from(event.target.files || []).slice(0, this.max - this.blobs.length);
                     event.target.value = '';
                     if (!files.length) return;
                     this.busy = true;
                     try {
-                        const blobs = [];
-                        for (const file of files) blobs.push(await this.shrink(file));
-                        this.previews = blobs.map(b => URL.createObjectURL(b));
-                        await new Promise((resolve, reject) => $wire.uploadMultiple('photos', blobs, resolve, reject));
+                        for (const file of files) this.blobs.push(await this.shrink(file));
+                        await this.sync();
                     } catch (e) {
                         $wire.set('uploadError', 'Das Foto konnte nicht verarbeitet werden.');
                     } finally {
                         this.busy = false;
                     }
+                },
+                remove(i) {
+                    this.blobs.splice(i, 1);
+                    this.sync();
+                },
+                async sync() {
+                    this.previews.forEach(u => URL.revokeObjectURL(u));
+                    this.previews = this.blobs.map(b => URL.createObjectURL(b));
+                    if (!this.blobs.length) { $wire.set('photos', []); return; }
+                    await new Promise((resolve, reject) => $wire.uploadMultiple('photos', this.blobs, resolve, reject));
                 },
                 shrink(file) {
                     return new Promise((resolve, reject) => {
@@ -52,7 +61,7 @@
                         img.src = url;
                     });
                 },
-                clear() { this.previews = []; $wire.set('photos', []); },
+                clear() { this.blobs = []; this.previews = []; $wire.set('photos', []); },
             }"
         >
             <input type="file" accept="image/*" capture="environment" multiple class="hidden" x-ref="camera" x-on:change="pick($event)">
@@ -60,15 +69,18 @@
 
             <template x-if="previews.length">
                 <div class="flex gap-2">
-                    <template x-for="(src, i) in previews" :key="i">
-                        <img :src="src" alt="" class="h-20 w-20 rounded-lg object-cover">
+                    <template x-for="(src, i) in previews" :key="src">
+                        <div class="relative">
+                            <img :src="src" alt="" class="h-20 w-20 rounded-lg object-cover">
+                            <button type="button" class="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-stone-800 text-xs text-white" x-on:click="remove(i)" x-bind:disabled="busy" aria-label="Foto entfernen">×</button>
+                        </div>
                     </template>
                 </div>
             </template>
 
             <div class="grid grid-cols-2 gap-2">
-                <button type="button" class="kb-button-secondary" x-on:click="$refs.camera.click()" x-bind:disabled="busy">Foto aufnehmen</button>
-                <button type="button" class="kb-button-secondary" x-on:click="$refs.library.click()" x-bind:disabled="busy">Aus Fotos wählen</button>
+                <button type="button" class="kb-button-secondary" x-on:click="$refs.camera.click()" x-bind:disabled="busy || blobs.length >= max" x-text="blobs.length ? 'Weiteres Foto' : 'Foto aufnehmen'"></button>
+                <button type="button" class="kb-button-secondary" x-on:click="$refs.library.click()" x-bind:disabled="busy || blobs.length >= max">Aus Fotos wählen</button>
             </div>
             <p class="text-xs text-stone-500">1 bis {{ $maxPhotos }} Fotos: das Werk, dazu Werktext oder Raumtext.</p>
 

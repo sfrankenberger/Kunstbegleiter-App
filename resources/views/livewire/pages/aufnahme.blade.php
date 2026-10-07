@@ -28,8 +28,17 @@
                 <button type="button" class="kb-button mt-3" wire:click="retry">Erneut versuchen</button>
             @endif
         </div>
-        @if ($capture->photos->first())
-            <img src="{{ $capture->photos->first()->url() }}" alt="" class="h-24 w-24 shrink-0 rounded-xl object-cover">
+        @if ($capture->photos->isNotEmpty())
+            <div class="flex shrink-0 flex-col gap-1">
+                <img src="{{ $capture->photos->first()->url() }}" alt="" class="h-24 w-24 rounded-xl object-cover">
+                @if ($capture->photos->count() > 1)
+                    <div class="flex gap-1">
+                        @foreach ($capture->photos->skip(1) as $photo)
+                            <img src="{{ $photo->url() }}" alt="" class="h-11 w-11 rounded-lg object-cover" wire:key="thumb-{{ $photo->getKey() }}">
+                        @endforeach
+                    </div>
+                @endif
+            </div>
         @elseif ($capture->place?->image_url)
             <img src="{{ $capture->place->image_url }}" alt="" class="h-24 w-24 shrink-0 rounded-xl bg-stone-100 object-cover" title="{{ $capture->place->image_credit }}">
         @endif
