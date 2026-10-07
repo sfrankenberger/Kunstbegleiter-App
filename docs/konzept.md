@@ -107,6 +107,11 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Verwenden:** Der frisch gescannte Raumtext ist für die nächsten Aufnahmen vorgewählt; unter dem Foto-Knopf stehen die Raumtexte des Besuchs als Chips, einer ist wählbar (Tipp = an oder aus). Beim Anlegen landet er in `captures.room_text_id`. `Capture::labelText()` hängt ihn an die abgelesenen Schildtexte an, bei der Schnellstufe geht er zusätzlich als Textblock zu den Fotos (Erkennung und Einordnung).
 - **Nachlesen:** Archiv listet Raumtexte unter den Werken (Suche über Titel und Text), Seite `raumtext/{id}` zeigt Text, Foto und die Werke, die ihn genutzt haben, mit Löschen. Foto nur signiert und nur für den Besitzer (`RoomTextPolicy`).
 
+## 11c. Textfotos nur als Text, Bilder groß (Sebastian, 07.10.2026)
+
+- **Werk- und Raumtextfotos:** Nach dem Ablesen wird die Datei gelöscht, der Text bleibt: bei Aufnahmen in `captures.label_text` (`CaptureService::dropTextPhotos`, aufgerufen in `RecognizeArtwork::store`; das erste Foto bleibt immer), bei Raumtexten wird `room_texts.path` geleert (`RoomTextService::dropPhoto`). `Capture::labelText()` liest `label_text` plus Reste plus Raumtext. Bestand einmalig mit `php artisan kunst:drop-text-photos` aufgeräumt.
+- **Bild groß:** Tipp auf das Vorschaubild im Archiv und auf das Foto oben auf der Werkseite öffnet es bildschirmfüllend (Alpine-Store `lightbox` in `public/js/player.js`, Overlay im Layout), Tipp oder Escape schließt.
+
 ## 12. Arbeitsweise in der Bauphase (Sebastian, 05.10.2026)
 
 - "Können wir das direkt auf der App machen, bei der kleinen App brauche ich kein Staging." Entscheidung: direkt auf `main`, kein PR, kein Staging, solange nur Sebastian die App nutzt. Details in `CLAUDE.md` und `docs/betrieb.md` Abschnitt 4. PR #5 (Etappe 3) wurde so direkt gemergt.

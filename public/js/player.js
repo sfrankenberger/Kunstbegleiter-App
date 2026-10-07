@@ -5,6 +5,13 @@
  * Ausgabe (AirPods, Lautsprecher) ueber den iOS-Routenwaehler des Audio-Elements.
  */
 document.addEventListener('alpine:init', () => {
+    // Lightbox: ein Foto gross ueber allem (Archiv, Aufnahme), Tipp schliesst
+    Alpine.store('lightbox', {
+        src: '',
+        open(src) { this.src = src; },
+        close() { this.src = ''; },
+    });
+
     Alpine.store('player', {
         el: null, src: '', key: null, title: '', artist: '', href: '', playing: false, rate: 1, position: 0, duration: 0, canRoute: false,
         attach(el) {

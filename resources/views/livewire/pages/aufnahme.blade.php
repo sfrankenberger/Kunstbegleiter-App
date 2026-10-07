@@ -30,7 +30,7 @@
         </div>
         @if ($capture->photos->isNotEmpty())
             <div class="flex shrink-0 flex-col gap-1">
-                <img src="{{ $capture->photos->first()->url() }}" alt="" class="h-24 w-24 rounded-xl object-cover">
+                <button type="button" x-data x-on:click="$store.lightbox.open(@js($capture->photos->first()->url()))" aria-label="Foto groß anzeigen"><img src="{{ $capture->photos->first()->url() }}" alt="" class="h-24 w-24 rounded-xl object-cover"></button>
                 @if ($capture->photos->count() > 1)
                     <div class="flex gap-1">
                         @foreach ($capture->photos->skip(1) as $photo)

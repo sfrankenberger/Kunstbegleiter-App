@@ -24,6 +24,8 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Sprechtext für die Stimme (Jahreszahlen, Daten, Jahrhunderte, Jahrzehnte deutsch ausgeschrieben, Abkürzungen aufgelöst) | `App\Services\Tts\SpeechText::normalize`, aufgerufen in `App\Services\Pipeline\Voice::synthesize` |
 | Beide Stufen je Aufnahme (Schnellstufe immer zuerst, vertiefend dazu, Umschalter auf der Guide-Seite) | `App\Services\Pipeline\Pipeline` (`start`, `continueAfterRecognition`, `queueFull`), `Capture::quickGuide/fullGuide`, `Aufnahme::selectedGuide`, `selectKind` |
 | Raumtext scannen, merken, als Kontext für Aufnahmen wählen, im Archiv nachlesen | `App\Services\Captures\RoomTextService`, `App\Models\RoomText`, `Capture::labelText`, Jetzt (`scanRoomText`, `toggleRoomText`), `App\Livewire\Pages\RaumText` (Route `raumtext`), `RoomTextPhotoController` |
+| Textfotos nach dem Ablesen löschen, Text bleibt (Aufnahme und Raumtext), Bestand mit `kunst:drop-text-photos` | `CaptureService::dropTextPhotos`, `RoomTextService::dropPhoto`, `App\Console\Commands\DropTextPhotos` |
+| Lightbox (Bild groß per Tipp, Archiv und Werkseite) | Store `lightbox` in `public/js/player.js`, Overlay in `resources/views/components/layouts/app.blade.php` |
 | Titelbox der Detailseiten bleibt beim Scrollen unter der Kopfzeile stehen (Werk/Ort und Künstler) | Klasse `kb-title-card` in `resources/css/app.css`, genutzt in `aufnahme.blade.php` und `kuenstler-detail.blade.php` |
 | Fotos ausliefern (signiert, nur mit Sicht) | `App\Http\Controllers\PhotoController`, `CapturePhoto::url()`, Route `fotos.show` |
 | Reiter Archiv (fertige Aufnahmen, Suche) | `App\Livewire\Pages\Archiv` (`?q=`) |

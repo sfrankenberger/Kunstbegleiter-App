@@ -46,6 +46,11 @@ class RoomTextService
                 'error' => null,
                 'cost_cents' => (int) $user->aiCalls()->latest('id')->value('cost_cents'),
             ])->save();
+
+            // Nur der Text bleibt, das Foto nicht (Sebastian, 07.10.2026)
+            if (filled($roomText->text)) {
+                $this->dropPhoto($roomText);
+            }
         } catch (Throwable $e) {
             report($e);
             $roomText->forceFill(['error' => mb_substr($e->getMessage(), 0, 250)])->save();
@@ -54,5 +59,13 @@ class RoomTextService
         $visit?->extend();
 
         return $roomText;
+    }
+
+    public function dropPhoto(RoomText $roomText): void
+    {
+        if ($roomText->path !== '') {
+            Storage::disk(CaptureService::DISK)->delete($roomText->path);
+            $roomText->forceFill(['path' => ''])->save();
+        }
     }
 }

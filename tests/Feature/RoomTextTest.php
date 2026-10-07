@@ -35,7 +35,8 @@ test('a room text is scanned, kept in the archive and used as context for the ne
     expect($roomText->text)->toContain('Blattgold')
         ->and($roomText->visit_id)->toBe($visit->getKey())
         ->and($component->get('roomTextId'))->toBe($roomText->getKey());
-    Storage::disk('local')->assertExists($roomText->path);
+    expect($roomText->hasPhoto())->toBeFalse();
+    Storage::disk('local')->assertMissing('room-texts/'.$roomText->getKey().'.jpg');
     Http::assertSent(fn ($r) => str_contains((string) ($r['system'] ?? ''), 'Saaltext') && ($r['messages'][0]['content'][0]['type'] ?? '') === 'image');
 
     $component->set('photos', [UploadedFile::fake()->image('werk.jpg', 600, 400)])->call('createCapture')->assertRedirect();

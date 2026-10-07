@@ -11,7 +11,11 @@
         <div class="kb-card whitespace-pre-line text-sm leading-relaxed">{{ $roomText->text }}</div>
     @endif
 
-    <img src="{{ $roomText->url() }}" alt="" class="w-full rounded-2xl object-contain" style="max-height: 70vh">
+    @if ($roomText->hasPhoto())
+        <img src="{{ $roomText->url() }}" alt="" class="w-full rounded-2xl object-contain" style="max-height: 70vh">
+    @else
+        <p class="text-xs text-stone-500">Das Foto wurde nach dem Ablesen gelöscht, der Text bleibt.</p>
+    @endif
 
     @if ($captures->isNotEmpty())
         <h2 class="text-sm font-semibold text-stone-700">Werke mit diesem Raumtext</h2>

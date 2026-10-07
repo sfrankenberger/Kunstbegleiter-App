@@ -65,6 +65,11 @@
         @endif
     </div>
 
+    {{-- Lightbox: ein Bild gross ueber allem, Tipp schliesst (Archiv und Aufnahme, 07.10.2026) --}}
+    <div x-data x-show="$store.lightbox.src" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/90 p-2" x-on:click="$store.lightbox.close()" x-on:keydown.escape.window="$store.lightbox.close()">
+        <img :src="$store.lightbox.src" alt="" class="max-h-full max-w-full rounded-lg object-contain">
+    </div>
+
     <script src="/js/player.js?v={{ @filemtime(public_path('js/player.js')) ?: 1 }}"></script>
     @livewireScripts
     <script>

@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['visit_id', 'user_id', 'artwork_id', 'place_id', 'room_text_id', 'lat', 'lng', 'status', 'length', 'mode', 'recognition', 'confirmed_at', 'error_message'])]
+#[Fillable(['visit_id', 'user_id', 'artwork_id', 'place_id', 'room_text_id', 'lat', 'lng', 'status', 'length', 'mode', 'recognition', 'label_text', 'confirmed_at', 'error_message'])]
 /**
  * Eine Analyse aus 1 bis 3 Fotos: Erkennung, Recherche, Skript, Audio (Etappe 3). Papierkorb mit Kaskade auf
  * Fotos, Audioguide und Fact Sheet.
@@ -86,7 +86,7 @@ class Capture extends Model
      */
     public function labelText(string $empty = 'nichts'): string
     {
-        $parts = $this->photos->filter(fn ($p) => $p->type !== PhotoType::Artwork)->pluck('ocr_text')->filter()->all();
+        $parts = array_values(array_filter([(string) $this->label_text, ...$this->photos->filter(fn ($p) => $p->type !== PhotoType::Artwork)->pluck('ocr_text')->all()], 'filled'));
         $room = $this->roomText?->promptText();
 
         if (filled($room)) {

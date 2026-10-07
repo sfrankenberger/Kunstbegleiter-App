@@ -68,8 +68,17 @@ class RoomText extends Model
     /**
      * Signierte Adresse fuer das Foto (60 Minuten), Auslieferung ueber RoomTextPhotoController.
      */
-    public function url(): string
+    public function hasPhoto(): bool
     {
+        return $this->path !== '' && $this->path !== null;
+    }
+
+    public function url(): ?string
+    {
+        if (! $this->hasPhoto()) {
+            return null;
+        }
+
         return URL::temporarySignedRoute('raumtexte.foto', now()->addHour(), ['roomText' => $this->getKey()]);
     }
 }

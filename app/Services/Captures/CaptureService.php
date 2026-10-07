@@ -154,6 +154,41 @@ class CaptureService
         $capture->forceDelete();
     }
 
+    /**
+     * Fotos von Werk- und Raumtexten nach dem Ablesen loeschen, der Text wandert nach captures.label_text
+     * (Sebastian, 07.10.2026). Das erste Foto bleibt immer (das Werk). Liefert die Zahl der geloeschten Fotos.
+     */
+    public function dropTextPhotos(Capture $capture): int
+    {
+        $dropped = 0;
+        $texts = [];
+
+        foreach ($capture->photos->sortBy('sort_order')->values() as $index => $photo) {
+            if ($index === 0 || $photo->type === PhotoType::Artwork) {
+                continue;
+            }
+
+            if (filled($photo->ocr_text)) {
+                $texts[] = trim((string) $photo->ocr_text);
+            }
+
+            Storage::disk(self::DISK)->delete($photo->path);
+            $photo->forceDelete();
+            $dropped++;
+        }
+
+        if ($texts !== []) {
+            $capture->forceFill(['label_text' => trim(implode("\n\n", array_filter([(string) $capture->label_text, ...$texts])))])->save();
+        }
+
+        if ($dropped > 0) {
+            $capture->unsetRelation('photos');
+            $capture->load('photos');
+        }
+
+        return $dropped;
+    }
+
     public function photoPath(CapturePhoto $photo): string
     {
         return Storage::disk(self::DISK)->path($photo->path);

@@ -106,6 +106,9 @@ class RecognizeArtwork extends PipelineJob
             }
         }
 
+        // Textfotos sind abgelesen: Datei weg, Text bleibt an der Aufnahme (07.10.2026)
+        app(CaptureService::class)->dropTextPhotos($capture);
+
         $confidence = (float) ($result['confidence'] ?? 0);
         $recognition = array_intersect_key($result, array_flip(['photos', 'title', 'artist', 'artist_life_dates', 'dating', 'technique', 'dimensions', 'inventory_number', 'epoch', 'confidence', 'alternatives', 'notes']));
         $capture->forceFill(['recognition' => $recognition])->save();

@@ -15,7 +15,10 @@
                 <li>
                     <a href="{{ route('aufnahme', $capture) }}" wire:navigate class="kb-card flex items-center gap-3">
                         @if ($capture->photos->first())
-                            <img src="{{ $capture->photos->first()->url() }}" alt="" class="h-16 w-16 shrink-0 rounded-lg object-cover">
+                            {{-- Tipp auf das Bild oeffnet es gross (Lightbox im Layout), der Rest der Zeile oeffnet die Aufnahme --}}
+                            <button type="button" class="shrink-0" x-on:click.prevent.stop="$store.lightbox.open(@js($capture->photos->first()->url()))" aria-label="Foto groß anzeigen">
+                                <img src="{{ $capture->photos->first()->url() }}" alt="" class="h-16 w-16 rounded-lg object-cover">
+                            </button>
                         @endif
                         <div class="min-w-0 flex-1">
                             <p class="truncate font-medium">{{ $capture->artwork->title }}</p>
@@ -35,7 +38,7 @@
             @foreach ($roomTexts as $roomText)
                 <li>
                     <a href="{{ route('raumtext', $roomText) }}" wire:navigate class="kb-card flex items-center gap-3">
-                        <img src="{{ $roomText->url() }}" alt="" class="h-16 w-16 shrink-0 rounded-lg object-cover">
+                        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500"><x-kb-icon name="document" class="h-7 w-7" /></div>
                         <div class="min-w-0 flex-1">
                             <p class="truncate font-medium">{{ $roomText->label() }}</p>
                             <p class="truncate text-sm text-stone-600">{{ $roomText->excerpt() }}</p>

@@ -16,6 +16,7 @@ class RoomTextPhotoController extends Controller
     public function __invoke(Request $request, RoomText $roomText): BinaryFileResponse
     {
         $request->user()?->can('view', $roomText) || abort(403);
+        $roomText->hasPhoto() || abort(404);
 
         return response()->file(Storage::disk(CaptureService::DISK)->path($roomText->path), ['Cache-Control' => 'private, max-age=3600']);
     }
