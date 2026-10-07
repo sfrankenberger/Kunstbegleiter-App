@@ -16,7 +16,7 @@
                 @if ($capture->isRunning())
                     <span class="inline-block h-3 w-3 animate-pulse rounded-full bg-accent"></span>
                 @endif
-                <p class="inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-medium text-accent">{{ $capture->progressLabel() }}</p>
+                <p class="inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-medium text-accent">{{ ($quick && $capture->isRunning() ? 'Vertiefend: ' : '').$capture->progressLabel() }}</p>
             </div>
             @if ($capture->error_message)
                 <p class="mt-2 text-sm text-red-700">{{ $capture->error_message }}</p>
@@ -63,11 +63,18 @@
         </div>
     @endif
 
-    @if ($capture->audioGuide)
-        @php($guide = $capture->audioGuide)
+    @if ($quick && ($full || (! $capture->isQuick() && $capture->isRunning())))
+        {{-- Beide Stufen bleiben (Sebastian, 07.10.2026): Schnellstufe sofort, vertiefender Guide sobald fertig --}}
+        <div class="grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1 text-sm font-medium">
+            <button type="button" class="rounded-lg py-2 {{ $guide?->kind === 'quick' ? 'bg-white shadow-sm text-ink' : 'text-stone-500' }}" wire:click="selectKind('quick')">Schnell</button>
+            <button type="button" class="rounded-lg py-2 {{ $guide?->kind === 'full' ? 'bg-white shadow-sm text-ink' : 'text-stone-500' }}" wire:click="selectKind('full')" @disabled($full === null)>{{ $full === null || ! $full->hasAudio() && $capture->isRunning() ? 'Vertiefend (läuft)' : 'Vertiefend' }}</button>
+        </div>
+    @endif
+
+    @if ($guide)
         @if ($guide->hasAudio())
             {{-- Der Player liegt im Layout (@persist) und spielt ueber Seitenwechsel weiter; hier wird nur geladen --}}
-            <div wire:ignore x-data x-init="$store.player.load({ src: @js($guide->url()), title: @js($capture->artwork?->title ?? 'Audioguide'), artist: @js($capture->artwork?->artist?->name ?? ''), duration: {{ (int) ($guide->duration_seconds ?? 0) }}, href: @js(route('aufnahme', $capture)), key: {{ $guide->getKey() }} })"></div>
+            <div wire:ignore wire:key="player-{{ $guide->getKey() }}" x-data x-init="$store.player.load({ src: @js($guide->url()), title: @js($capture->artwork?->title ?? 'Audioguide'), artist: @js($capture->artwork?->artist?->name ?? ''), duration: {{ (int) ($guide->duration_seconds ?? 0) }}, href: @js(route('aufnahme', $capture)), key: {{ $guide->getKey() }} })"></div>
         @elseif ($segments->isNotEmpty() && ! $capture->isRunning())
             {{-- Handy-Stimme als Rueckfall ohne MP3, fest am unteren Rand. wire:ignore: Livewire zeichnet ihn nie neu --}}
             <div class="fixed inset-x-0 z-10 border-t border-stone-200 bg-white/95 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur" style="bottom: calc(3.6rem + env(safe-area-inset-bottom))" wire:ignore wire:key="speech-{{ $guide->getKey() }}">
@@ -149,8 +156,7 @@
         @endif
     @endif
 
-    @if ($capture->factSheet)
-        @php($sheet = $capture->factSheet)
+    @if ($sheet)
         @if (filled($sheet->key_facts))
             <div class="kb-card">
                 <h2 class="text-sm font-semibold text-stone-700">Kurzfakten</h2>
@@ -339,13 +345,12 @@
     @if ($capture->isQuick() && $capture->isDone() && ($capture->artwork_id || $capture->place_id))
         <div class="kb-card flex flex-col gap-2">
             <p class="font-semibold">Mehr zu diesem Werk?</p>
-            <p class="text-sm text-stone-600">Der ausführliche Guide recherchiert im Netz, prüft die Fakten und wird von der Studio-Stimme gesprochen. Dauert einige Minuten, kostet etwa 20 bis 40 Cent.</p>
+            <p class="text-sm text-stone-600">Der vertiefende Guide recherchiert im Netz, prüft die Fakten und wird von zwei Stimmen mit Musik gesprochen. Dauert etwa eine Minute, kostet etwa 20 bis 40 Cent. Die Schnellstufe bleibt erhalten.</p>
             <button type="button" class="kb-button" wire:click="upgrade" wire:loading.attr="disabled">Ausführlichen Guide erstellen</button>
         </div>
     @endif
 
-    @if ($capture->audioGuide)
-        @php($guide = $capture->audioGuide)
+    @if ($guide)
         <div class="kb-card">
             <p class="mb-2 text-sm font-semibold text-stone-700">War der Guide gut?</p>
             <div class="flex items-center justify-between gap-2 text-sm">
@@ -364,7 +369,7 @@
 
     <button type="button" class="kb-button-secondary text-red-700" wire:click="delete" wire:confirm="Aufnahme in den Papierkorb legen?">Aufnahme löschen</button>
 
-    @if ($capture->audioGuide && ! $capture->audioGuide->hasAudio())
+    @if ($guide && ! $guide->hasAudio())
         <div class="h-24" aria-hidden="true"></div>
     @endif
 </div>

@@ -106,7 +106,7 @@ test('a typed place is looked up at wikidata and the full guide runs through res
             'coord' => ['value' => 'Point(16.3697 48.2095)'], 'classes' => ['value' => 'http://www.wikidata.org/entity/Q16970'],
             'image' => ['value' => 'http://commons.wikimedia.org/wiki/Special:FilePath/Peterskirche.jpg'], 'architectLabel' => ['value' => 'Johann Lucas von Hildebrandt'], 'inception' => ['value' => '1733-01-01T00:00:00Z'],
         ]]]]),
-        'api.anthropic.com/*' => Http::sequence()->push(claudeJson(researchJson() + scriptJson()))->push(claudeJson(knowledgeJson())),
+        'api.anthropic.com/*' => Http::sequence()->push(claudeJson(scriptJson()))->push(claudeJson(researchJson() + scriptJson()))->push(claudeJson(knowledgeJson())),
     ]);
     $user = User::factory()->create(['default_mode' => GuideMode::Full]);
 
@@ -123,7 +123,8 @@ test('a typed place is looked up at wikidata and the full guide runs through res
         ->and($capture->status)->toBe(CaptureStatus::Done)
         ->and($place->fresh()->research)->not->toBeNull()
         ->and($place->fresh()->research->summary)->toContain('Belvedere')
-        ->and($capture->audioGuide->audio_path)->not->toBeNull();
+        ->and($capture->quickGuide)->not->toBeNull()
+        ->and($capture->fullGuide->audio_path)->not->toBeNull();
     Http::assertSent(fn ($request) => str_contains($request->url(), 'anthropic') && isset($request['tools'][0]) && str_contains((string) $request['system'], 'Wien Geschichte Wiki'));
 });
 

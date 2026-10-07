@@ -7,7 +7,6 @@ use App\Enums\GuideMode;
 use App\Enums\PipelineStep;
 use App\Jobs\QuickGuide;
 use App\Jobs\QuickOverview;
-use App\Jobs\RecognizeArtwork;
 use App\Jobs\ResearchAndWrite;
 use App\Jobs\SynthesizeAudio;
 use App\Jobs\UpdateKnowledge;
@@ -18,9 +17,9 @@ use Illuminate\Support\Facades\Bus;
 use RuntimeException;
 
 /**
- * Ablauf je Aufnahme (docs/konzept.md Abschnitte 10, 11, 13). Schnell: ein Aufruf, synchron in der Anfrage
- * (Ziel 10 Sekunden). Ausfuehrlich: Erkennung synchron, dann Recherche plus Skript, Stimme und Lernen ueber die
- * Queue (Ziel 45 Sekunden bis zur Stimme), der Worker wird sofort angestossen. `retry` setzt nach einem Fehler
+ * Ablauf je Aufnahme (docs/konzept.md Abschnitte 10, 11, 13, 25). Immer zuerst die Schnellstufe: ein Aufruf,
+ * synchron in der Anfrage (Ziel 10 Sekunden). Ausfuehrlich: danach Recherche plus Skript, Stimme und Lernen ueber
+ * die Queue (Ziel 45 Sekunden bis zur Stimme), der Worker wird sofort angestossen; beide Guides bleiben. `retry` setzt nach einem Fehler
  * beim letzten erreichten Stand fort, `upgrade` bestellt aus der Schnellstufe den ausfuehrlichen Guide.
  * Vorher wird jeweils das Monatslimit geprueft.
  */
@@ -34,44 +33,49 @@ class Pipeline
         if ($capture->isPlace() && $capture->photos()->doesntExist()) {
             // Ort aus der Liste gewaehlt: nichts zu erkennen. Ueber die Queue, damit die Seite sofort wechselt
             // und den Fortschritt zeigt (Sebastian, 05.10.2026: "dauert ewig, keine Klick-Animation")
-            $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => $capture->isQuick() ? PipelineStep::Writing : PipelineStep::Researching, 'needs_confirmation' => false])->save();
+            $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Writing, 'needs_confirmation' => false])->save();
+            $this->queue(array_merge([new QuickOverview($capture->getKey())], $capture->isQuick() ? [] : self::fullChain($capture)));
 
-            if ($capture->isQuick()) {
-                $this->queue([new QuickOverview($capture->getKey())]);
-            } else {
-                $this->queue([new ResearchAndWrite($capture->getKey()), new SynthesizeAudio($capture->getKey()), new UpdateKnowledge($capture->getKey())]);
+            return;
+        }
+
+        // Immer zuerst die Schnellstufe (Erkennung plus Kurztext in einem Aufruf, synchron), ausfuehrlich dann
+        // im Hintergrund dazu (Sebastian, 07.10.2026: "dass immer auch der schnelle erstellt wird")
+        Bus::dispatchSync(new QuickGuide($capture->getKey()));
+        $capture->refresh();
+
+        if (! $capture->isQuick() && ! $capture->needs_confirmation && $capture->isDone()) {
+            $this->queueFull($capture);
+        }
+    }
+
+    /**
+     * Nach der Erkennung (oder der Bestaetigung): Schnellstufe synchron, falls sie noch fehlt, ausfuehrlich
+     * danach ueber die Queue.
+     */
+    public function continueAfterRecognition(Capture $capture): void
+    {
+        $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Writing, 'needs_confirmation' => false, 'error_message' => null])->save();
+
+        if ($capture->quickGuide()->doesntExist()) {
+            Bus::dispatchSync(new QuickOverview($capture->getKey()));
+            $capture->refresh();
+        }
+
+        if ($capture->isQuick()) {
+            if (! $capture->isDone()) {
+                $capture->forceFill(['status' => CaptureStatus::Done, 'step' => null, 'finished_at' => now()])->save();
             }
 
             return;
         }
 
-        if ($capture->isQuick()) {
-            Bus::dispatchSync(new QuickGuide($capture->getKey()));
-
-            return;
-        }
-
-        Bus::dispatchSync(new RecognizeArtwork($capture->getKey()));
+        $this->queueFull($capture);
     }
 
     /**
-     * Nach der Erkennung (oder der Bestaetigung): schnell ein Aufruf synchron, ausfuehrlich die Kette ueber die Queue.
-     */
-    public function continueAfterRecognition(Capture $capture): void
-    {
-        if ($capture->isQuick()) {
-            $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Writing, 'needs_confirmation' => false, 'error_message' => null])->save();
-            Bus::dispatchSync(new QuickOverview($capture->getKey()));
-
-            return;
-        }
-
-        $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Researching, 'needs_confirmation' => false, 'error_message' => null])->save();
-        $this->queue([new ResearchAndWrite($capture->getKey()), new SynthesizeAudio($capture->getKey()), new UpdateKnowledge($capture->getKey())]);
-    }
-
-    /**
-     * Aus der Schnellstufe den ausfuehrlichen Guide nachbestellen: Werk bleibt, Recherche plus Skript, Stimme, Lernen.
+     * Aus der Schnellstufe den vertiefenden Guide nachbestellen: Werk und Schnellstufe bleiben, Recherche plus
+     * Skript, Stimme, Lernen laufen dazu.
      */
     public function upgrade(Capture $capture): void
     {
@@ -81,8 +85,23 @@ class Pipeline
             throw new RuntimeException('Zuerst das Werk bestätigen.');
         }
 
-        $capture->forceFill(['mode' => GuideMode::Full, 'finished_at' => null])->save();
+        $capture->forceFill(['mode' => GuideMode::Full])->save();
         $this->continueAfterRecognition($capture);
+    }
+
+    /**
+     * Vertiefender Guide ueber die Queue; die Schnellstufe bleibt waehrenddessen anhoerbar.
+     */
+    private function queueFull(Capture $capture): void
+    {
+        $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Researching, 'error_message' => null])->save();
+        $this->queue(self::fullChain($capture));
+    }
+
+    /** @return list<object> */
+    private static function fullChain(Capture $capture): array
+    {
+        return [new ResearchAndWrite($capture->getKey()), new SynthesizeAudio($capture->getKey()), new UpdateKnowledge($capture->getKey())];
     }
 
     /**
@@ -99,7 +118,7 @@ class Pipeline
         }
 
         $capture->forceFill(['error_message' => null])->save();
-        $guide = $capture->audioGuide;
+        $guide = $capture->fullGuide;
 
         if (! $capture->isQuick() && $guide !== null && filled($guide->script) && ! $guide->hasAudio()) {
             $capture->forceFill(['status' => CaptureStatus::Scripted, 'step' => PipelineStep::Speaking])->save();

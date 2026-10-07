@@ -36,6 +36,9 @@ class Aufnahme extends Component
 
     public string $notice = '';
 
+    /** Welcher Guide gerade gezeigt wird: quick, full oder leer (automatisch: vertiefend sobald fertig) */
+    public string $guideKind = '';
+
     public function mount(Capture $capture): void
     {
         $this->authorize('view', $capture);
@@ -114,10 +117,34 @@ class Aufnahme extends Component
         }
     }
 
+    public function selectKind(string $kind): void
+    {
+        $this->guideKind = in_array($kind, ['quick', 'full'], true) ? $kind : '';
+    }
+
+    /**
+     * Der gezeigte Guide: gewaehlt oder, sobald der vertiefende fertig ist, dieser, sonst die Schnellstufe.
+     */
+    public function selectedGuide(): ?AudioGuide
+    {
+        $quick = $this->capture->quickGuide;
+        $full = $this->capture->fullGuide;
+
+        if ($this->guideKind === 'quick' && $quick !== null) {
+            return $quick;
+        }
+
+        if ($this->guideKind === 'full' && $full !== null) {
+            return $full;
+        }
+
+        return $full !== null && ($full->hasAudio() || ! $this->capture->isRunning()) ? $full : ($quick ?? $full ?? $this->capture->audioGuide);
+    }
+
     public function feedback(string $value): void
     {
         $this->authorize('update', $this->capture);
-        $guide = $this->capture->audioGuide;
+        $guide = $this->selectedGuide();
 
         if ($guide instanceof AudioGuide && in_array($value, ['up', 'down'], true)) {
             $guide->update(['feedback' => $guide->feedback === $value ? null : $value]);
@@ -127,7 +154,7 @@ class Aufnahme extends Component
     public function difficulty(string $value): void
     {
         $this->authorize('update', $this->capture);
-        $guide = $this->capture->audioGuide;
+        $guide = $this->selectedGuide();
 
         if ($guide instanceof AudioGuide && in_array($value, ['too_easy', 'right', 'too_hard'], true)) {
             $guide->update(['difficulty_feedback' => $guide->difficulty_feedback === $value ? null : $value]);
@@ -154,10 +181,17 @@ class Aufnahme extends Component
 
     public function render(): View
     {
-        $this->capture->refresh()->load(['photos', 'artwork.artist', 'artwork.epoch', 'artwork.research', 'artwork.relatedWorks', 'place.city', 'place.research', 'place.relatedWorks', 'visit.museum', 'audioGuide', 'factSheet']);
+        $this->capture->refresh()->load(['photos', 'artwork.artist', 'artwork.epoch', 'artwork.research', 'artwork.relatedWorks', 'place.city', 'place.research', 'place.relatedWorks', 'visit.museum', 'audioGuide', 'quickGuide', 'fullGuide', 'factSheets']);
         $research = $this->capture->place?->research ?? $this->capture->artwork?->research;
 
+        $guide = $this->selectedGuide();
+        $sheet = $this->capture->factSheets->sortByDesc('id')->first(fn ($s) => $s->kind === ($guide?->kind ?? 'quick')) ?? $this->capture->factSheets->sortByDesc('id')->first();
+
         return view('livewire.pages.aufnahme', [
+            'guide' => $guide,
+            'sheet' => $sheet,
+            'quick' => $this->capture->quickGuide,
+            'full' => $this->capture->fullGuide,
             'photoTypes' => PhotoType::cases(),
             'sources' => $research !== null ? ContextBuilder::sources($research) : [],
             'related' => $this->capture->place?->relatedWorks ?? $this->capture->artwork?->relatedWorks ?? collect(),
@@ -165,7 +199,7 @@ class Aufnahme extends Component
                 ((bool) config('museumguide.images.enabled', true) && $this->capture->artwork->image_checked_at === null)
                 || ((bool) config('museumguide.artist_profile.enabled', true) && $this->capture->artwork->artist !== null && $this->capture->artwork->artist->profile_checked_at === null)
             ),
-            'segments' => collect($this->capture->audioGuide?->script ?? [])->filter(fn (mixed $s): bool => is_array($s) && filled($s['text'] ?? null))->values(),
+            'segments' => collect($guide?->script ?? [])->filter(fn (mixed $s): bool => is_array($s) && filled($s['text'] ?? null))->values(),
         ]);
     }
 

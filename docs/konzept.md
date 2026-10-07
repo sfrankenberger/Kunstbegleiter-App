@@ -94,6 +94,13 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Ausführlich:** die Kette aus Abschnitt 10. Aus der Schnellstufe heraus über "Ausführlichen Guide erstellen" (`Pipeline::upgrade`): Werk und Erkennung bleiben, es läuft Recherche bis Merken; der neue Audioguide ersetzt den Kurztext in der Anzeige (`latestOfMany`), der alte bleibt in der Datenbank.
 - "Erneut versuchen" kennt die Stufe: schnell wiederholt den einen Aufruf, ausführlich setzt beim letzten Stand fort.
 
+## 11a. Beide Stufen bleiben (Sebastian, 07.10.2026: "am Schluss beide Audio Guides")
+
+- **Ablauf:** Jede Aufnahme bekommt zuerst die Schnellstufe (ein Aufruf, synchron, Studio-Stimme), auch im Modus ausführlich. Sie wird sofort gezeigt. Im Modus ausführlich läuft danach die Kette Recherche plus Skript, Stimme, Lernen über die Queue; die Seite zeigt währenddessen "Vertiefend: Recherche ..." und die Schnellstufe bleibt anhörbar. `RecognizeArtwork` als eigener Schritt wird nicht mehr gestartet (die Klasse bleibt für Bildblöcke, Museumsnotizen und `store`).
+- **Daten:** `audio_guides.kind` und `fact_sheets.kind` (quick, full). `Capture::quickGuide()` und `fullGuide()` sind je der letzte seiner Art, `audioGuide` bleibt der jeweils letzte. Bestand: bei Aufnahmen im Modus full wurde der letzte Guide als full markiert.
+- **Anzeige:** Umschalter Schnell / Vertiefend über dem Player, sobald beide da sind oder der vertiefende läuft. Standard ist der vertiefende, sobald er Audio hat, sonst die Schnellstufe (`Aufnahme::selectedGuide`). Kurzfakten und Abschnitte folgen dem gewählten Guide, Rückmeldung ebenso. Der Player bekommt je Guide einen eigenen Schlüssel, der globale Player wechselt die Quelle.
+- **Nachbestellen:** "Ausführlichen Guide erstellen" aus der Schnellstufe legt den vertiefenden dazu (Modus wird full), die Schnellstufe bleibt. "Erneut versuchen" überspringt die Schnellstufe, wenn sie schon da ist.
+
 ## 12. Arbeitsweise in der Bauphase (Sebastian, 05.10.2026)
 
 - "Können wir das direkt auf der App machen, bei der kleinen App brauche ich kein Staging." Entscheidung: direkt auf `main`, kein PR, kein Staging, solange nur Sebastian die App nutzt. Details in `CLAUDE.md` und `docs/betrieb.md` Abschnitt 4. PR #5 (Etappe 3) wurde so direkt gemergt.

@@ -31,7 +31,7 @@ class ResearchAndWrite extends PipelineJob
         }
 
         $existing = $place !== null ? $place->research : $artwork->research;
-        $capture->forceFill(['step' => $existing !== null ? PipelineStep::Writing : PipelineStep::Researching])->save();
+        $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => $existing !== null ? PipelineStep::Writing : PipelineStep::Researching])->save();
         $context = app(ContextBuilder::class)->build($capture);
         $museum = $capture->visit?->museum ?? $artwork?->museum;
         $labelText = $capture->photos->filter(fn ($p) => $p->type !== PhotoType::Artwork)->pluck('ocr_text')->filter()->implode("\n");
@@ -107,6 +107,7 @@ class ResearchAndWrite extends PipelineJob
         $segments = array_values(array_filter((array) ($result['segments'] ?? []), fn (mixed $s): bool => is_array($s) && filled($s['text'] ?? null)));
 
         $guide = $capture->audioGuides()->create([
+            'kind' => 'full',
             'script' => $segments,
             'word_count' => str_word_count(strip_tags(implode(' ', array_column($segments, 'text')))),
             'model' => $call?->model ?? AiPurpose::Script->model(),
@@ -117,6 +118,7 @@ class ResearchAndWrite extends PipelineJob
 
         $sheet = (array) ($result['fact_sheet'] ?? []);
         $capture->factSheets()->create([
+            'kind' => 'full',
             'key_facts' => (array) ($sheet['key_facts'] ?? []),
             'key_statements' => (array) ($sheet['key_statements'] ?? []),
             'cross_references' => (array) ($sheet['cross_references'] ?? []),

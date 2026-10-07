@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\URL;
 
-#[Fillable(['capture_id', 'script', 'audio_path', 'duration_seconds', 'word_count', 'model', 'tts_provider', 'tts_characters', 'input_tokens', 'output_tokens', 'cost_cents', 'feedback', 'difficulty_feedback'])]
+#[Fillable(['capture_id', 'kind', 'script', 'audio_path', 'duration_seconds', 'word_count', 'model', 'tts_provider', 'tts_characters', 'input_tokens', 'output_tokens', 'cost_cents', 'feedback', 'difficulty_feedback'])]
 /**
  * Das Hoerstueck: Skript (Segmente mit Sprecherrolle), MP3, Dauer, Kosten, Rueckmeldung.
  */
@@ -31,6 +31,11 @@ class AudioGuide extends Model
     public function capture(): BelongsTo
     {
         return $this->belongsTo(Capture::class);
+    }
+
+    public function isFull(): bool
+    {
+        return $this->kind === 'full';
     }
 
     public function hasAudio(): bool

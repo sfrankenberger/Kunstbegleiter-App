@@ -92,6 +92,18 @@ class Capture extends Model
         return $this->hasOne(AudioGuide::class)->latestOfMany();
     }
 
+    /** @return HasOne<AudioGuide, $this> */
+    public function quickGuide(): HasOne
+    {
+        return $this->hasOne(AudioGuide::class)->ofMany(['id' => 'max'], fn ($q) => $q->where('kind', 'quick'));
+    }
+
+    /** @return HasOne<AudioGuide, $this> */
+    public function fullGuide(): HasOne
+    {
+        return $this->hasOne(AudioGuide::class)->ofMany(['id' => 'max'], fn ($q) => $q->where('kind', 'full'));
+    }
+
     /** @return HasMany<FactSheet, $this> */
     public function factSheets(): HasMany
     {

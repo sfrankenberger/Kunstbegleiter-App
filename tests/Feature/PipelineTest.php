@@ -83,6 +83,13 @@ test('the quick mode is one call with the photos, no web search, no mp3, and can
         ->and($capture->audioGuides()->count())->toBe(2)
         ->and($capture->audioGuide->audio_path)->not->toBeNull()
         ->and($capture->audioGuide->tts_provider)->toBe('fake');
+
+    // Beide Stufen bleiben waehlbar, Standard ist der fertige vertiefende Guide
+    Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])
+        ->assertSeeInOrder(['Schnell', 'Vertiefend'])
+        ->assertSet('guideKind', '')
+        ->call('selectKind', 'quick')
+        ->assertSee('Vorlesen');
 });
 
 test('the quick mode speaks with the studio voice when a real provider is bound', function () {
@@ -127,7 +134,7 @@ test('the profile default and the switch on jetzt decide the mode', function () 
 
 test('a capture runs through the whole chain to a finished guide', function () {
     Http::fake(['api.anthropic.com/*' => Http::sequence()
-        ->push(claudeJson(recognitionJson()))
+        ->push(claudeJson(recognitionJson() + scriptJson()))
         ->push(claudeJson(researchJson() + scriptJson(), ['input_tokens' => 5000, 'output_tokens' => 1500, 'server_tool_use' => ['web_search_requests' => 3]]))
         ->push(claudeJson(knowledgeJson())),
     ]);
@@ -145,9 +152,13 @@ test('a capture runs through the whole chain to a finished guide', function () {
         ->and($capture->artwork->museum_id)->toBe($museum->getKey())
         ->and($capture->artwork->research->summary)->toContain('Belvedere')
         ->and($capture->photos[1]->ocr_text)->toContain('Der Kuss')
-        ->and($capture->audioGuide->script)->toHaveCount(3)
+        // Beide Stufen bleiben: Schnellstufe zuerst, vertiefend danach (07.10.2026)
+        ->and($capture->audioGuides()->count())->toBe(2)
+        ->and($capture->quickGuide->kind)->toBe('quick')
+        ->and($capture->fullGuide->script)->toHaveCount(3)
         ->and($capture->audioGuide->audio_path)->toBe('captures/'.$capture->getKey().'/guide-'.$capture->audioGuide->getKey().'.mp3')
         ->and($capture->audioGuide->tts_provider)->toBe('fake')
+        ->and($capture->factSheets()->where('kind', 'full')->count())->toBe(1)
         ->and(KnowledgeItem::query()->whereBelongsTo($user)->count())->toBe(1)
         ->and(AiCall::query()->where('capture_id', $capture->getKey())->where('succeeded', true)->count())->toBe(4)
         ->and(AiCall::query()->where('purpose', AiPurpose::Script)->value('characters'))->toBe(3)
@@ -209,7 +220,7 @@ test('a typed title is used when nothing was recognised', function () {
 test('an api failure marks the capture and retry finishes it', function () {
     Http::fake(['api.anthropic.com/*' => Http::sequence()
         ->push(['error' => ['message' => 'Overloaded']], 529)
-        ->push(claudeJson(recognitionJson()))
+        ->push(claudeJson(recognitionJson() + scriptJson()))
         ->push(claudeJson(researchJson() + scriptJson()))
         ->push(claudeJson(knowledgeJson())),
     ]);
@@ -234,7 +245,7 @@ test('a known artwork reuses its research and a refusal is reported', function (
     $artwork->research()->create(['summary' => 'Schon recherchiert.', 'sources' => [['url' => 'https://example.org', 'title' => 'Quelle', 'kind' => 'web']], 'existing_guides' => []]);
 
     Http::fake(['api.anthropic.com/*' => Http::sequence()
-        ->push(claudeJson(recognitionJson()))
+        ->push(claudeJson(recognitionJson() + scriptJson()))
         ->push(['content' => [], 'stop_reason' => 'refusal', 'stop_details' => ['category' => 'test'], 'usage' => []]),
     ]);
 

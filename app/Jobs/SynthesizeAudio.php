@@ -15,7 +15,7 @@ class SynthesizeAudio extends PipelineJob
 {
     protected function run(Capture $capture): void
     {
-        $guide = $capture->audioGuide;
+        $guide = $capture->fullGuide ?? $capture->audioGuide;
 
         if ($guide === null) {
             throw new \RuntimeException('Kein Skript zum Einsprechen.');

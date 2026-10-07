@@ -103,6 +103,7 @@ class QuickOverview extends PipelineJob
         $call = $capture->aiCalls()->latest('id')->first();
 
         $guide = $capture->audioGuides()->create([
+            'kind' => 'quick',
             'script' => $segments,
             'word_count' => str_word_count(strip_tags(implode(' ', array_column($segments, 'text')))),
             'model' => AiPurpose::Quick->model(),
@@ -113,6 +114,7 @@ class QuickOverview extends PipelineJob
         ]);
 
         $capture->factSheets()->create([
+            'kind' => 'quick',
             'key_facts' => (array) ($sheet['key_facts'] ?? []),
             'key_statements' => (array) ($sheet['key_statements'] ?? []),
             'cross_references' => (array) ($sheet['cross_references'] ?? []),

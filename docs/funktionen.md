@@ -22,6 +22,7 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Fotos sammeln auf Jetzt (Kamera liefert je Auslösung ein Foto, Vorschau mit Entfernen, bis `museumguide.photos.max_per_capture`) | Alpine-Block in `resources/views/livewire/pages/jetzt.blade.php` (`pick`, `remove`, `sync`) |
 | Aufnahme-Seite (Fotos, Typ je Foto, Löschen) | `App\Livewire\Pages\Aufnahme`, Route `aufnahme` |
 | Sprechtext für die Stimme (Jahreszahlen, Daten, Jahrhunderte, Jahrzehnte deutsch ausgeschrieben, Abkürzungen aufgelöst) | `App\Services\Tts\SpeechText::normalize`, aufgerufen in `App\Services\Pipeline\Voice::synthesize` |
+| Beide Stufen je Aufnahme (Schnellstufe immer zuerst, vertiefend dazu, Umschalter auf der Guide-Seite) | `App\Services\Pipeline\Pipeline` (`start`, `continueAfterRecognition`, `queueFull`), `Capture::quickGuide/fullGuide`, `Aufnahme::selectedGuide`, `selectKind` |
 | Titelbox der Detailseiten bleibt beim Scrollen unter der Kopfzeile stehen (Werk/Ort und Künstler) | Klasse `kb-title-card` in `resources/css/app.css`, genutzt in `aufnahme.blade.php` und `kuenstler-detail.blade.php` |
 | Fotos ausliefern (signiert, nur mit Sicht) | `App\Http\Controllers\PhotoController`, `CapturePhoto::url()`, Route `fotos.show` |
 | Reiter Archiv (fertige Aufnahmen, Suche) | `App\Livewire\Pages\Archiv` (`?q=`) |
