@@ -34,7 +34,7 @@
                 @if ($capture->photos->count() > 1)
                     <div class="flex gap-1">
                         @foreach ($capture->photos->skip(1) as $photo)
-                            <img src="{{ $photo->url() }}" alt="" class="h-11 w-11 rounded-lg object-cover" wire:key="thumb-{{ $photo->getKey() }}">
+                            <button type="button" x-data x-on:click="$store.lightbox.open(@js($photo->url()))" wire:key="thumb-{{ $photo->getKey() }}" aria-label="Foto groß anzeigen"><img src="{{ $photo->url() }}" alt="" class="h-11 w-11 rounded-lg object-cover"></button>
                         @endforeach
                     </div>
                 @endif
@@ -320,27 +320,6 @@
         </div>
     @endif
 
-    <div class="kb-card" x-data="{ open: @js($showPhotos) }">
-        <button type="button" class="flex w-full items-center justify-between text-sm font-semibold text-stone-700" @click="open = ! open">
-            <span>Fotos ({{ $capture->photos->count() }})</span>
-            <span class="text-stone-400" x-text="open ? 'Zu' : 'Auf'"></span>
-        </button>
-        <ul class="mt-3 flex flex-col gap-3" x-show="open" x-cloak>
-                @foreach ($capture->photos as $photo)
-                    <li class="flex flex-col gap-2" wire:key="photo-{{ $photo->getKey() }}">
-                        <img src="{{ $photo->url() }}" alt="" class="w-full rounded-xl object-contain" style="max-height: 60vh">
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="text-xs text-stone-500">{{ $photo->width }} × {{ $photo->height }} px</span>
-                            <select class="kb-input w-auto py-2 text-sm" wire:change="setType({{ $photo->getKey() }}, $event.target.value)">
-                                @foreach ($photoTypes as $type)
-                                    <option value="{{ $type->value }}" @selected($photo->type === $type)>{{ $type->label() }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </li>
-                @endforeach
-            </ul>
-    </div>
 
     @if ($capture->isQuick() && $capture->isDone() && ($capture->artwork_id || $capture->place_id))
         <div class="kb-card flex flex-col gap-2">

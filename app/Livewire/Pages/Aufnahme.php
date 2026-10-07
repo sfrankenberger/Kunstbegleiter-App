@@ -32,8 +32,6 @@ class Aufnahme extends Component
 
     public bool $showScript = false;
 
-    public bool $showPhotos = false;
-
     public string $notice = '';
 
     /** Welcher Guide gerade gezeigt wird: quick, full oder leer (automatisch: vertiefend sobald fertig) */
@@ -43,7 +41,6 @@ class Aufnahme extends Component
     {
         $this->authorize('view', $capture);
         $this->capture = $capture;
-        $this->showPhotos = ! $capture->isDone();
         $this->showScript = $capture->isQuick();
     }
 

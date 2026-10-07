@@ -163,8 +163,15 @@ class CaptureService
         $dropped = 0;
         $texts = [];
 
+        $seen = [];
+
         foreach ($capture->photos->sortBy('sort_order')->values() as $index => $photo) {
-            if ($index === 0 || $photo->type === PhotoType::Artwork) {
+            // Dasselbe Foto zweimal (Bestand vor dem 07.10.2026): nur einmal behalten
+            $hash = Storage::disk(self::DISK)->exists($photo->path) ? md5_file(Storage::disk(self::DISK)->path($photo->path)) : null;
+            $duplicate = $hash !== null && in_array($hash, $seen, true);
+            $seen[] = $hash;
+
+            if (! $duplicate && ($index === 0 || $photo->type === PhotoType::Artwork)) {
                 continue;
             }
 
