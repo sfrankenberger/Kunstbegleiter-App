@@ -53,7 +53,7 @@ class WikiImages
     private function searchEntity(string $search, ?string $mustContain): ?string
     {
         foreach (['de', 'en'] as $language) {
-            $hits = (array) $this->get(self::WIKIDATA, ['action' => 'wbsearchentities', 'search' => $search, 'language' => $language, 'uselang' => 'de', 'type' => 'item', 'limit' => (int) config('museumguide.images.search_limit', 10), 'format' => 'json'])['search'] ?? [];
+            $hits = (array) ($this->get(self::WIKIDATA, ['action' => 'wbsearchentities', 'search' => $search, 'language' => $language, 'uselang' => 'de', 'type' => 'item', 'limit' => (int) config('museumguide.images.search_limit', 10), 'format' => 'json'])['search'] ?? []);
 
             foreach ($hits as $hit) {
                 $haystack = mb_strtolower(($hit['label'] ?? '').' '.($hit['description'] ?? ''));
@@ -69,7 +69,7 @@ class WikiImages
 
     private function imageFile(string $id): ?string
     {
-        $claims = (array) $this->get(self::WIKIDATA, ['action' => 'wbgetclaims', 'entity' => $id, 'property' => 'P18', 'format' => 'json'])['claims']['P18'] ?? [];
+        $claims = (array) ($this->get(self::WIKIDATA, ['action' => 'wbgetclaims', 'entity' => $id, 'property' => 'P18', 'format' => 'json'])['claims']['P18'] ?? []);
         $file = $claims[0]['mainsnak']['datavalue']['value'] ?? null;
 
         return is_string($file) && $file !== '' ? $file : null;
@@ -77,7 +77,7 @@ class WikiImages
 
     private function credit(string $file): ?string
     {
-        $pages = (array) $this->get(self::COMMONS, ['action' => 'query', 'titles' => 'File:'.$file, 'prop' => 'imageinfo', 'iiprop' => 'extmetadata', 'format' => 'json'])['query']['pages'] ?? [];
+        $pages = (array) ($this->get(self::COMMONS, ['action' => 'query', 'titles' => 'File:'.$file, 'prop' => 'imageinfo', 'iiprop' => 'extmetadata', 'format' => 'json'])['query']['pages'] ?? []);
         $meta = (array) (array_values($pages)[0]['imageinfo'][0]['extmetadata'] ?? []);
         $artist = trim(strip_tags((string) ($meta['Artist']['value'] ?? '')));
         $license = trim((string) ($meta['LicenseShortName']['value'] ?? ''));

@@ -153,7 +153,10 @@ class Pipeline
         $limit = $user->monthlyLimitCents();
 
         if ($limit > 0 && AiCall::monthCents($user) >= $limit) {
-            throw new RuntimeException('Monatslimit erreicht ('.number_format($limit / 100, 2, ',', '.').' €). Im Admin erhöhen oder nächsten Monat weitermachen.');
+            // Ohne Betrag fuer Testnutzer, nur der Admin sieht Zahlen (14.10.2026)
+            throw new RuntimeException($user->is_admin
+                ? 'Monatslimit erreicht ('.number_format($limit / 100, 2, ',', '.').' €). Im Admin erhöhen oder nächsten Monat weitermachen.'
+                : 'Das Kontingent für diesen Monat ist aufgebraucht. Bitte Sebastian Bescheid geben, er schaltet mehr frei.');
         }
     }
 }

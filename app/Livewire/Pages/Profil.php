@@ -7,13 +7,14 @@ use App\Enums\GuideMode;
 use App\Models\AiCall;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 /**
  * Reiter "Profil": Vorwissen-Profil und Laenge (die einzige echte Eingabe in Etappe 1), Kosten des Monats,
- * Passkeys (App\Livewire\PasskeyManager), Abmelden. Stimmen und Kopplung kommen in Etappe 4 und 5.
+ * Passkeys (App\Livewire\PasskeyManager), Passwort aendern, Abmelden. Kosten sieht nur ein Admin (14.10.2026). Stimmen und Kopplung kommen in Etappe 4 und 5.
  */
 #[Layout('components.layouts.app', ['title' => 'Profil'])]
 class Profil extends Component
@@ -25,6 +26,12 @@ class Profil extends Component
     public string $default_mode = 'quick';
 
     public bool $saved = false;
+
+    public string $new_password = '';
+
+    public string $new_password_confirmation = '';
+
+    public bool $passwordSaved = false;
 
     public function mount(): void
     {
@@ -44,6 +51,18 @@ class Profil extends Component
 
         $this->user()->fill($data)->save();
         $this->saved = true;
+    }
+
+    public function savePassword(): void
+    {
+        $this->validate(['new_password' => ['required', 'string', 'min:8', 'confirmed']], [
+            'new_password.min' => 'Mindestens 8 Zeichen.',
+            'new_password.confirmed' => 'Die beiden Eingaben stimmen nicht überein.',
+        ]);
+
+        $this->user()->forceFill(['password' => Hash::make($this->new_password)])->save();
+        $this->reset('new_password', 'new_password_confirmation');
+        $this->passwordSaved = true;
     }
 
     public function render(): View

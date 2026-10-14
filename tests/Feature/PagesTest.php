@@ -58,8 +58,8 @@ test('profile saves knowledge profile and length', function () {
         ->and($user->fresh()->preferred_length)->toBe(GuideLength::Long);
 });
 
-test('profile shows the monthly costs against the limit', function () {
-    $user = User::factory()->create(['monthly_budget_cents' => 1000]);
+test('profile shows the monthly costs against the limit to admins only', function () {
+    $user = User::factory()->create(['monthly_budget_cents' => 1000, 'is_admin' => true]);
     AiCall::factory()->for($user)->create(['cost_cents' => 850]);
 
     $this->actingAs($user)->get('/profil')->assertSee('8,50 € von 10,00 €')->assertSee('85 %');

@@ -27,7 +27,7 @@
                     <option value="{{ $mode->value }}">{{ $mode->label() }}</option>
                 @endforeach
             </select>
-            <p class="mt-1 text-xs text-stone-500">Schnell: ein Aufruf, Handy liest vor, wenige Cent. Ausführlich: Recherche, Faktencheck und Studio-Stimme, einige Minuten. Beim Fotografieren jederzeit umschaltbar.</p>
+            <p class="mt-1 text-xs text-stone-500">Schnell: Überblick in etwa 15 Sekunden. Ausführlich: zusätzlich Recherche, zwei Stimmen und Musik, etwa eine Minute. Beim Fotografieren jederzeit umschaltbar.</p>
             @error('default_mode') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
         </div>
         <button type="submit" class="kb-button">Speichern</button>
@@ -36,6 +36,8 @@
         @endif
     </form>
 
+    {{-- Kosten nur fuer Admins (Sebastian, 14.10.2026: "Clemens soll sich da keine Sorgen machen") --}}
+    @if ($user->is_admin)
     <div class="kb-card">
         <h2 class="font-semibold">Kosten diesen Monat</h2>
         <p class="mt-1 text-sm text-stone-600">{{ number_format($spentCents / 100, 2, ',', '.') }} € von {{ number_format($limitCents / 100, 2, ',', '.') }} €</p>
@@ -46,6 +48,25 @@
             <p class="mt-2 text-sm text-red-700">Du hast {{ $percent }} % deines Monatslimits verbraucht.</p>
         @endif
     </div>
+    @endif
+
+    {{-- Passwort neu setzen, auch nach der Anmeldung mit Code (14.10.2026) --}}
+    <form wire:submit="savePassword" class="kb-card flex flex-col gap-3">
+        <h2 class="font-semibold">Passwort ändern</h2>
+        <div>
+            <label for="new_password" class="kb-label">Neues Passwort</label>
+            <input id="new_password" type="password" wire:model="new_password" class="kb-input" autocomplete="new-password" minlength="8" required>
+            @error('new_password') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+        </div>
+        <div>
+            <label for="new_password_confirmation" class="kb-label">Noch einmal</label>
+            <input id="new_password_confirmation" type="password" wire:model="new_password_confirmation" class="kb-input" autocomplete="new-password" required>
+        </div>
+        <button type="submit" class="kb-button-secondary">Passwort speichern</button>
+        @if ($passwordSaved)
+            <p class="text-center text-sm text-green-700">Neues Passwort gespeichert.</p>
+        @endif
+    </form>
 
     <div class="kb-card">
         <h2 class="font-semibold">Passkeys</h2>

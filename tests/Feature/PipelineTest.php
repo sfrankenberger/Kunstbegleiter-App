@@ -268,7 +268,7 @@ test('the monthly limit stops a new capture with a clear message', function () {
     $capture = captureWithPhotos($user)->fresh();
 
     expect($capture->status)->toBe(CaptureStatus::Failed)
-        ->and($capture->error_message)->toContain('Monatslimit');
+        ->and($capture->error_message)->toContain('Kontingent');
     Http::assertNothingSent();
 });
 

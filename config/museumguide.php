@@ -51,6 +51,8 @@ return [
         'confidence_threshold' => (float) env('MUSEUMGUIDE_CONFIDENCE', 0.7),
         'tries' => 3,
         'backoff_seconds' => 20,
+        // Ohne Fortschritt so lange, dann Fehler (kunst:stuck-captures)
+        'stuck_minutes' => 10,
     ],
     'research' => [
         'max_searches' => (int) env('MUSEUMGUIDE_MAX_SEARCHES', 4),

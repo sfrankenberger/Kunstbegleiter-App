@@ -4,26 +4,63 @@
         <p class="mt-3 text-sm text-stone-600">Dein persönlicher Audioguide im Museum.</p>
     </div>
 
-    <form wire:submit="login" class="kb-card flex flex-col gap-4">
-        <div>
-            <label for="email" class="kb-label">E-Mail</label>
-            <input id="email" type="email" wire:model="email" class="kb-input" autocomplete="username webauthn" inputmode="email" required autofocus>
-            @error('email') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+    @if ($mode === 'password')
+        <form wire:submit="login" class="kb-card flex flex-col gap-4">
+            <div>
+                <label for="email" class="kb-label">E-Mail</label>
+                <input id="email" type="email" wire:model="email" class="kb-input" autocomplete="username webauthn" inputmode="email" required autofocus>
+                @error('email') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label for="password" class="kb-label">Passwort</label>
+                <input id="password" type="password" wire:model="password" class="kb-input" autocomplete="current-password" required>
+                @error('password') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+            </div>
+            <label class="flex items-center gap-2 text-sm text-stone-700">
+                <input type="checkbox" wire:model="remember" class="h-5 w-5 rounded border-stone-300 text-accent">
+                Angemeldet bleiben
+            </label>
+            <button type="submit" class="kb-button" wire:loading.attr="disabled">
+                <span wire:loading.remove wire:target="login">Anmelden</span>
+                <span wire:loading wire:target="login">Einen Moment ...</span>
+            </button>
+            <button type="button" class="text-sm font-medium text-accent" wire:click="useCode">Passwort vergessen? Mit Code aus der E-Mail anmelden</button>
+        </form>
+    @else
+        {{-- Anmelden mit Code (14.10.2026), zugleich "Passwort vergessen": danach im Profil neu setzen --}}
+        <div class="kb-card flex flex-col gap-4">
+            <p class="text-sm text-stone-600">Wir schicken dir einen sechsstelligen Code per E-Mail. Danach kannst du im Profil ein neues Passwort setzen.</p>
+            <form wire:submit="sendCode" class="flex flex-col gap-3">
+                <div>
+                    <label for="email-code" class="kb-label">E-Mail</label>
+                    <input id="email-code" type="email" wire:model="email" class="kb-input" autocomplete="username" inputmode="email" required>
+                    @error('email') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" class="{{ $codeSent ? 'kb-button-secondary' : 'kb-button' }}" wire:loading.attr="disabled" wire:target="sendCode">
+                    <span wire:loading.remove wire:target="sendCode">{{ $codeSent ? 'Code noch einmal schicken' : 'Code schicken' }}</span>
+                    <span wire:loading wire:target="sendCode">Wird verschickt ...</span>
+                </button>
+            </form>
+            @if ($notice !== '')
+                <p class="text-sm text-stone-700">{{ $notice }}</p>
+            @endif
+            @if ($codeSent)
+                <form wire:submit="loginWithCode" class="flex flex-col gap-3 border-t border-stone-200 pt-3">
+                    <div>
+                        <label for="code" class="kb-label">Code</label>
+                        <input id="code" type="text" wire:model="code" class="kb-input text-center text-2xl tracking-widest" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000000" required autofocus>
+                        @error('code') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    </div>
+                    <label class="flex items-center gap-2 text-sm text-stone-700">
+                        <input type="checkbox" wire:model="remember" class="h-5 w-5 rounded border-stone-300 text-accent">
+                        Angemeldet bleiben
+                    </label>
+                    <button type="submit" class="kb-button" wire:loading.attr="disabled" wire:target="loginWithCode">Anmelden</button>
+                </form>
+            @endif
+            <button type="button" class="text-sm font-medium text-stone-500" wire:click="usePassword">Zurück zur Anmeldung mit Passwort</button>
         </div>
-        <div>
-            <label for="password" class="kb-label">Passwort</label>
-            <input id="password" type="password" wire:model="password" class="kb-input" autocomplete="current-password" required>
-            @error('password') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
-        </div>
-        <label class="flex items-center gap-2 text-sm text-stone-700">
-            <input type="checkbox" wire:model="remember" class="h-5 w-5 rounded border-stone-300 text-accent">
-            Angemeldet bleiben
-        </label>
-        <button type="submit" class="kb-button" wire:loading.attr="disabled">
-            <span wire:loading.remove>Anmelden</span>
-            <span wire:loading>Einen Moment ...</span>
-        </button>
-    </form>
+    @endif
 
     <div
         x-data="{

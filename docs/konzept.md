@@ -193,6 +193,7 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - Orte ohne Wikidata-Eintrag bekommen den Schlüssel `places.osm_id` ("node/123") oder `place_id` (Google). Der Guide selbst recherchiert ohnehin im Netz (Websuche), die Liste ist nur der Finder.
 - Die Stadt kommt aus der Position: `Geocoder` (Nominatim, OpenStreetMap, 30 Tage Cache je gerundeter Position) liefert Stadt und Land für Ort, Prompt und Fotoerkennung. Die Annahme "Wien" ist weg. Prompt `place-guide.md` nennt je Land die amtlichen Denkmaldatenbanken (Frankreich: Base Mérimée, Base Palissy, Paris Musées, Inventaire général).
 
+## 8. Offen nach Etappe 3 (Stand 14.10.2026)
 
 
 - Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.

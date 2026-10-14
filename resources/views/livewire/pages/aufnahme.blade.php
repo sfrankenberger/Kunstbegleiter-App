@@ -324,7 +324,7 @@
     @if ($capture->isQuick() && $capture->isDone() && ($capture->artwork_id || $capture->place_id))
         <div class="kb-card flex flex-col gap-2">
             <p class="font-semibold">Mehr zu diesem Werk?</p>
-            <p class="text-sm text-stone-600">Der vertiefende Guide recherchiert im Netz, prüft die Fakten und wird von zwei Stimmen mit Musik gesprochen. Dauert etwa eine Minute, kostet etwa 20 bis 40 Cent. Die Schnellstufe bleibt erhalten.</p>
+            <p class="text-sm text-stone-600">Der vertiefende Guide recherchiert im Netz, prüft die Fakten und wird von zwei Stimmen mit Musik gesprochen. Dauert etwa eine Minute. Die Schnellstufe bleibt erhalten.</p>
             <button type="button" class="kb-button" wire:click="upgrade" wire:loading.attr="disabled">Ausführlichen Guide erstellen</button>
         </div>
     @endif
