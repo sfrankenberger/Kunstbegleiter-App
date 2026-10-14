@@ -19,7 +19,8 @@ test('a queued upload creates the capture once, even when the phone sends it aga
         'client_id' => 'abc-123',
         'full' => '1',
         'visit_id' => $visit->getKey(),
-        'photos' => [UploadedFile::fake()->image('werk.jpg', 800, 600), UploadedFile::fake()->image('schild.jpg', 400, 300)],
+        'photos' => [UploadedFile::fake()->image('schild.jpg', 400, 300), UploadedFile::fake()->image('werk.jpg', 800, 600)],
+        'types' => ['label', 'artwork'],
     ];
 
     $first = $this->actingAs($user)->post('/aufnahmen', $payload(), ['Accept' => 'application/json'])->assertCreated();
@@ -30,7 +31,8 @@ test('a queued upload creates the capture once, even when the phone sends it aga
         ->and($again->json('id'))->toBe($capture->getKey())
         ->and($capture->visit_id)->toBe($visit->getKey())
         ->and($capture->mode)->toBe(GuideMode::Full)
-        ->and($capture->photos)->toHaveCount(2);
+        ->and($capture->photos)->toHaveCount(2)
+        ->and($capture->photos->pluck('type.value')->all())->toBe(['label', 'artwork']);
     Bus::assertDispatched(StartCapture::class);
 });
 

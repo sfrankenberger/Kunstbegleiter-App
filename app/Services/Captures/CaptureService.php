@@ -32,7 +32,7 @@ class CaptureService
     /**
      * @param  list<UploadedFile>  $files
      */
-    public function create(User $user, Visit $visit, array $files, ?GuideMode $mode = null, ?RoomText $roomText = null, bool $queue = false, ?string $clientId = null): Capture
+    public function create(User $user, Visit $visit, array $files, ?GuideMode $mode = null, ?RoomText $roomText = null, bool $queue = false, ?string $clientId = null, array $types = []): Capture
     {
         $max = (int) config('museumguide.photos.max_per_capture', 3);
 
@@ -55,7 +55,8 @@ class CaptureService
 
             $capture->photos()->create([
                 'path' => (string) $path,
-                'type' => $index === 0 ? PhotoType::Artwork : PhotoType::Label,
+                // Rolle vom Handy (Werk oder Werktext, 15.10.2026), sonst erstes Foto Werk, weitere Werktext
+                'type' => PhotoType::tryFrom((string) ($types[$index] ?? '')) ?? ($index === 0 ? PhotoType::Artwork : PhotoType::Label),
                 'width' => $width,
                 'height' => $height,
                 'sort_order' => $index,

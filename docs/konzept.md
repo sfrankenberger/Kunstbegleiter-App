@@ -210,6 +210,7 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Männerstimme:** "eine Spur zu langsam oder wenig dynamisch im Vergleich zur Frau, nur an manchen Stellen". Der Erzähler hat eigene Einstellungen (`museumguide.tts.elevenlabs.voice_settings.narrator`: speed 1,05, stability 0,40, style 0,45), die Frau bleibt bei 0,45 und 0,35 ohne Tempoänderung. Gilt für neu gesprochene Guides und Antworten.
 - **Kein Schlusssatz zum Mitnehmen:** In allen Prompts gestrichen und ausdrücklich verboten; der Text endet mit der letzten inhaltlichen Aussage.
 - **Titelbox einklappbar:** Auf der Werk- und Ortsseite klappt sie beim Scrollen auf eine Zeile mit kleinem Bild zusammen, der Pfeil klappt von Hand auf oder zu.
+- **Scannen klar getrennt:** Auf Jetzt gibt es "1 Werk fotografieren" und "2 Werktext fotografieren (Schild mit Bildbeschreibung, optional)", dazu "Oder aus Fotos wählen" (erstes Foto Werk, weitere Werktext). Jede Vorschau trägt ein Schildchen Werk oder Werktext. Die Rolle geht als `types[]` an `POST /aufnahmen` und wird an der Aufnahme gespeichert, die Schnellstufe bekommt sie als Hinweis zu jedem Foto. Der Raumtext-Bereich erklärt, dass er für die nächsten Werke im Saal gilt und keinen Guide erzeugt. Der Knopf zum Erstellen steht direkt unter den Fotos.
 - **Player sagt, was läuft:** Der Knopf heißt "Schnell anhören", "Vertiefend anhören" oder "Antwort anhören", in der Zeile darüber steht dieselbe Kennzeichnung (`$store.player.label`).
 
 ## 8. Offen nach Etappe 3 (Stand 14.10.2026)

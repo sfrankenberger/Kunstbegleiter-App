@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Enums\AiPurpose;
 use App\Enums\CaptureStatus;
+use App\Enums\PhotoType;
 use App\Enums\PipelineStep;
 use App\Models\Capture;
 use App\Models\Epoch;
@@ -29,7 +30,7 @@ class QuickGuide extends PipelineJob
         $content = [];
 
         foreach ($capture->photos as $index => $photo) {
-            $content[] = ['type' => 'text', 'text' => 'Foto '.($index + 1).':'];
+            $content[] = ['type' => 'text', 'text' => 'Foto '.($index + 1).($photo->type === PhotoType::Artwork ? ' (vom Nutzer als Werk fotografiert)' : ' (vom Nutzer als Werktext oder Schild fotografiert)').':'];
             $content[] = RecognizeArtwork::imageBlock($photo);
         }
 

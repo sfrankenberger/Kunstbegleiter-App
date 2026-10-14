@@ -51,18 +51,21 @@
         <div
             class="kb-card flex flex-col gap-3"
             x-data="{
-                busy: false, sending: false, waiting: false, error: '', previews: [], blobs: [], max: {{ $maxPhotos }}, edge: {{ $maxEdge }},
+                busy: false, sending: false, waiting: false, error: '', previews: [], blobs: [], kinds: [], max: {{ $maxPhotos }}, edge: {{ $maxEdge }},
                 full: $wire.entangle('full'),
                 // Die Kamera liefert je Ausloesung ein Foto: neue Fotos kommen zu den bisherigen dazu (bis max)
-                async pick(event) {
+                // kind: artwork (Werk), label (Werktext, Bildbeschreibung) oder auto (Galerie: erst Werk, dann Werktext)
+                async pick(event, kind) {
                     const files = Array.from(event.target.files || []).slice(0, this.max - this.blobs.length);
                     event.target.value = '';
                     if (!files.length) return;
                     this.busy = true;
                     try {
-                        const fresh = [];
-                        for (const file of files) fresh.push(await this.shrink(file));
-                        this.blobs.push(...fresh);
+                        for (const file of files) {
+                            const blob = await this.shrink(file);
+                            this.blobs.push(blob);
+                            this.kinds.push(kind === 'auto' ? (this.kinds.includes('artwork') ? 'label' : 'artwork') : kind);
+                        }
                         this.refreshPreviews();
                         this.waiting = false; this.error = '';
                     } catch (e) {
@@ -71,8 +74,10 @@
                         this.busy = false;
                     }
                 },
+                hasArtwork() { return this.kinds.includes('artwork'); },
                 remove(i) {
                     this.blobs.splice(i, 1);
+                    this.kinds.splice(i, 1);
                     this.refreshPreviews();
                 },
                 // Erst am Handy speichern, dann senden; ohne Netz bleibt sie in der Warteschlange
@@ -80,8 +85,10 @@
                     if (! this.blobs.length || this.sending) return;
                     this.sending = true; this.error = ''; this.waiting = false;
                     try {
-                        const entry = await window.KunstOffline.add({ blobs: this.blobs, full: this.full, roomTextId: $wire.roomTextId, visitId: {{ (int) $visit->getKey() }} });
-                        this.blobs = []; this.refreshPreviews();
+                        // Werkfotos zuerst, dann Werktexte
+                        const order = this.blobs.map((b, i) => i).sort((a, b) => (this.kinds[a] === 'artwork' ? 0 : 1) - (this.kinds[b] === 'artwork' ? 0 : 1));
+                        const entry = await window.KunstOffline.add({ blobs: order.map(i => this.blobs[i]), kinds: order.map(i => this.kinds[i]), full: this.full, roomTextId: $wire.roomTextId, visitId: {{ (int) $visit->getKey() }} });
+                        this.blobs = []; this.kinds = []; this.refreshPreviews();
                         const result = await window.KunstOffline.flush(entry.id);
                         if (result && result.url) { window.Livewire.navigate(result.url); return; }
                         if (result && result.error) { this.error = result.error; } else { this.waiting = true; }
@@ -112,7 +119,7 @@
                         img.src = url;
                     });
                 },
-                clear() { this.blobs = []; this.refreshPreviews(); },
+                clear() { this.blobs = []; this.kinds = []; this.refreshPreviews(); },
                 async pickRoom(event) {
                     const file = (event.target.files || [])[0];
                     event.target.value = '';
@@ -130,49 +137,35 @@
                 },
             }"
         >
-            <input type="file" accept="image/*" capture="environment" multiple class="hidden" x-ref="camera" x-on:change="pick($event)">
-            <input type="file" accept="image/*" multiple class="hidden" x-ref="library" x-on:change="pick($event)">
+            {{-- Klar getrennt (15.10.2026): Werk fotografieren, Werktext (Bildbeschreibung am Schild) fotografieren --}}
+            <input type="file" accept="image/*" capture="environment" class="hidden" x-ref="camera" x-on:change="pick($event, 'artwork')">
+            <input type="file" accept="image/*" capture="environment" class="hidden" x-ref="label" x-on:change="pick($event, 'label')">
+            <input type="file" accept="image/*" multiple class="hidden" x-ref="library" x-on:change="pick($event, 'auto')">
 
             <template x-if="previews.length">
                 <div class="flex gap-2">
                     <template x-for="(src, i) in previews" :key="src">
                         <div class="relative">
                             <img :src="src" alt="" class="h-20 w-20 rounded-lg object-cover">
+                            <span class="absolute inset-x-0 bottom-0 rounded-b-lg bg-stone-900/70 py-0.5 text-center text-[10px] font-semibold text-white" x-text="kinds[i] === 'artwork' ? 'Werk' : 'Werktext'"></span>
                             <button type="button" class="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-stone-800 text-xs text-white" x-on:click="remove(i)" x-bind:disabled="busy" aria-label="Foto entfernen">×</button>
                         </div>
                     </template>
                 </div>
             </template>
 
-            <div class="grid grid-cols-2 gap-2">
-                <button type="button" class="kb-button-secondary" x-on:click="$refs.camera.click()" x-bind:disabled="busy || blobs.length >= max" x-text="blobs.length ? 'Weiteres Foto' : 'Foto aufnehmen'"></button>
-                <button type="button" class="kb-button-secondary" x-on:click="$refs.library.click()" x-bind:disabled="busy || blobs.length >= max">Aus Fotos wählen</button>
+            <div class="flex flex-col gap-2">
+                <button type="button" class="kb-button-secondary justify-start gap-3" x-on:click="$refs.camera.click()" x-bind:disabled="busy || blobs.length >= max">
+                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-sm text-white">1</span>
+                    <span class="text-left" x-text="hasArtwork() ? 'Weiteres Foto vom Werk' : 'Werk fotografieren'"></span>
+                </button>
+                <button type="button" class="kb-button-secondary justify-start gap-3" x-on:click="$refs.label.click()" x-bind:disabled="busy || blobs.length >= max">
+                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-200 text-sm text-stone-700">2</span>
+                    <span class="text-left">Werktext fotografieren <span class="font-normal text-stone-500">(Schild mit Bildbeschreibung, optional)</span></span>
+                </button>
+                <button type="button" class="self-start text-sm font-medium text-accent" x-on:click="$refs.library.click()" x-bind:disabled="busy || blobs.length >= max">Oder aus Fotos wählen</button>
             </div>
-            <p class="text-xs text-stone-500">1 bis {{ $maxPhotos }} Fotos: das Werk, dazu der Werktext. Den Raumtext einmal eigens scannen, er gilt dann für die nächsten Werke.</p>
-
-            {{-- Raumtext: nur ablesen und merken (Sebastian, 07.10.2026), Auswahl als Kontext fuer die naechsten Aufnahmen --}}
-            <input type="file" accept="image/*" capture="environment" class="hidden" x-ref="room" x-on:change="pickRoom($event)">
-            <div class="flex flex-wrap items-center gap-2 border-t border-stone-200 pt-3">
-                <button type="button" class="kb-button-secondary w-auto px-3 py-2 text-sm" x-on:click="$refs.room.click()" x-bind:disabled="busy" wire:loading.attr="disabled" wire:target="scanRoomText, roomPhoto">Raumtext scannen</button>
-                <span class="text-xs text-stone-500" wire:loading wire:target="scanRoomText, roomPhoto">Raumtext wird abgelesen ...</span>
-                @foreach ($roomTexts as $roomText)
-                    <button type="button" class="rounded-full px-3 py-1 text-xs {{ $roomTextId === $roomText->getKey() ? 'bg-accent text-white' : 'bg-stone-100 text-stone-700' }}" wire:click="toggleRoomText({{ $roomText->getKey() }})" wire:key="room-{{ $roomText->getKey() }}" title="{{ $roomText->excerpt() }}">{{ $roomTextId === $roomText->getKey() ? '✓ ' : '' }}{{ \Illuminate\Support\Str::limit($roomText->label(), 28) }}</button>
-                @endforeach
-            </div>
-            @if ($roomTexts->isNotEmpty())
-                <p class="text-xs text-stone-500">{{ $roomTextId ? 'Der markierte Raumtext fließt in die nächsten Aufnahmen ein.' : 'Raumtext antippen, damit er in die nächsten Aufnahmen einfließt.' }} Nachlesen im <a href="{{ route('archiv') }}" wire:navigate class="text-accent">Archiv</a>.</p>
-            @endif
-            @if ($roomTextError !== '')
-                <p class="text-sm text-red-700">{{ $roomTextError }}</p>
-            @endif
-
-            <p x-show="busy" x-cloak class="text-sm text-stone-600">Fotos werden verkleinert ...</p>
-            <p x-show="error" x-cloak x-text="error" class="text-sm text-red-700"></p>
-            <p x-show="waiting" x-cloak class="text-sm text-stone-700">Gerade kein Netz. Die Aufnahme ist am Handy gespeichert und wird automatisch gesendet, sobald wieder Empfang da ist. Du kannst inzwischen weiter fotografieren.</p>
-
-            @if ($uploadError !== '')
-                <p class="text-sm text-red-700">{{ $uploadError }}</p>
-            @endif
+            <p class="text-xs text-stone-500">Höchstens {{ $maxPhotos }} Fotos. Der Werktext hilft bei der Erkennung und landet als Text im Archiv, das Foto davon wird danach gelöscht.</p>
 
             <template x-if="blobs.length">
                 <div class="flex flex-col gap-3">
@@ -188,6 +181,32 @@
                     <button type="button" class="text-sm text-stone-500" x-on:click="clear">Fotos verwerfen</button>
                 </div>
             </template>
+
+            <p x-show="error" x-cloak x-text="error" class="text-sm text-red-700"></p>
+            <p x-show="waiting" x-cloak class="text-sm text-stone-700">Gerade kein Netz. Die Aufnahme ist am Handy gespeichert und wird automatisch gesendet, sobald wieder Empfang da ist. Du kannst inzwischen weiter fotografieren.</p>
+            {{-- Raumtext: nur ablesen und merken (Sebastian, 07.10.2026), Auswahl als Kontext fuer die naechsten Aufnahmen --}}
+            <input type="file" accept="image/*" capture="environment" class="hidden" x-ref="room" x-on:change="pickRoom($event)">
+            <div class="flex flex-wrap items-center gap-2 border-t border-stone-200 pt-3">
+                <p class="w-full text-xs text-stone-500">Raumtext (Saaltext an der Wand): nur einmal scannen, er gilt dann für die nächsten Werke in diesem Saal. Es entsteht kein Guide.</p>
+                <button type="button" class="kb-button-secondary w-auto px-3 py-2 text-sm" x-on:click="$refs.room.click()" x-bind:disabled="busy" wire:loading.attr="disabled" wire:target="scanRoomText, roomPhoto">Raumtext scannen</button>
+                <span class="text-xs text-stone-500" wire:loading wire:target="scanRoomText, roomPhoto">Raumtext wird abgelesen ...</span>
+                @foreach ($roomTexts as $roomText)
+                    <button type="button" class="rounded-full px-3 py-1 text-xs {{ $roomTextId === $roomText->getKey() ? 'bg-accent text-white' : 'bg-stone-100 text-stone-700' }}" wire:click="toggleRoomText({{ $roomText->getKey() }})" wire:key="room-{{ $roomText->getKey() }}" title="{{ $roomText->excerpt() }}">{{ $roomTextId === $roomText->getKey() ? '✓ ' : '' }}{{ \Illuminate\Support\Str::limit($roomText->label(), 28) }}</button>
+                @endforeach
+            </div>
+            @if ($roomTexts->isNotEmpty())
+                <p class="text-xs text-stone-500">{{ $roomTextId ? 'Der markierte Raumtext fließt in die nächsten Aufnahmen ein.' : 'Raumtext antippen, damit er in die nächsten Aufnahmen einfließt.' }} Nachlesen im <a href="{{ route('archiv') }}" wire:navigate class="text-accent">Archiv</a>.</p>
+            @endif
+            @if ($roomTextError !== '')
+                <p class="text-sm text-red-700">{{ $roomTextError }}</p>
+            @endif
+
+            <p x-show="busy" x-cloak class="text-sm text-stone-600">Fotos werden verkleinert ...</p>
+
+            @if ($uploadError !== '')
+                <p class="text-sm text-red-700">{{ $uploadError }}</p>
+            @endif
+
         </div>
 
         @if ($captures->isNotEmpty())

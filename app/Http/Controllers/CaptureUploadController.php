@@ -31,6 +31,8 @@ class CaptureUploadController extends Controller
             'full' => ['nullable', 'boolean'],
             'room_text_id' => ['nullable', 'integer'],
             'visit_id' => ['nullable', 'integer'],
+            'types' => ['nullable', 'array'],
+            'types.*' => ['in:artwork,label'],
         ]);
 
         /** @var User $user */
@@ -51,7 +53,7 @@ class CaptureUploadController extends Controller
 
         $roomText = isset($data['room_text_id']) ? RoomText::query()->whereBelongsTo($user)->find($data['room_text_id']) : null;
 
-        $capture = $captures->create($user, $visit, array_values($request->file('photos')), ($data['full'] ?? false) ? GuideMode::Full : GuideMode::Quick, $roomText, queue: true, clientId: $data['client_id']);
+        $capture = $captures->create($user, $visit, array_values($request->file('photos')), ($data['full'] ?? false) ? GuideMode::Full : GuideMode::Quick, $roomText, queue: true, clientId: $data['client_id'], types: array_values($data['types'] ?? []));
 
         return response()->json(['url' => route('aufnahme', $capture), 'id' => $capture->getKey()], 201);
     }

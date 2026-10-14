@@ -44,7 +44,7 @@
     // Fotos als ArrayBuffer speichern (sicherer als Blobs in aelteren iOS-Versionen)
     async function add(data) {
         const photos = [];
-        for (const blob of data.blobs) photos.push({ type: blob.type || 'image/jpeg', name: blob.name || 'foto.jpg', buffer: await blob.arrayBuffer() });
+        for (const [i, blob] of data.blobs.entries()) photos.push({ type: blob.type || 'image/jpeg', name: blob.name || 'foto.jpg', kind: (data.kinds || [])[i] || (i === 0 ? 'artwork' : 'label'), buffer: await blob.arrayBuffer() });
         const entry = { id: uuid(), createdAt: Date.now(), photos, full: !!data.full, roomTextId: data.roomTextId || null, visitId: data.visitId || null };
         await run('readwrite', s => s.put(entry));
         await refreshCount();
@@ -63,7 +63,10 @@
         body.append('full', entry.full ? '1' : '0');
         if (entry.roomTextId) body.append('room_text_id', entry.roomTextId);
         if (entry.visitId) body.append('visit_id', entry.visitId);
-        entry.photos.forEach((p, i) => body.append('photos[]', new File([p.buffer], p.name || ('foto-' + (i + 1) + '.jpg'), { type: p.type })));
+        entry.photos.forEach((p, i) => {
+            body.append('photos[]', new File([p.buffer], p.name || ('foto-' + (i + 1) + '.jpg'), { type: p.type }));
+            body.append('types[]', p.kind || (i === 0 ? 'artwork' : 'label'));
+        });
 
         let response;
         try {
