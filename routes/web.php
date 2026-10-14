@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AudioController;
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\CaptureUploadController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\RoomTextPhotoController;
 use App\Livewire\Auth\Login;
@@ -34,6 +35,7 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::get('jetzt', Jetzt::class)->name('jetzt');
     Route::get('aufnahme/{capture}', Aufnahme::class)->name('aufnahme');
+    Route::post('aufnahmen', CaptureUploadController::class)->middleware('throttle:30,1')->name('aufnahmen.store');
     Route::get('fotos/{photo}', PhotoController::class)->middleware('signed')->name('fotos.show');
     Route::get('audio/{guide}', AudioController::class)->middleware('signed')->name('audio.show');
     Route::get('archiv', Archiv::class)->name('archiv');

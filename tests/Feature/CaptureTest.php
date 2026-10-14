@@ -25,7 +25,6 @@ test('photos become a capture, the visit is extended and the user lands on the c
     Livewire::actingAs($user)->test(Jetzt::class)
         ->set('photos', [UploadedFile::fake()->image('werk.jpg', 1200, 900), UploadedFile::fake()->image('schild.jpg', 800, 600)])
         ->assertSet('uploadError', '')
-        ->assertSee('2 Fotos bereit')
         ->call('createCapture')
         ->assertRedirect();
 

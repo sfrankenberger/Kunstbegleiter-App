@@ -32,6 +32,13 @@
         </header>
 
         <main class="flex-1 px-4 py-4 {{ $tabs ? 'pb-24' : '' }}">
+            {{-- Netz und Offline-Warteschlange (public/js/offline.js, 14.10.2026) --}}
+            <div x-data x-cloak x-show="! $store.net.online || $store.net.pending > 0 || $store.net.sent || $store.net.error" class="mb-3 flex flex-col gap-1 rounded-xl px-3 py-2 text-sm" :class="$store.net.error ? 'bg-red-50 text-red-800' : 'bg-accent-soft text-accent'">
+                <p x-show="! $store.net.online">Kein Netz. Fotos werden am Handy aufgehoben und gesendet, sobald wieder Empfang da ist.</p>
+                <p x-show="$store.net.pending > 0" x-text="($store.net.pending === 1 ? '1 Aufnahme wartet' : $store.net.pending + ' Aufnahmen warten') + ($store.net.sending ? ', wird gesendet ...' : ' auf Netz.')"></p>
+                <p x-show="$store.net.sent">Aufnahme gesendet. <a :href="$store.net.sent" class="font-semibold underline" x-on:click="$store.net.sent = ''">Ansehen</a></p>
+                <p x-show="$store.net.error" x-text="$store.net.error"></p>
+            </div>
             {{ $slot }}
             <div x-data x-show="$store.player.src" x-cloak class="h-24" aria-hidden="true"></div>
         </main>
@@ -70,6 +77,7 @@
         <img :src="$store.lightbox.src" alt="" class="max-h-full max-w-full rounded-lg object-contain">
     </div>
 
+    <script src="/js/offline.js?v={{ @filemtime(public_path('js/offline.js')) ?: 1 }}"></script>
     <script src="/js/player.js?v={{ @filemtime(public_path('js/player.js')) ?: 1 }}"></script>
     @livewireScripts
     <script>

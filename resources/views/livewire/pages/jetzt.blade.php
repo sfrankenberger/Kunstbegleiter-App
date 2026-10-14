@@ -14,11 +14,13 @@
             @endif
         </div>
 
-        {{-- Aufnahme: 1 bis 3 Fotos, im Browser verkleinert (lange Kante {{ $maxEdge }} px), dann Livewire-Upload --}}
+        {{-- Aufnahme: 1 bis 3 Fotos, im Browser verkleinert (lange Kante {{ $maxEdge }} px), dann ueber die
+             Offline-Warteschlange (public/js/offline.js) an POST /aufnahmen; bei Funkloch bleiben sie am Handy --}}
         <div
             class="kb-card flex flex-col gap-3"
             x-data="{
-                busy: false, previews: [], blobs: [], max: {{ $maxPhotos }}, edge: {{ $maxEdge }},
+                busy: false, sending: false, waiting: false, error: '', previews: [], blobs: [], max: {{ $maxPhotos }}, edge: {{ $maxEdge }},
+                full: $wire.entangle('full'),
                 // Die Kamera liefert je Ausloesung ein Foto: neue Fotos kommen zu den bisherigen dazu (bis max)
                 async pick(event) {
                     const files = Array.from(event.target.files || []).slice(0, this.max - this.blobs.length);
@@ -30,25 +32,31 @@
                         for (const file of files) fresh.push(await this.shrink(file));
                         this.blobs.push(...fresh);
                         this.refreshPreviews();
-                        // uploadMultiple haengt an (Livewire append = true): nur die neuen Dateien schicken, sonst
-                        // landet jedes Foto doppelt (Sebastian, 07.10.2026: "Bild immer 2 mal angezeigt")
-                        await new Promise((resolve, reject) => $wire.uploadMultiple('photos', fresh, resolve, reject));
+                        this.waiting = false; this.error = '';
                     } catch (e) {
-                        $wire.set('uploadError', 'Das Foto konnte nicht verarbeitet werden.');
+                        this.error = 'Das Foto konnte nicht verarbeitet werden.';
                     } finally {
                         this.busy = false;
                     }
                 },
-                async remove(i) {
+                remove(i) {
                     this.blobs.splice(i, 1);
                     this.refreshPreviews();
-                    this.busy = true;
+                },
+                // Erst am Handy speichern, dann senden; ohne Netz bleibt sie in der Warteschlange
+                async submit() {
+                    if (! this.blobs.length || this.sending) return;
+                    this.sending = true; this.error = ''; this.waiting = false;
                     try {
-                        // Liste am Server neu aufbauen: leeren, dann die verbliebenen Fotos wieder hochladen
-                        await $wire.set('photos', []);
-                        if (this.blobs.length) await new Promise((resolve, reject) => $wire.uploadMultiple('photos', this.blobs, resolve, reject));
+                        const entry = await window.KunstOffline.add({ blobs: this.blobs, full: this.full, roomTextId: $wire.roomTextId, visitId: {{ (int) $visit->getKey() }} });
+                        this.blobs = []; this.refreshPreviews();
+                        const result = await window.KunstOffline.flush(entry.id);
+                        if (result && result.url) { window.Livewire.navigate(result.url); return; }
+                        if (result && result.error) { this.error = result.error; } else { this.waiting = true; }
+                    } catch (e) {
+                        this.error = 'Die Aufnahme konnte nicht gespeichert werden.';
                     } finally {
-                        this.busy = false;
+                        this.sending = false;
                     }
                 },
                 refreshPreviews() {
@@ -72,7 +80,7 @@
                         img.src = url;
                     });
                 },
-                clear() { this.blobs = []; this.previews = []; $wire.set('photos', []); },
+                clear() { this.blobs = []; this.refreshPreviews(); },
                 async pickRoom(event) {
                     const file = (event.target.files || [])[0];
                     event.target.value = '';
@@ -126,25 +134,28 @@
                 <p class="text-sm text-red-700">{{ $roomTextError }}</p>
             @endif
 
-            <div wire:loading wire:target="photos" class="text-sm text-stone-600">Fotos werden hochgeladen ...</div>
             <p x-show="busy" x-cloak class="text-sm text-stone-600">Fotos werden verkleinert ...</p>
+            <p x-show="error" x-cloak x-text="error" class="text-sm text-red-700"></p>
+            <p x-show="waiting" x-cloak class="text-sm text-stone-700">Gerade kein Netz. Die Aufnahme ist am Handy gespeichert und wird automatisch gesendet, sobald wieder Empfang da ist. Du kannst inzwischen weiter fotografieren.</p>
 
             @if ($uploadError !== '')
                 <p class="text-sm text-red-700">{{ $uploadError }}</p>
             @endif
 
-            @if ($photos !== [])
-                <p class="text-sm text-stone-700">{{ count($photos) }} {{ count($photos) === 1 ? 'Foto' : 'Fotos' }} bereit.</p>
-                <label class="flex items-center gap-2 text-sm text-stone-700">
-                    <input type="checkbox" wire:model="full" class="h-5 w-5 rounded border-stone-300">
-                    <span>Gleich ausführlich (Recherche und Studio-Stimme, dauert einige Minuten)</span>
-                </label>
-                <button type="button" class="kb-button h-14 text-lg" wire:click="createCapture" wire:loading.attr="disabled">
-                    <span wire:loading.remove wire:target="createCapture">{{ $full ? 'Ausführlichen Guide erstellen' : 'Schnellen Überblick erstellen' }}</span>
-                    <span wire:loading wire:target="createCapture">{{ $full ? 'Erkenne das Werk ...' : 'Erkenne das Werk und schreibe den Überblick ...' }}</span>
-                </button>
-                <button type="button" class="text-sm text-stone-500" x-on:click="clear">Fotos verwerfen</button>
-            @endif
+            <template x-if="blobs.length">
+                <div class="flex flex-col gap-3">
+                    <p class="text-sm text-stone-700" x-text="blobs.length + (blobs.length === 1 ? ' Foto' : ' Fotos') + ' bereit.'"></p>
+                    <label class="flex items-center gap-2 text-sm text-stone-700">
+                        <input type="checkbox" x-model="full" class="h-5 w-5 rounded border-stone-300">
+                        <span>Zusätzlich vertiefend (Recherche, zwei Stimmen, etwa eine Minute)</span>
+                    </label>
+                    <button type="button" class="kb-button h-14 text-lg" x-on:click="submit" x-bind:disabled="sending || busy">
+                        <span x-show="! sending" x-text="full ? 'Überblick und vertiefenden Guide erstellen' : 'Schnellen Überblick erstellen'"></span>
+                        <span x-show="sending" x-cloak>Wird gesendet ...</span>
+                    </button>
+                    <button type="button" class="text-sm text-stone-500" x-on:click="clear">Fotos verwerfen</button>
+                </div>
+            </template>
         </div>
 
         @if ($captures->isNotEmpty())

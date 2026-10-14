@@ -126,7 +126,7 @@ test('the profile default and the switch on jetzt decide the mode', function () 
         ->assertSet('full', false)
         ->set('full', true)
         ->set('photos', [UploadedFile::fake()->image('werk.jpg')])
-        ->assertSee('Ausführlichen Guide erstellen')
+        ->assertSee('Zusätzlich vertiefend')
         ->call('createCapture');
 
     expect(Capture::query()->first()->mode)->toBe(GuideMode::Full);

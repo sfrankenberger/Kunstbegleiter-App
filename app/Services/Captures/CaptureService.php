@@ -5,6 +5,7 @@ namespace App\Services\Captures;
 use App\Enums\CaptureStatus;
 use App\Enums\GuideMode;
 use App\Enums\PhotoType;
+use App\Jobs\StartCapture;
 use App\Models\Capture;
 use App\Models\CapturePhoto;
 use App\Models\Place;
@@ -12,6 +13,7 @@ use App\Models\RoomText;
 use App\Models\User;
 use App\Models\Visit;
 use App\Services\Pipeline\Pipeline;
+use App\Support\QueueKick;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
@@ -30,7 +32,7 @@ class CaptureService
     /**
      * @param  list<UploadedFile>  $files
      */
-    public function create(User $user, Visit $visit, array $files, ?GuideMode $mode = null, ?RoomText $roomText = null): Capture
+    public function create(User $user, Visit $visit, array $files, ?GuideMode $mode = null, ?RoomText $roomText = null, bool $queue = false, ?string $clientId = null): Capture
     {
         $max = (int) config('museumguide.photos.max_per_capture', 3);
 
@@ -40,6 +42,7 @@ class CaptureService
 
         $capture = $visit->captures()->create([
             'user_id' => $user->getKey(),
+            'client_id' => $clientId,
             'status' => CaptureStatus::Uploaded,
             'length' => $user->preferred_length?->value ?? 'normal',
             'mode' => $mode ?? $user->default_mode ?? GuideMode::Quick,
@@ -60,7 +63,14 @@ class CaptureService
         }
 
         $visit->extend();
-        $this->startPipeline($capture);
+
+        if ($queue) {
+            // Aus der Offline-Warteschlange: sofort antworten, Fortschritt zeigt die Seite (14.10.2026)
+            StartCapture::dispatch($capture->getKey());
+            QueueKick::now();
+        } else {
+            $this->startPipeline($capture);
+        }
 
         return $capture;
     }

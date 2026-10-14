@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['visit_id', 'user_id', 'artwork_id', 'place_id', 'room_text_id', 'lat', 'lng', 'status', 'length', 'mode', 'recognition', 'label_text', 'confirmed_at', 'error_message'])]
+#[Fillable(['visit_id', 'user_id', 'client_id', 'artwork_id', 'place_id', 'room_text_id', 'lat', 'lng', 'status', 'length', 'mode', 'recognition', 'label_text', 'confirmed_at', 'error_message'])]
 /**
  * Eine Analyse aus 1 bis 3 Fotos: Erkennung, Recherche, Skript, Audio (Etappe 3). Papierkorb mit Kaskade auf
  * Fotos, Audioguide und Fact Sheet.
