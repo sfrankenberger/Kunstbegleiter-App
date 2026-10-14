@@ -26,6 +26,14 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 | Raumtext scannen, merken, als Kontext für Aufnahmen wählen, im Archiv nachlesen | `App\Services\Captures\RoomTextService`, `App\Models\RoomText`, `Capture::labelText`, Jetzt (`scanRoomText`, `toggleRoomText`), `App\Livewire\Pages\RaumText` (Route `raumtext`), `RoomTextPhotoController` |
 | Textfotos nach dem Ablesen löschen, Text bleibt (Aufnahme und Raumtext), Bestand mit `kunst:drop-text-photos` | `CaptureService::dropTextPhotos`, `RoomTextService::dropPhoto`, `App\Console\Commands\DropTextPhotos` |
 | Lightbox (Bild groß per Tipp, Archiv und Werkseite) | Store `lightbox` in `public/js/player.js`, Overlay in `resources/views/components/layouts/app.blade.php` |
+| Hängende Aufnahmen beenden | `App\Console\Commands\FailStuckCaptures` (`kunst:stuck-captures`, alle 5 Minuten) |
+| Anmelden mit Code, Passwort ändern | `App\Services\Auth\LoginCodes`, `App\Mail\LoginCodeMail`, `App\Livewire\Auth\Login` (`sendCode`, `loginWithCode`), `Profil::savePassword` |
+| Offline-Warteschlange für Aufnahmen, Audio offline | `public/js/offline.js`, `App\Http\Controllers\CaptureUploadController` (`POST /aufnahmen`), `App\Jobs\StartCapture`, Cache in `public/js/player.js` |
+| Nachfragen zum Werk oder Ort | `App\Services\Questions\QuestionService`, `App\Models\CaptureQuestion`, `Aufnahme::ask`, `Voice::speak`, `AnswerAudioController` |
+| Vertiefenden Guide wiederverwenden, persönlich neu | `Pipeline::reuseFull`, `Pipeline::regenerateFull`, `Aufnahme::regenerate` |
+| Besuchsrückblick, PDF und geteilter Link | `App\Http\Controllers\VisitReviewController`, `resources/views/rueckblick.blade.php` |
+| Archivfilter, Besuche im Archiv | `App\Livewire\Pages\Archiv` |
+| Nicht verpassen (Museums-Highlights) | `Schemas::museum` (`highlights`), `ResearchMuseum::due`, Jetzt |
 | Titelbox der Detailseiten bleibt beim Scrollen unter der Kopfzeile stehen (Werk/Ort und Künstler) | Klasse `kb-title-card` in `resources/css/app.css`, genutzt in `aufnahme.blade.php` und `kuenstler-detail.blade.php` |
 | Fotos ausliefern (signiert, nur mit Sicht) | `App\Http\Controllers\PhotoController`, `CapturePhoto::url()`, Route `fotos.show` |
 | Reiter Archiv (fertige Aufnahmen, Suche) | `App\Livewire\Pages\Archiv` (`?q=`) |

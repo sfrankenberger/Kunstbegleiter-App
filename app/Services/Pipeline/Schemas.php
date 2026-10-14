@@ -173,6 +173,13 @@ class Schemas
             'online_collection' => self::nullableString(),
             'audioguide' => self::nullableString(),
             'notes' => self::array(['type' => 'string']),
+            // "Nicht verpassen" beim Start eines Besuchs (14.10.2026)
+            'highlights' => self::array(self::object([
+                'title' => ['type' => 'string'],
+                'artist' => ['type' => 'string'],
+                'location' => ['type' => 'string'],
+                'reason' => ['type' => 'string'],
+            ])),
         ]);
     }
 

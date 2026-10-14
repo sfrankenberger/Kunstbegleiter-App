@@ -29,11 +29,21 @@ class ResearchMuseum implements ShouldQueue
 
     public function __construct(public readonly int $museumId, public readonly ?int $userId = null) {}
 
+    /**
+     * Neu recherchieren, wenn aelter als eine Woche oder wenn die Empfehlungen noch fehlen (vor dem 14.10.2026).
+     */
+    public static function due(Museum $museum): bool
+    {
+        return $museum->researched_at === null
+            || $museum->researched_at->lt(now()->subWeek())
+            || ! array_key_exists('highlights', (array) $museum->research);
+    }
+
     public function handle(): void
     {
         $museum = Museum::query()->with('city')->find($this->museumId);
 
-        if ($museum === null || ($museum->researched_at !== null && $museum->researched_at->gt(now()->subWeek()))) {
+        if ($museum === null || ! self::due($museum)) {
             return;
         }
 

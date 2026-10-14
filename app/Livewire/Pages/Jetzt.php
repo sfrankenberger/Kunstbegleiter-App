@@ -228,6 +228,8 @@ class Jetzt extends Component
             'visit' => $visit,
             'captures' => $visit?->captures()->with(['artwork.artist', 'photos'])->latest()->get() ?? collect(),
             'roomTexts' => $visit?->roomTexts()->latest()->limit(8)->get() ?? collect(),
+            'highlights' => array_values(array_filter((array) ($visit?->museum?->research['highlights'] ?? []), fn ($h) => is_array($h) && filled($h['title'] ?? null))),
+            'highlightsPending' => $visit?->museum !== null && ! array_key_exists('highlights', (array) $visit->museum->research) && $visit->created_at->gt(now()->subMinutes(5)),
             'photoTypes' => PhotoType::cases(),
             'maxPhotos' => (int) config('museumguide.photos.max_per_capture', 3),
             'maxEdge' => (int) config('museumguide.photos.max_edge', 2000),

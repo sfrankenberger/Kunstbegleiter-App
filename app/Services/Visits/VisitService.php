@@ -8,6 +8,7 @@ use App\Models\City;
 use App\Models\Museum;
 use App\Models\User;
 use App\Models\Visit;
+use App\Support\QueueKick;
 use Illuminate\Support\Str;
 
 /**
@@ -110,11 +111,12 @@ class VisitService
      */
     private function researchMuseum(?Museum $museum, ?User $user): void
     {
-        if ($museum === null || ($museum->researched_at !== null && $museum->researched_at->gt(now()->subWeek()))) {
+        if ($museum === null || ! ResearchMuseum::due($museum)) {
             return;
         }
 
         ResearchMuseum::dispatch($museum->getKey(), $user?->getKey());
+        QueueKick::now();
     }
 
     /**

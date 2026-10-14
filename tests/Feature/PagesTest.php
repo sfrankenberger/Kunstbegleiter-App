@@ -6,6 +6,7 @@ use App\Models\AiCall;
 use App\Models\Artist;
 use App\Models\Artwork;
 use App\Models\Capture;
+use App\Models\Museum;
 use App\Models\User;
 use App\Models\Visit;
 use Livewire\Livewire;
@@ -75,4 +76,20 @@ test('the artist tab lists artists of own captures and the artist page shows the
     $this->actingAs($user)->get(route('kuenstler.show', $artist))->assertOk()
         ->assertSee('Tulln')->assertSee('Schüler von Klimt')->assertSee('Die Familie')->assertSee('Schiele-Forschung')->assertSee('Sitzende Frau');
     $this->actingAs($user)->get(route('aufnahme', $capture))->assertOk()->assertSee('player.js');
+});
+
+test('jetzt shows the highlights of the museum and ticks off what was captured', function () {
+    $user = User::factory()->create();
+    $museum = Museum::factory()->create(['research' => ['highlights' => [
+        ['title' => 'Der Kuss', 'artist' => 'Gustav Klimt', 'location' => 'Oberes Belvedere, 1. Stock', 'reason' => 'Hauptwerk der Goldenen Periode.'],
+        ['title' => 'Judith', 'artist' => 'Gustav Klimt', 'location' => '', 'reason' => 'Frühes Goldbild.'],
+    ]], 'researched_at' => now()]);
+    $visit = Visit::factory()->for($user)->create(['museum_id' => $museum->getKey()]);
+    Capture::factory()->for($visit)->for($user)->done()->create(['artwork_id' => Artwork::factory()->create(['title' => 'Der Kuss'])->getKey()]);
+
+    $this->actingAs($user)->get('/jetzt')
+        ->assertSee('Nicht verpassen (2)')
+        ->assertSee('Oberes Belvedere, 1. Stock')
+        ->assertSee('Frühes Goldbild.')
+        ->assertDontSee('Hauptwerk der Goldenen Periode.');
 });

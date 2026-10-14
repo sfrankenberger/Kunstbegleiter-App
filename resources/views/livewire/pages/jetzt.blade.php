@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-4" @if ($highlightsPending) wire:poll.10s @endif>
     @if ($visit)
         <div class="kb-card">
             <div class="flex items-start justify-between gap-2">
@@ -16,6 +16,33 @@
             </div>
             @if (! $visit->museum)
                 <button type="button" class="mt-3 text-sm font-medium text-accent" wire:click="$set('showManual', true)">Museum eintragen</button>
+            @endif
+
+            {{-- Nicht verpassen (14.10.2026): aus der Museumsrecherche, abgehakt, was schon fotografiert ist --}}
+            @if ($highlights !== [])
+                @php($seen = $captures->map(fn ($c) => mb_strtolower((string) $c->artwork?->title))->filter()->all())
+                <details class="mt-3 border-t border-stone-200 pt-3" @if ($captures->isEmpty()) open @endif>
+                    <summary class="cursor-pointer text-sm font-semibold text-stone-700">Nicht verpassen ({{ count($highlights) }})</summary>
+                    <ol class="mt-2 flex flex-col gap-2">
+                        @foreach ($highlights as $h)
+                            @php($done = collect($seen)->contains(fn ($t) => $t !== '' && (str_contains($t, mb_strtolower($h['title'])) || str_contains(mb_strtolower($h['title']), $t))))
+                            <li class="flex gap-2 text-sm {{ $done ? 'text-stone-400' : 'text-stone-700' }}">
+                                <span class="w-5 shrink-0 text-right">{{ $done ? '✓' : $loop->iteration.'.' }}</span>
+                                <div class="min-w-0">
+                                    <p class="font-medium {{ $done ? 'line-through' : 'text-ink' }}">{{ $h['title'] }}{{ filled($h['artist'] ?? null) ? ', '.$h['artist'] : '' }}</p>
+                                    @if (filled($h['location'] ?? null))
+                                        <p class="text-xs text-stone-500">{{ $h['location'] }}</p>
+                                    @endif
+                                    @if (! $done && filled($h['reason'] ?? null))
+                                        <p class="text-xs text-stone-600">{{ $h['reason'] }}</p>
+                                    @endif
+                                </div>
+                            </li>
+                        @endforeach
+                    </ol>
+                </details>
+            @elseif ($highlightsPending)
+                <p class="mt-3 text-xs text-stone-500">Suche die Werke, die man hier nicht verpassen sollte ...</p>
             @endif
         </div>
 

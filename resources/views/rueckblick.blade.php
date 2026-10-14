@@ -22,11 +22,7 @@
                     <div class="min-w-0 flex-1">
                         <p class="font-semibold">{{ $capture->artwork?->title ?? $capture->place?->name }}</p>
                         <p class="text-sm text-stone-600">
-                            @if ($capture->artwork)
-                                {{ $capture->artwork->artist?->name }}{{ $capture->artwork->dating ? ', '.$capture->artwork->dating : '' }}
-                            @else
-                                {{ $capture->place?->architect }}{{ $capture->place?->architect && $capture->place?->built ? ', ' : '' }}{{ $capture->place?->built }}
-                            @endif
+                            {{ implode(', ', array_filter($capture->artwork ? [$capture->artwork->artist?->name, $capture->artwork->dating] : [$capture->place?->architect, $capture->place?->built])) }}
                         </p>
                         @if (! $shared)
                             <a href="{{ route('aufnahme', $capture) }}" wire:navigate class="text-xs font-medium text-accent print:hidden">Zum Guide</a>

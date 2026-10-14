@@ -193,12 +193,21 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - Orte ohne Wikidata-Eintrag bekommen den Schlüssel `places.osm_id` ("node/123") oder `place_id` (Google). Der Guide selbst recherchiert ohnehin im Netz (Websuche), die Liste ist nur der Finder.
 - Die Stadt kommt aus der Position: `Geocoder` (Nominatim, OpenStreetMap, 30 Tage Cache je gerundeter Position) liefert Stadt und Land für Ort, Prompt und Fotoerkennung. Die Annahme "Wien" ist weg. Prompt `place-guide.md` nennt je Land die amtlichen Denkmaldatenbanken (Frankreich: Base Mérimée, Base Palissy, Paris Musées, Inventaire général).
 
+## 25. Testphase mit Clemens (Sebastian, 14.10.2026: "ja ich lasse jetzt Clemens die App testen. baue das alles")
+
+- **Hängende Aufnahmen:** `kunst:stuck-captures` (Scheduler alle fünf Minuten) setzt Aufnahmen ohne Fortschritt nach `museumguide.pipeline.stuck_minutes` (10) auf Fehler, die Seite zeigt "Erneut versuchen". Bildersuche: fehlendes Wikidata-Bild führt nicht mehr zum Absturz.
+- **Anmelden mit Code** (`App\Services\Auth\LoginCodes`): sechs Ziffern per Mail, 15 Minuten gültig, höchstens fünf Fehlversuche, drei Codes je zehn Minuten, gehasht im Cache, keine Auskunft, ob eine Adresse existiert. Ersetzt "Passwort vergessen": im Profil gibt es "Passwort ändern". Versand über den Postfix des Servers (`MAIL_MAILER=sendmail`, Absender kunst@tourtool.app). Der SPF-Eintrag von tourtool.app erlaubt nur Google; bei Gmail-Empfängern kann die Mail deshalb im Spam landen. Abhilfe: Server-IP in den SPF-Eintrag oder SMTP über Google Workspace mit App-Passwort.
+- **Kosten nur für Admins:** Profil zeigt Kosten nur mit `is_admin`, Hinweise auf Cent-Beträge sind aus der Oberfläche raus. Beim Monatslimit sehen Testnutzer "Kontingent aufgebraucht, bitte Sebastian Bescheid geben" ohne Betrag.
+- **Offline:** Aufnahmen gehen über eine Warteschlange am Handy (`public/js/offline.js`, IndexedDB) an `POST /aufnahmen` (`CaptureUploadController`). Ohne Netz bleiben sie am Handy und werden bei "online", alle 20 Sekunden und beim Öffnen jeder Seite nachgesendet. Die Handy-ID (`captures.client_id`, eindeutig je Nutzer) verhindert Doppelte. Die Pipeline startet im Hintergrund (`StartCapture`). Hinweisleiste im Layout ("Kein Netz", "1 Aufnahme wartet", "gesendet, ansehen"). Angehörte Audios landen im Cache Storage `kb-audio` (höchstens 40) und spielen danach auch ohne Netz. Seiten selbst werden nicht zwischengespeichert: der Service Worker bleibt ohne fetch-Handler (Safari verliert sonst die Sitzung).
+- **Frag nach** (`App\Services\Questions\QuestionService`, Tabelle `capture_questions`, Prompt `question.md`): Frage tippen oder sprechen (Spracherkennung des Browsers, de-AT), Antwort 40 bis 120 Wörter mit Recherche, Schild- und Raumtext, Guide und früheren Nachfragen als Kontext, ohne Websuche, dann Erzählerstimme (`Voice::speak`). Antwort-Audio über `antwort/{id}` (signiert).
+- **Wiederverwenden:** Gibt es zum selben Werk oder Ort einen fertigen vertiefenden Guide mit Audio (nicht älter als 180 Tage, `museumguide.reuse`), kopiert `Pipeline::reuseFull` Text, Kurzfakten und Audio (`audio_guides.source_guide_id`), ohne Recherche- und Stimmkosten; das Lerngedächtnis läuft trotzdem. Auf der Seite steht der Hinweis mit "Persönlich neu" (`Pipeline::regenerateFull`). Premium-Aufnahmen werden nie wiederverwendet.
+- **Besuchsrückblick** (`VisitReviewController`, Route `rueckblick`): alle erkannten Werke eines Besuchs mit Kernaussagen, Nachfragen und Raumtexten; "Als PDF sichern" über Drucken (Druck-CSS blendet Kopf, Reiter und Player aus), "Link teilen" als signierter Link 30 Tage ohne Anmeldung (ohne eigene Fotos, nur Wikidata-Bilder). Erreichbar über Jetzt und das Archiv (Abschnitt "Besuche").
+- **Archivfilter** nach Museum, Stadt, Künstler und Epoche (nur Werte aus den eigenen Aufnahmen, in der Adresse gemerkt).
+- **Nicht verpassen:** Die Museumsrecherche liefert zusätzlich acht bis zehn Highlights mit Standort und Begründung; Jetzt zeigt sie im Besuch und hakt ab, was schon fotografiert ist. Museen ohne Highlights werden beim nächsten Besuch neu recherchiert (`ResearchMuseum::due`).
+
 ## 8. Offen nach Etappe 3 (Stand 14.10.2026)
 
-
-- Schlüssel für Anthropic und ElevenLabs unter Admin > Einstellungen > Zugänge eintragen (ohne Anthropic-Schlüssel bleibt jede Aufnahme mit Fehlermeldung stehen; ohne ElevenLabs gibt es Text ohne Audio). Google Places optional.
-- Stimmen-IDs in `config/museumguide.php` (`tts.elevenlabs.voices`) auf echte Stimmen setzen.
-- Entscheidung schnell/ausführlich (Abschnitt 10, letzter Punkt).
-- Etappe 4: zwei Stimmen und Zitatstimme, Entdecken-Reiter mit Tipps, Kopplung mit Martha im Alltag.
-- Server: Staging und Live laufen (05.10.2026, Etappe 1 auf `main` gemergt und deployt). Offen sind die Root-Schritte systemd und app-register (docs/betrieb.md Abschnitt 2, Punkte 6 und 7).
-- Datei `claude/laravel-apps-betrieb.md` ins Repo legen, falls sie bei Sebastian liegt.
+- Mailversand verlässlich machen: Server-IP in den SPF-Eintrag von tourtool.app oder SMTP über Google Workspace.
+- Rückmeldungen von Clemens sammeln; Schwierigkeits-Knopf wurde nie benutzt und kann weg.
+- Stadt Schritt 2: historische Karten (Kulturgut Wien), Architektenprofile im Reiter Künstler.
+- Später für ein Produkt: Mehrsprachigkeit, Bezahlung, App im App Store.
