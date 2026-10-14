@@ -65,9 +65,24 @@ class Pipeline
      * Nach der Erkennung (oder der Bestaetigung): Schnellstufe synchron, falls sie noch fehlt, ausfuehrlich
      * danach ueber die Queue.
      */
-    public function continueAfterRecognition(Capture $capture): void
+    public function continueAfterRecognition(Capture $capture, bool $background = false): void
     {
         $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Writing, 'needs_confirmation' => false, 'error_message' => null])->save();
+
+        // Nach der Rueckfrage (Tipp auf ein Werk): alles im Hintergrund, die Seite zeigt sofort den Fortschritt
+        // (Sebastian, 15.10.2026: "muss 5 Mal klicken und es passiert erst dann was")
+        if ($background && $capture->quickGuide()->doesntExist()) {
+            if (! $capture->isQuick() && $this->reuseFull($capture)) {
+                $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Writing])->save();
+                $this->queue([new QuickOverview($capture->getKey())]);
+
+                return;
+            }
+
+            $this->queue(array_merge([new QuickOverview($capture->getKey())], $capture->isQuick() ? [] : self::fullChain($capture)));
+
+            return;
+        }
 
         if ($capture->quickGuide()->doesntExist()) {
             Bus::dispatchSync(new QuickOverview($capture->getKey()));

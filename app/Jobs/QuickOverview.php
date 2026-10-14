@@ -64,6 +64,14 @@ class QuickOverview extends PipelineJob
 
         $segments = array_values(array_filter((array) ($result['segments'] ?? []), fn (mixed $s): bool => is_array($s) && filled($s['text'] ?? null)));
         self::storeGuide($capture, $segments, (array) ($result['fact_sheet'] ?? []));
+
+        // Kommt danach noch der vertiefende Guide, bleibt die Aufnahme "laufend", damit die Seite weiter nachsieht
+        if (! $capture->isQuick() && $capture->fullGuide()->doesntExist()) {
+            $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Researching])->save();
+
+            return;
+        }
+
         $capture->forceFill(['status' => CaptureStatus::Done, 'step' => null, 'finished_at' => now()])->save();
     }
 

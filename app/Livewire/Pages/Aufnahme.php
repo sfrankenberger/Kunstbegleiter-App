@@ -256,7 +256,7 @@ class Aufnahme extends Component
         }
 
         try {
-            app(Pipeline::class)->continueAfterRecognition($this->capture);
+            app(Pipeline::class)->continueAfterRecognition($this->capture, background: true);
             $this->notice = '';
         } catch (Throwable $e) {
             report($e);

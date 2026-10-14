@@ -569,3 +569,21 @@ test('a finished in-depth guide for the same artwork is reused at once and can b
     expect($second->fresh()->fullGuide->source_guide_id)->toBeNull()
         ->and(AiCall::query()->where('purpose', AiPurpose::Script)->where('capture_id', $second->getKey())->exists())->toBeTrue();
 });
+
+test('confirming an unsure artwork returns at once and writes the overview in the background', function () {
+    Http::fake(['api.anthropic.com/*' => Http::response(claudeJson(recognitionJson(0.4) + ['segments' => [], 'fact_sheet' => scriptJson()['fact_sheet']]))]);
+    $user = User::factory()->create();
+    $capture = captureWithPhotos($user, null, GuideMode::Quick)->fresh();
+    expect($capture->needs_confirmation)->toBeTrue();
+
+    Bus::fake();
+    Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])
+        ->assertSee('Wird übernommen')
+        ->call('confirm', -1);
+
+    $capture->refresh();
+    expect($capture->needs_confirmation)->toBeFalse()
+        ->and($capture->status)->toBe(CaptureStatus::Recognized)
+        ->and($capture->artwork_id)->not->toBeNull();
+    Bus::assertChained([\App\Jobs\QuickOverview::class]);
+});

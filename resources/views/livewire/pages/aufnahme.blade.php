@@ -58,16 +58,17 @@
             <p class="font-semibold">Welches Werk ist es?</p>
             <p class="text-sm text-stone-600">Die Erkennung ist unsicher{{ isset($capture->recognition['confidence']) ? ' ('.(int) round($capture->recognition['confidence'] * 100).' %)' : '' }}. Bitte bestätigen oder korrigieren.</p>
             @if (filled($capture->recognition['title'] ?? null))
-                <button type="button" class="kb-button" wire:click="confirm(-1)">{{ $capture->recognition['title'] }}{{ filled($capture->recognition['artist'] ?? null) ? ' von '.$capture->recognition['artist'] : '' }}</button>
+                <button type="button" class="kb-button" wire:click="confirm(-1)" wire:loading.attr="disabled" wire:target="confirm, confirmManual">{{ $capture->recognition['title'] }}{{ filled($capture->recognition['artist'] ?? null) ? ' von '.$capture->recognition['artist'] : '' }}</button>
             @endif
             @foreach ($capture->recognition['alternatives'] ?? [] as $i => $alt)
-                <button type="button" class="kb-button-secondary" wire:click="confirm({{ $i }})">{{ $alt['title'] ?? '' }}{{ filled($alt['artist'] ?? null) ? ' von '.$alt['artist'] : '' }}</button>
+                <button type="button" class="kb-button-secondary" wire:click="confirm({{ $i }})" wire:loading.attr="disabled" wire:target="confirm, confirmManual">{{ $alt['title'] ?? '' }}{{ filled($alt['artist'] ?? null) ? ' von '.$alt['artist'] : '' }}</button>
             @endforeach
+            <p class="flex items-center gap-2 text-sm font-medium text-accent" wire:loading.flex wire:target="confirm, confirmManual"><span class="inline-block h-3 w-3 animate-pulse rounded-full bg-accent"></span>Wird übernommen, der Überblick startet ...</p>
             <form wire:submit="confirmManual" class="flex flex-col gap-2 border-t border-stone-200 pt-3">
                 <label class="text-sm text-stone-600">Oder selbst eintragen</label>
                 <input type="text" class="kb-input" wire:model="manualTitle" placeholder="Titel des Werks" required>
                 <input type="text" class="kb-input" wire:model="manualArtist" placeholder="Künstlerin oder Künstler (optional)">
-                <button type="submit" class="kb-button-secondary">So weitermachen</button>
+                <button type="submit" class="kb-button-secondary" wire:loading.attr="disabled" wire:target="confirm, confirmManual">So weitermachen</button>
             </form>
         </div>
     @endif
