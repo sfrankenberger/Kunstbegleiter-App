@@ -24,7 +24,7 @@
 </head>
 <body class="min-h-dvh">
     <div class="mx-auto flex min-h-dvh max-w-lg flex-col">
-        <header class="sticky top-0 z-10 border-b border-stone-200 bg-paper/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur">
+        <header class="print:hidden sticky top-0 z-10 border-b border-stone-200 bg-paper/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur">
             <div class="flex h-14 items-center justify-between">
                 <h1 class="text-lg font-semibold tracking-tight">{{ $title ?? 'Kunstbegleiter' }}</h1>
                 {{ $actions ?? '' }}
@@ -45,7 +45,7 @@
 
         @if ($tabs)
             @persist('player')
-                <div x-data x-show="$store.player.src" x-cloak class="fixed inset-x-0 z-10 border-t border-stone-200 bg-white/95 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur" style="bottom: calc(3.6rem + env(safe-area-inset-bottom))">
+                <div x-data x-show="$store.player.src" x-cloak class="print:hidden fixed inset-x-0 z-10 border-t border-stone-200 bg-white/95 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur" style="bottom: calc(3.6rem + env(safe-area-inset-bottom))">
                     <div class="mx-auto flex max-w-lg flex-col gap-1 px-4 py-2">
                         <audio x-ref="audio" x-init="$store.player.attach($refs.audio)" preload="metadata" x-webkit-airplay="allow"></audio>
                         <div class="flex items-center justify-between gap-2 text-xs text-stone-500">

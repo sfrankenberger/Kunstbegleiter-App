@@ -50,3 +50,10 @@
         @apply mb-1 block text-sm font-medium text-stone-700;
     }
 }
+
+/* Besuchsrueckblick drucken bzw. als PDF sichern (14.10.2026) */
+@media print {
+    body { background: #fff; }
+    .kb-card { box-shadow: none; break-inside: avoid; }
+    .kb-title-card { position: static; }
+}

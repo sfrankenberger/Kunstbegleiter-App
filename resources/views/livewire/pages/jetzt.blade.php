@@ -7,7 +7,12 @@
                     <p class="mt-1 text-lg font-semibold">{{ $visit->museum?->name ?? 'Museum noch nicht bestimmt' }}</p>
                     <p class="text-sm text-stone-600">{{ $visit->city?->name ? $visit->city->name.' · ' : '' }}noch {{ $visit->remainingMinutes() }} Minuten</p>
                 </div>
-                <button type="button" class="text-sm font-medium text-stone-500" wire:click="endVisit" wire:confirm="Besuch beenden?">Beenden</button>
+                <div class="flex flex-col items-end gap-1">
+                    <button type="button" class="text-sm font-medium text-stone-500" wire:click="endVisit" wire:confirm="Besuch beenden?">Beenden</button>
+                    @if ($captures->isNotEmpty())
+                        <a href="{{ route('rueckblick', $visit) }}" class="text-sm font-medium text-accent">Rückblick</a>
+                    @endif
+                </div>
             </div>
             @if (! $visit->museum)
                 <button type="button" class="mt-3 text-sm font-medium text-accent" wire:click="$set('showManual', true)">Museum eintragen</button>

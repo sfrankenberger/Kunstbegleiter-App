@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\CaptureUploadController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\RoomTextPhotoController;
+use App\Http\Controllers\VisitReviewController;
 use App\Livewire\Auth\Login;
 use App\Livewire\Pages\Archiv;
 use App\Livewire\Pages\Aufnahme;
@@ -33,6 +34,9 @@ Route::middleware('guest')->group(function (): void {
     Route::get('anmelden', Login::class)->name('login');
 });
 
+// Geteilter Besuchsrueckblick: ohne Anmeldung, nur mit signiertem Link (30 Tage)
+Route::get('rueckblick/{visit}/geteilt', [VisitReviewController::class, 'shared'])->middleware('signed')->name('rueckblick.shared');
+
 Route::middleware('auth')->group(function (): void {
     Route::get('jetzt', Jetzt::class)->name('jetzt');
     Route::get('aufnahme/{capture}', Aufnahme::class)->name('aufnahme');
@@ -41,6 +45,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('audio/{guide}', AudioController::class)->middleware('signed')->name('audio.show');
     Route::get('antwort/{question}', AnswerAudioController::class)->middleware('signed')->name('antwort.audio');
     Route::get('archiv', Archiv::class)->name('archiv');
+    Route::get('rueckblick/{visit}', [VisitReviewController::class, 'show'])->name('rueckblick');
     Route::get('raumtext/{roomText}', RaumText::class)->name('raumtext');
     Route::get('raumtexte/{roomText}/foto', RoomTextPhotoController::class)->middleware('signed')->name('raumtexte.foto');
     Route::get('kuenstler', Kuenstler::class)->name('kuenstler');
