@@ -607,3 +607,18 @@ test('a script that talks to the user instead of about the work is written again
         ->and($capture->fullGuide->scriptText())->not->toContain('Fact Sheet');
     Http::assertSent(fn ($r) => str_contains((string) ($r['system'] ?? ''), 'Der letzte Versuch hat statt eines Skripts') && ($r['messages'][0]['content'][0]['type'] ?? '') === 'image');
 });
+
+test('a confirmed choice and the text read on the artwork photo reach the in-depth guide', function () {
+    Http::fake(['api.anthropic.com/*' => Http::sequence()
+        ->push(claudeJson(array_merge(recognitionJson(0.5), ['notes' => 'Schriftrest: Bologna 1588, Pinacoteca Nazionale'])))
+        ->push(claudeJson(researchJson() + scriptJson()))
+        ->push(claudeJson(researchJson() + scriptJson()))
+        ->push(claudeJson(knowledgeJson())),
+    ]);
+    $user = User::factory()->create();
+    $capture = captureWithPhotos($user)->fresh();
+
+    Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])->call('confirm', 0);
+
+    Http::assertSent(fn ($r) => str_contains((string) ($r['system'] ?? ''), 'Vom Nutzer vor dem Original bestätigt: Die Umarmung') && str_contains((string) $r['system'], 'Pinacoteca Nazionale') && isset($r['tools']));
+});

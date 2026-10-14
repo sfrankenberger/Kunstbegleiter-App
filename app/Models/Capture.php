@@ -87,6 +87,22 @@ class Capture extends Model
     public function labelText(string $empty = 'nichts'): string
     {
         $parts = array_values(array_filter([(string) $this->label_text, ...$this->photos->filter(fn ($p) => $p->type !== PhotoType::Artwork)->pluck('ocr_text')->all()], 'filled'));
+
+        // Schriftreste am Werkfoto und Hinweise der Erkennung gehen mit (15.10.2026, Aufnahme 21)
+        foreach ($this->photos->filter(fn ($p) => $p->type === PhotoType::Artwork)->pluck('ocr_text')->filter() as $ocr) {
+            $parts[] = 'Am Werkfoto gelesen: '.$ocr;
+        }
+
+        $recognition = (array) ($this->recognition ?? []);
+
+        if (filled($recognition['notes'] ?? null)) {
+            $parts[] = 'Hinweis der Erkennung: '.$recognition['notes'];
+        }
+
+        if (($recognition['confirmed_by_user'] ?? false) === true) {
+            $parts[] = 'Vom Nutzer vor dem Original bestätigt: '.($recognition['title'] ?? '').(filled($recognition['artist'] ?? null) ? ' von '.$recognition['artist'] : '').'. Diese Zuordnung gilt als gesetzt; sprich über dieses Werk, ohne sie in Frage zu stellen.';
+        }
+
         $room = $this->roomText?->promptText();
 
         if (filled($room)) {

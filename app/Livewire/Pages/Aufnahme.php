@@ -248,6 +248,8 @@ class Aufnahme extends Component
      */
     private function startWith(array $recognition): void
     {
+        // Die Wahl des Nutzers ist gesetzt (15.10.2026): geht als bestaetigt an Ueberblick und vertiefenden Guide
+        $recognition = array_merge($recognition, ['confidence' => 1.0, 'confirmed_by_user' => true]);
         $this->capture->forceFill(['recognition' => $recognition])->save();
         if ($this->capture->visit_id === null) {
             app(PlaceMatcher::class)->attach($this->capture, $recognition);
