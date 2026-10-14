@@ -156,6 +156,50 @@
         @endif
     @endif
 
+    {{-- Nachfragen (14.10.2026): tippen oder sprechen, Antwort als Text und Stimme --}}
+    @if ($capture->artwork_id || $capture->place_id)
+        <div class="kb-card flex flex-col gap-3"
+            x-data="{
+                listening: false, recognizer: null,
+                canListen: !! (window.SpeechRecognition || window.webkitSpeechRecognition),
+                listen() {
+                    const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (! R) return;
+                    if (this.listening) { this.recognizer && this.recognizer.stop(); return; }
+                    const r = new R(); r.lang = 'de-AT'; r.interimResults = true; r.continuous = false;
+                    r.onresult = (e) => { $wire.question = Array.from(e.results).map(x => x[0].transcript).join(' '); };
+                    r.onend = () => { this.listening = false; if ($wire.question.trim() !== '') $wire.ask(); };
+                    r.onerror = () => { this.listening = false; };
+                    this.recognizer = r; this.listening = true; r.start();
+                },
+            }"
+            x-on:play-answer.window="$store.player.load({ src: $event.detail.src, key: $event.detail.key, title: $event.detail.title, artist: @js($capture->artwork?->title ?? $capture->place?->name ?? ''), duration: $event.detail.duration, href: @js(route('aufnahme', $capture)) }).then(() => $store.player.el && $store.player.el.play().catch(() => {}))"
+        >
+            <h2 class="text-sm font-semibold text-stone-700">Frag nach</h2>
+            @foreach ($capture->questions as $q)
+                <div class="flex flex-col gap-1 border-b border-stone-100 pb-3 last:border-0 last:pb-0" wire:key="question-{{ $q->getKey() }}">
+                    <p class="text-sm font-semibold text-stone-800">{{ $q->question }}</p>
+                    <p class="text-sm leading-relaxed text-stone-700">{{ $q->answer }}</p>
+                    @if ($q->hasAudio())
+                        <button type="button" class="self-start text-sm font-medium text-accent" x-on:click="$store.player.load({ src: @js($q->url()), key: @js('q'.$q->getKey()), title: @js('Nachfrage: '.\Illuminate\Support\Str::limit($q->question, 60)), artist: @js($capture->artwork?->title ?? $capture->place?->name ?? ''), duration: {{ (int) $q->duration_seconds }}, href: @js(route('aufnahme', $capture)) }).then(() => $store.player.el && $store.player.el.play())">▶ Antwort anhören</button>
+                    @endif
+                </div>
+            @endforeach
+            <form wire:submit="ask" class="flex items-center gap-2">
+                <input type="text" wire:model="question" class="kb-input flex-1" placeholder="{{ $capture->place_id ? 'z. B. Wer hat das umgebaut?' : 'z. B. Wer ist die Figur links?' }}" maxlength="500" enterkeyhint="send" wire:loading.attr="disabled" wire:target="ask">
+                <button type="button" x-show="canListen" x-cloak class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-stone-300" :class="listening ? 'bg-accent text-white' : 'bg-white text-stone-700'" x-on:click="listen" aria-label="Frage sprechen">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" /></svg>
+                </button>
+                <button type="submit" class="kb-button w-auto shrink-0 px-4" wire:loading.attr="disabled" wire:target="ask">Fragen</button>
+            </form>
+            <p class="text-sm text-stone-600" wire:loading wire:target="ask">Denke nach und spreche die Antwort ein ...</p>
+            <p class="text-xs text-stone-500" x-show="listening" x-cloak>Ich höre zu ... Tippe noch einmal aufs Mikrofon, wenn du fertig bist.</p>
+            @if ($questionError !== '')
+                <p class="text-sm text-red-700">{{ $questionError }}</p>
+            @endif
+        </div>
+    @endif
+
     @if ($sheet)
         @if (filled($sheet->key_facts))
             <div class="kb-card">

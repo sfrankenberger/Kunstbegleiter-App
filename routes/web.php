@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AnswerAudioController;
 use App\Http\Controllers\AudioController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\CaptureUploadController;
@@ -38,6 +39,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('aufnahmen', CaptureUploadController::class)->middleware('throttle:30,1')->name('aufnahmen.store');
     Route::get('fotos/{photo}', PhotoController::class)->middleware('signed')->name('fotos.show');
     Route::get('audio/{guide}', AudioController::class)->middleware('signed')->name('audio.show');
+    Route::get('antwort/{question}', AnswerAudioController::class)->middleware('signed')->name('antwort.audio');
     Route::get('archiv', Archiv::class)->name('archiv');
     Route::get('raumtext/{roomText}', RaumText::class)->name('raumtext');
     Route::get('raumtexte/{roomText}/foto', RoomTextPhotoController::class)->middleware('signed')->name('raumtexte.foto');

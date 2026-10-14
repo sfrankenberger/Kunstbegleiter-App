@@ -29,7 +29,7 @@ class Capture extends Model
     use CascadesSoftDeletes, HasFactory, LogsChanges, SoftDeletes;
 
     /** @var list<string> */
-    protected array $softCascades = ['photos', 'audioGuides', 'factSheets'];
+    protected array $softCascades = ['photos', 'audioGuides', 'factSheets', 'questions'];
 
     protected function casts(): array
     {
@@ -124,6 +124,12 @@ class Capture extends Model
     public function fullGuide(): HasOne
     {
         return $this->hasOne(AudioGuide::class)->ofMany(['id' => 'max'], fn ($q) => $q->where('kind', 'full'));
+    }
+
+    /** @return HasMany<CaptureQuestion, $this> */
+    public function questions(): HasMany
+    {
+        return $this->hasMany(CaptureQuestion::class);
     }
 
     /** @return HasMany<FactSheet, $this> */

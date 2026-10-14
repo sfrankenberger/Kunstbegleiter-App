@@ -10,7 +10,9 @@ use App\Services\Pipeline\ArtworkMatcher;
 use App\Services\Pipeline\ContextBuilder;
 use App\Services\Pipeline\Pipeline;
 use App\Services\Pipeline\PlaceMatcher;
+use App\Services\Questions\QuestionService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Throwable;
@@ -89,6 +91,31 @@ class Aufnahme extends Component
     /**
      * Aus der Schnellstufe den ausfuehrlichen Guide nachbestellen.
      */
+    public string $question = '';
+
+    public string $questionError = '';
+
+    /**
+     * Nachfrage zum Werk (14.10.2026): Antwort als Text und gesprochen, wird gleich abgespielt.
+     */
+    public function ask(): void
+    {
+        $this->authorize('view', $this->capture);
+        $this->questionError = '';
+
+        try {
+            $entry = app(QuestionService::class)->ask($this->capture, $this->question);
+            $this->question = '';
+
+            if ($entry->hasAudio()) {
+                $this->dispatch('play-answer', src: $entry->url(), key: 'q'.$entry->getKey(), title: 'Nachfrage: '.Str::limit($entry->question, 60), duration: (int) $entry->duration_seconds);
+            }
+        } catch (Throwable $e) {
+            report($e);
+            $this->questionError = str_contains($e->getMessage(), 'Anthropic') ? 'Die Antwort kam gerade nicht zustande. Bitte noch einmal fragen.' : $e->getMessage();
+        }
+    }
+
     public function upgrade(): void
     {
         $this->authorize('update', $this->capture);
@@ -178,7 +205,7 @@ class Aufnahme extends Component
 
     public function render(): View
     {
-        $this->capture->refresh()->load(['photos', 'artwork.artist', 'artwork.epoch', 'artwork.research', 'artwork.relatedWorks', 'place.city', 'place.research', 'place.relatedWorks', 'visit.museum', 'audioGuide', 'quickGuide', 'fullGuide', 'factSheets']);
+        $this->capture->refresh()->load(['photos', 'artwork.artist', 'artwork.epoch', 'artwork.research', 'artwork.relatedWorks', 'place.city', 'place.research', 'place.relatedWorks', 'visit.museum', 'audioGuide', 'quickGuide', 'fullGuide', 'factSheets', 'questions']);
         $research = $this->capture->place?->research ?? $this->capture->artwork?->research;
 
         $guide = $this->selectedGuide();

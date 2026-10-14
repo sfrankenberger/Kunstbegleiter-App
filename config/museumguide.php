@@ -27,6 +27,7 @@ return [
         'artist' => env('MUSEUMGUIDE_MODEL_ARTIST', 'claude-sonnet-5-5'),
         'tips' => env('MUSEUMGUIDE_MODEL_TIPS', 'claude-sonnet-5-5'),
         'small' => env('MUSEUMGUIDE_MODEL_SMALL', 'claude-haiku-4-5'),
+        'question' => env('MUSEUMGUIDE_MODEL_QUESTION', 'claude-sonnet-5-5'),
     ],
 
     // Preise (USD je Million Tokens, Stand 05.10.2026, platform.claude.com/docs/en/about-claude/pricing) und

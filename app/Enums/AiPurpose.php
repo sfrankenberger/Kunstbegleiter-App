@@ -16,6 +16,7 @@ enum AiPurpose: string
     case Artist = 'artist';
     case Tips = 'tips';
     case Small = 'small';
+    case Question = 'question';
     case Tts = 'tts';
 
     public function label(): string
@@ -30,6 +31,7 @@ enum AiPurpose: string
             self::Artist => 'Künstlerprofil',
             self::Tips => 'Stadt-Tipps',
             self::Small => 'Kleinkram',
+            self::Question => 'Nachfrage',
             self::Tts => 'Stimme',
         };
     }

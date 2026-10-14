@@ -77,6 +77,35 @@ class Voice
     }
 
     /**
+     * Einen kurzen Text mit der Erzaehlerstimme sprechen und ablegen (Nachfragen, 14.10.2026). Liefert Pfad und
+     * Dauer oder null (kein echter Anbieter oder Fehler, dann bleibt die Antwort Text).
+     *
+     * @return array{path: string, duration: int}|null
+     */
+    public function speak(Capture $capture, string $text, string $path): ?array
+    {
+        if (! $this->isReal() || trim($text) === '') {
+            return null;
+        }
+
+        $spoken = SpeechText::normalize($text);
+        $started = hrtime(true);
+
+        try {
+            $result = $this->provider->synthesize($spoken, 'narrator');
+        } catch (Throwable $e) {
+            AiCall::query()->create(['user_id' => $capture->user_id, 'capture_id' => $capture->getKey(), 'purpose' => AiPurpose::Tts, 'model' => $this->provider->name(), 'characters' => mb_strlen($spoken), 'succeeded' => false, 'error' => mb_substr($e->getMessage(), 0, 500), 'duration_ms' => (int) ((hrtime(true) - $started) / 1_000_000)]);
+
+            return null;
+        }
+
+        Storage::disk(CaptureService::DISK)->put($path, $result->audio);
+        AiCall::query()->create(['user_id' => $capture->user_id, 'capture_id' => $capture->getKey(), 'purpose' => AiPurpose::Tts, 'model' => $this->provider->name(), 'characters' => mb_strlen($spoken), 'cost_cents' => Pricing::ttsCents($this->provider->name(), mb_strlen($spoken)), 'succeeded' => true, 'duration_ms' => (int) ((hrtime(true) - $started) / 1_000_000)]);
+
+        return ['path' => $path, 'duration' => $result->durationSeconds ?? (int) ceil(str_word_count($text) / 150 * 60)];
+    }
+
+    /**
      * Rolle im Skript auf die Stimme beim Anbieter: narrator, second, quote.
      */
     public static function voiceFor(string $role): string
