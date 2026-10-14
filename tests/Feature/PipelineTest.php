@@ -538,3 +538,34 @@ test('a schema the api rejects as too large falls back to plain json in the text
     Http::assertSentCount(2);
     Http::assertSent(fn ($r) => ! isset($r['output_config']['format']) && str_contains((string) $r['system'], 'JSON-Schema'));
 });
+
+test('a finished in-depth guide for the same artwork is reused at once and can be regenerated', function () {
+    Http::fake(['api.anthropic.com/*' => Http::sequence()
+        ->push(claudeJson(recognitionJson() + scriptJson()))
+        ->push(claudeJson(researchJson() + scriptJson()))
+        ->push(claudeJson(knowledgeJson()))
+        ->push(claudeJson(recognitionJson() + scriptJson()))
+        ->push(claudeJson(knowledgeJson()))
+        ->push(claudeJson(researchJson() + scriptJson()))
+        ->push(claudeJson(knowledgeJson())),
+    ]);
+    $first = captureWithPhotos(User::factory()->create())->fresh();
+    $calls = AiCall::query()->count();
+
+    $second = captureWithPhotos(User::factory()->create())->fresh();
+
+    expect($second->artwork_id)->toBe($first->artwork_id)
+        ->and($second->status)->toBe(CaptureStatus::Done)
+        ->and($second->fullGuide->source_guide_id)->toBe($first->fullGuide->getKey())
+        ->and($second->fullGuide->audio_path)->not->toBe($first->fullGuide->audio_path)
+        ->and($second->factSheets()->where('kind', 'full')->exists())->toBeTrue()
+        ->and(AiCall::query()->where('purpose', AiPurpose::Script)->where('capture_id', $second->getKey())->exists())->toBeFalse();
+    Storage::disk('local')->assertExists($second->fullGuide->audio_path);
+
+    Livewire::actingAs($second->user)->test(Aufnahme::class, ['capture' => $second])
+        ->assertSee('schon einmal erstellt')
+        ->call('regenerate');
+
+    expect($second->fresh()->fullGuide->source_guide_id)->toBeNull()
+        ->and(AiCall::query()->where('purpose', AiPurpose::Script)->where('capture_id', $second->getKey())->exists())->toBeTrue();
+});

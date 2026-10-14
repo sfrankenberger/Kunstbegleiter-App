@@ -116,6 +116,22 @@ class Aufnahme extends Component
         }
     }
 
+    /**
+     * Wiederverwendeten vertiefenden Guide persoenlich neu erstellen lassen (Recherche, Skript, Stimme).
+     */
+    public function regenerate(): void
+    {
+        $this->authorize('update', $this->capture);
+
+        try {
+            app(Pipeline::class)->regenerateFull($this->capture);
+            $this->guideKind = '';
+            $this->notice = '';
+        } catch (Throwable $e) {
+            $this->notice = $e->getMessage();
+        }
+    }
+
     public function upgrade(): void
     {
         $this->authorize('update', $this->capture);

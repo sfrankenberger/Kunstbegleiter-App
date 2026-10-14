@@ -11,9 +11,13 @@ use App\Jobs\ResearchAndWrite;
 use App\Jobs\SynthesizeAudio;
 use App\Jobs\UpdateKnowledge;
 use App\Models\AiCall;
+use App\Models\AudioGuide;
 use App\Models\Capture;
+use App\Models\FactSheet;
+use App\Services\Captures\CaptureService;
 use App\Support\QueueKick;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 /**
@@ -33,6 +37,14 @@ class Pipeline
         if ($capture->isPlace() && $capture->photos()->doesntExist()) {
             // Ort aus der Liste gewaehlt: nichts zu erkennen. Ueber die Queue, damit die Seite sofort wechselt
             // und den Fortschritt zeigt (Sebastian, 05.10.2026: "dauert ewig, keine Klick-Animation")
+            if (! $capture->isQuick() && $this->reuseFull($capture)) {
+                // Vertiefender Guide schon vorhanden: nur noch die Schnellstufe schreiben, Seite pollt weiter
+                $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Writing])->save();
+                $this->queue([new QuickOverview($capture->getKey())]);
+
+                return;
+            }
+
             $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Writing, 'needs_confirmation' => false])->save();
             $this->queue(array_merge([new QuickOverview($capture->getKey())], $capture->isQuick() ? [] : self::fullChain($capture)));
 
@@ -90,12 +102,79 @@ class Pipeline
     }
 
     /**
-     * Vertiefender Guide ueber die Queue; die Schnellstufe bleibt waehrenddessen anhoerbar.
+     * Vertiefender Guide ueber die Queue; die Schnellstufe bleibt waehrenddessen anhoerbar. Gibt es zum selben Werk
+     * oder Ort schon einen fertigen vertiefenden Guide mit Audio, wird er kopiert (sofort, ohne Kosten, Abschnitt 25).
      */
-    private function queueFull(Capture $capture): void
+    private function queueFull(Capture $capture, bool $fresh = false): void
     {
+        if (! $fresh && $this->reuseFull($capture)) {
+            return;
+        }
+
         $capture->forceFill(['status' => CaptureStatus::Recognized, 'step' => PipelineStep::Researching, 'error_message' => null])->save();
         $this->queue(self::fullChain($capture));
+    }
+
+    /**
+     * "Persoenlich neu erstellen": vertiefenden Guide ohne Wiederverwendung neu recherchieren und schreiben.
+     */
+    public function regenerateFull(Capture $capture): void
+    {
+        $this->assertBudget($capture);
+        $capture->forceFill(['mode' => GuideMode::Full])->save();
+        $this->queueFull($capture, fresh: true);
+    }
+
+    /**
+     * Fertigen vertiefenden Guide eines anderen Besuchs zum selben Werk oder Ort uebernehmen (Text, Kurzfakten, Audio
+     * als eigene Kopie). Nicht fuer Premium-Aufnahmen und nicht aelter als `museumguide.reuse.days`.
+     */
+    private function reuseFull(Capture $capture): bool
+    {
+        if (! (bool) config('museumguide.reuse.enabled', true) || $capture->premium || ($capture->artwork_id === null && $capture->place_id === null)) {
+            return false;
+        }
+
+        $donor = AudioGuide::query()
+            ->where('kind', 'full')
+            ->whereNotNull('audio_path')
+            ->where('created_at', '>', now()->subDays((int) config('museumguide.reuse.days', 180)))
+            ->whereHas('capture', fn ($q) => $q->whereKeyNot($capture->getKey())->where($capture->artwork_id !== null ? 'artwork_id' : 'place_id', $capture->artwork_id ?? $capture->place_id))
+            ->latest('id')
+            ->first();
+
+        if ($donor === null || ! Storage::disk(CaptureService::DISK)->exists((string) $donor->audio_path)) {
+            return false;
+        }
+
+        $guide = $capture->audioGuides()->create([
+            'kind' => 'full',
+            'source_guide_id' => $donor->source_guide_id ?? $donor->getKey(),
+            'script' => $donor->script,
+            'word_count' => $donor->word_count,
+            'model' => $donor->model,
+            'tts_provider' => $donor->tts_provider,
+            'tts_characters' => 0,
+            'duration_seconds' => $donor->duration_seconds,
+            'cost_cents' => 0,
+        ]);
+
+        $path = 'captures/'.$capture->getKey().'/guide-'.$guide->getKey().'.mp3';
+        Storage::disk(CaptureService::DISK)->copy((string) $donor->audio_path, $path);
+        $guide->forceFill(['audio_path' => $path])->save();
+
+        $sheet = FactSheet::query()->where('capture_id', $donor->capture_id)->where('kind', 'full')->latest('id')->first();
+
+        if ($sheet !== null) {
+            $capture->factSheets()->create(['kind' => 'full'] + $sheet->only(['key_facts', 'key_statements', 'cross_references', 'sections']));
+        }
+
+        $capture->forceFill(['status' => CaptureStatus::Done, 'step' => null, 'finished_at' => now(), 'error_message' => null])->save();
+
+        // Lerngedaechtnis trotzdem fortschreiben (Haiku, guenstig)
+        $this->queue([new UpdateKnowledge($capture->getKey())]);
+
+        return true;
     }
 
     /** @return list<object> */

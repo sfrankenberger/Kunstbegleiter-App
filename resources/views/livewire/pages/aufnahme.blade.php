@@ -71,6 +71,14 @@
         </div>
     @endif
 
+    @if ($guide?->kind === 'full' && $guide->source_guide_id && ! $capture->isRunning())
+        {{-- Wiederverwendet (14.10.2026): sofort da, auf Wunsch persoenlich neu --}}
+        <div class="flex items-center justify-between gap-3 rounded-xl bg-stone-100 px-3 py-2 text-xs text-stone-600">
+            <span>Dieser vertiefende Guide wurde schon einmal erstellt und stand deshalb sofort bereit.</span>
+            <button type="button" class="shrink-0 font-semibold text-accent" wire:click="regenerate" wire:loading.attr="disabled" wire:target="regenerate" wire:confirm="Den vertiefenden Guide neu recherchieren und persönlich für dich schreiben? Das dauert etwa eine Minute.">Persönlich neu</button>
+        </div>
+    @endif
+
     @if ($guide)
         @if ($guide->hasAudio())
             {{-- Der Player liegt im Layout (@persist) und spielt ueber Seitenwechsel weiter; hier wird nur geladen --}}

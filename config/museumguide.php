@@ -55,6 +55,12 @@ return [
         // Ohne Fortschritt so lange, dann Fehler (kunst:stuck-captures)
         'stuck_minutes' => 10,
     ],
+    // Fertige vertiefende Guides zum selben Werk oder Ort wiederverwenden (14.10.2026)
+    'reuse' => [
+        'enabled' => (bool) env('MUSEUMGUIDE_REUSE', true),
+        'days' => 180,
+    ],
+
     'research' => [
         'max_searches' => (int) env('MUSEUMGUIDE_MAX_SEARCHES', 4),
         'museum_max_searches' => 4,
