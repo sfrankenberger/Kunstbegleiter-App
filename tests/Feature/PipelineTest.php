@@ -7,6 +7,7 @@ use App\Enums\GuideMode;
 use App\Enums\PipelineStep;
 use App\Jobs\FetchImages;
 use App\Jobs\ProfileArtist;
+use App\Jobs\QuickOverview;
 use App\Jobs\SynthesizeAudio;
 use App\Livewire\Pages\Aufnahme;
 use App\Livewire\Pages\Jetzt;
@@ -176,6 +177,7 @@ test('an unsure recognition waits for confirmation and continues after a tap', f
     Http::fake(['api.anthropic.com/*' => Http::sequence()
         ->push(claudeJson(recognitionJson(0.4)))
         ->push(claudeJson(researchJson() + scriptJson()))
+        ->push(claudeJson(researchJson() + scriptJson()))
         ->push(claudeJson(knowledgeJson())),
     ]);
     $user = User::factory()->create();
@@ -202,6 +204,7 @@ test('an unsure recognition waits for confirmation and continues after a tap', f
 test('a typed title is used when nothing was recognised', function () {
     Http::fake(['api.anthropic.com/*' => Http::sequence()
         ->push(claudeJson(array_merge(recognitionJson(0.1), ['title' => null, 'artist' => null, 'alternatives' => []])))
+        ->push(claudeJson(researchJson() + scriptJson()))
         ->push(claudeJson(researchJson() + scriptJson()))
         ->push(claudeJson(knowledgeJson())),
     ]);
@@ -585,5 +588,22 @@ test('confirming an unsure artwork returns at once and writes the overview in th
     expect($capture->needs_confirmation)->toBeFalse()
         ->and($capture->status)->toBe(CaptureStatus::Recognized)
         ->and($capture->artwork_id)->not->toBeNull();
-    Bus::assertChained([\App\Jobs\QuickOverview::class]);
+    Bus::assertChained([QuickOverview::class]);
+});
+
+test('a script that talks to the user instead of about the work is written again', function () {
+    $meta = ['segments' => [['role' => 'narrator', 'text' => 'Bevor wir sprechen, brauche ich Gewissheit.'], ['role' => 'second', 'text' => 'Wenn du mir das Schild nennst, erstelle ich Skript und Fact Sheet.']]] + scriptJson();
+    Http::fake(['api.anthropic.com/*' => Http::sequence()
+        ->push(claudeJson(recognitionJson() + scriptJson()))
+        ->push(claudeJson(researchJson() + $meta))
+        ->push(claudeJson(researchJson() + scriptJson()))
+        ->push(claudeJson(knowledgeJson())),
+    ]);
+
+    $capture = captureWithPhotos(User::factory()->create())->fresh();
+
+    expect($capture->status)->toBe(CaptureStatus::Done)
+        ->and($capture->fullGuide->scriptText())->toContain('bekannteste Bild Wiens')
+        ->and($capture->fullGuide->scriptText())->not->toContain('Fact Sheet');
+    Http::assertSent(fn ($r) => str_contains((string) ($r['system'] ?? ''), 'Der letzte Versuch hat statt eines Skripts') && ($r['messages'][0]['content'][0]['type'] ?? '') === 'image');
 });
