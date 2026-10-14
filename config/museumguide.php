@@ -94,6 +94,14 @@ return [
             // Stimmen je Rolle (Voice-IDs aus Sebastians ElevenLabs-Bibliothek, 05.10.2026): immer Mann und Frau.
             // narrator "Christian, warm and captivating" (Mann, reif, gemuetlich), second und quote "Sabrina, authentic
             // and engaging" (Frau, reif, ruhig, artikuliert; Leonie wirkte daneben zu jung). Die Schnellstufe nutzt nur narrator.
+            // Feinabstimmung je Rolle (15.10.2026): der Mann eine Spur schneller, lebendiger und mit mehr Betonung
+            'voice_settings' => [
+                'narrator' => [
+                    'speed' => (float) env('ELEVENLABS_NARRATOR_SPEED', 1.05),
+                    'stability' => (float) env('ELEVENLABS_NARRATOR_STABILITY', 0.40),
+                    'style' => (float) env('ELEVENLABS_NARRATOR_STYLE', 0.45),
+                ],
+            ],
             'voices' => [
                 'narrator' => env('ELEVENLABS_VOICE_NARRATOR', 'NBqeXKdZHweef6y0B67V'),
                 'second' => env('ELEVENLABS_VOICE_SECOND', 'cqPdIo76zSHFDcSZpFov'),

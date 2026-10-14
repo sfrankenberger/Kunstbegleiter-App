@@ -49,11 +49,11 @@
                     <div class="mx-auto flex max-w-lg flex-col gap-1 px-4 py-2">
                         <audio x-ref="audio" x-init="$store.player.attach($refs.audio)" preload="metadata" x-webkit-airplay="allow"></audio>
                         <div class="flex items-center justify-between gap-2 text-xs text-stone-500">
-                            <a :href="$store.player.href" wire:navigate class="min-w-0 truncate"><span class="font-medium text-stone-700" x-text="$store.player.title"></span><span x-show="$store.player.artist" x-text="', ' + $store.player.artist"></span></a>
+                            <a :href="$store.player.href" wire:navigate class="min-w-0 truncate"><span x-show="$store.player.label" class="mr-1 rounded-full bg-accent-soft px-2 py-0.5 font-semibold text-accent" x-text="$store.player.label"></span><span class="font-medium text-stone-700" x-text="$store.player.title"></span><span x-show="$store.player.artist" x-text="', ' + $store.player.artist"></span></a>
                             <button type="button" class="shrink-0 px-1" @click="$store.player.close()" aria-label="Player schließen">✕</button>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button type="button" class="kb-button w-auto flex-1 py-2" @click="$store.player.toggle()" x-text="$store.player.playing ? 'Pause' : 'Anhören'"></button>
+                            <button type="button" class="kb-button w-auto flex-1 py-2" @click="$store.player.toggle()" x-text="$store.player.playing ? 'Pause' : ($store.player.label ? $store.player.label + ' anhören' : 'Anhören')"></button>
                             <button type="button" class="kb-button-secondary w-auto px-3 py-2 text-sm" @click="$store.player.back()">15 s</button>
                             <button type="button" class="kb-button-secondary w-auto px-3 py-2 text-sm" @click="$store.player.speed()" x-text="$store.player.rate + '×'"></button>
                             <button type="button" class="kb-button-secondary w-auto px-3 py-2" @click="$store.player.route()" x-show="$store.player.canRoute" title="Ausgabe wählen (AirPods, Lautsprecher)" aria-label="Ausgabe wählen">

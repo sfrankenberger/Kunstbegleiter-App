@@ -28,7 +28,7 @@ class ElevenLabsTtsProvider implements TtsProvider
 
         $response = Http::withHeaders(['xi-api-key' => $key, 'Accept' => 'audio/mpeg'])
             ->timeout(180)
-            ->post(self::BASE.'/text-to-speech/'.$this->voiceId($voice).'?output_format=mp3_44100_128', $this->body($text));
+            ->post(self::BASE.'/text-to-speech/'.$this->voiceId($voice).'?output_format=mp3_44100_128', $this->body($text, $voice));
 
         if (! $response->successful()) {
             throw new RuntimeException('ElevenLabs antwortet mit HTTP '.$response->status().': '.mb_substr((string) $response->body(), 0, 200));
@@ -74,7 +74,7 @@ class ElevenLabsTtsProvider implements TtsProvider
                 fn (array $s, int $i) => $pool->as((string) $i)
                     ->withHeaders(['xi-api-key' => $key, 'Accept' => 'audio/mpeg'])
                     ->timeout(180)
-                    ->post(self::BASE.'/text-to-speech/'.$this->voiceId($s['voice']).'?output_format=mp3_44100_128', $this->body($s['text'])),
+                    ->post(self::BASE.'/text-to-speech/'.$this->voiceId($s['voice']).'?output_format=mp3_44100_128', $this->body($s['text'], $s['voice'])),
                 $chunk,
                 array_keys($chunk),
             ));
@@ -120,12 +120,20 @@ class ElevenLabsTtsProvider implements TtsProvider
     /**
      * @return array<string, mixed>
      */
-    private function body(string $text): array
+    private function body(string $text, string $voice = 'narrator'): array
     {
+        // Je Rolle eigene Feinabstimmung (Sebastian, 15.10.2026: Mann "eine Spur zu langsam, wenig dynamisch")
+        $own = (array) config('museumguide.tts.elevenlabs.voice_settings.'.$voice, []);
+
         return [
             'text' => $text,
             'model_id' => (string) config('museumguide.tts.elevenlabs.model', 'eleven_flash_v2_5'),
-            'voice_settings' => ['stability' => (float) config('museumguide.tts.elevenlabs.stability', 0.45), 'similarity_boost' => 0.75, 'style' => (float) config('museumguide.tts.elevenlabs.style', 0.35)],
+            'voice_settings' => array_filter([
+                'stability' => (float) ($own['stability'] ?? config('museumguide.tts.elevenlabs.stability', 0.45)),
+                'similarity_boost' => 0.75,
+                'style' => (float) ($own['style'] ?? config('museumguide.tts.elevenlabs.style', 0.35)),
+                'speed' => isset($own['speed']) ? (float) $own['speed'] : null,
+            ], fn ($v) => $v !== null),
         ];
     }
 

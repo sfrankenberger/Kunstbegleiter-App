@@ -205,6 +205,13 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Archivfilter** nach Museum, Stadt, Künstler und Epoche (nur Werte aus den eigenen Aufnahmen, in der Adresse gemerkt).
 - **Nicht verpassen:** Die Museumsrecherche liefert zusätzlich acht bis zehn Highlights mit Standort und Begründung; Jetzt zeigt sie im Besuch und hakt ab, was schon fotografiert ist. Museen ohne Highlights werden beim nächsten Besuch neu recherchiert (`ResearchMuseum::due`).
 
+## 26. Feinschliff nach dem ersten Test (Sebastian, 15.10.2026)
+
+- **Männerstimme:** "eine Spur zu langsam oder wenig dynamisch im Vergleich zur Frau, nur an manchen Stellen". Der Erzähler hat eigene Einstellungen (`museumguide.tts.elevenlabs.voice_settings.narrator`: speed 1,05, stability 0,40, style 0,45), die Frau bleibt bei 0,45 und 0,35 ohne Tempoänderung. Gilt für neu gesprochene Guides und Antworten.
+- **Kein Schlusssatz zum Mitnehmen:** In allen Prompts gestrichen und ausdrücklich verboten; der Text endet mit der letzten inhaltlichen Aussage.
+- **Titelbox einklappbar:** Auf der Werk- und Ortsseite klappt sie beim Scrollen auf eine Zeile mit kleinem Bild zusammen, der Pfeil klappt von Hand auf oder zu.
+- **Player sagt, was läuft:** Der Knopf heißt "Schnell anhören", "Vertiefend anhören" oder "Antwort anhören", in der Zeile darüber steht dieselbe Kennzeichnung (`$store.player.label`).
+
 ## 8. Offen nach Etappe 3 (Stand 14.10.2026)
 
 - Optional DKIM-Signatur für Mails vom Server (Plesk), falls Gmail die Codes doch einmal in den Spam sortiert.

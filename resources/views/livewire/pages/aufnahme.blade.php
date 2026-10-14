@@ -1,9 +1,14 @@
 <div class="flex flex-col gap-4" @if ($capture->isRunning()) wire:poll.4s @elseif ($imagesPending) wire:poll.5s @endif>
     @php($bullets = fn (mixed $v): array => is_array($v) ? array_values(array_filter(array_map(fn ($x) => is_array($x) ? ($x['text'] ?? '') : (string) $x, $v), 'filled')) : array_values(array_filter(preg_split('/(?<=[.!?])\s+/u', (string) $v) ?: [], 'filled')))
-    <div class="kb-card kb-title-card flex gap-3">
+    {{-- Titelbox: klappt beim Scrollen auf eine Zeile zusammen, Tipp auf den Pfeil klappt auf oder zu (15.10.2026) --}}
+    <div class="kb-card kb-title-card flex gap-3"
+        x-data="{ open: true, manual: false }"
+        x-init="window.addEventListener('scroll', () => { if (! manual) open = window.scrollY < 140 }, { passive: true })"
+        :class="open ? '' : 'py-2'">
         <div class="min-w-0 flex-1">
-            <p class="text-xs uppercase tracking-wide text-stone-500">{{ $capture->place ? $capture->place->kindLabel().($capture->place->city ? ', '.$capture->place->city->name : '') : ($capture->visit?->museum?->name ?? ($capture->visit_id === null ? 'Stadt' : 'Ohne Museum')) }} · {{ $capture->created_at->format('d.m.Y H:i') }}</p>
-            <p class="mt-1 text-lg font-semibold">{{ $capture->place?->name ?? $capture->artwork?->title ?? ($capture->recognition['title'] ?? ($capture->visit_id === null ? 'Ort wird erkannt' : 'Werk wird erkannt')) }}</p>
+            <p class="text-xs uppercase tracking-wide text-stone-500" x-show="open">{{ $capture->place ? $capture->place->kindLabel().($capture->place->city ? ', '.$capture->place->city->name : '') : ($capture->visit?->museum?->name ?? ($capture->visit_id === null ? 'Stadt' : 'Ohne Museum')) }} · {{ $capture->created_at->format('d.m.Y H:i') }}</p>
+            <p class="font-semibold" :class="open ? 'mt-1 text-lg' : 'truncate text-base'">{{ $capture->place?->name ?? $capture->artwork?->title ?? ($capture->recognition['title'] ?? ($capture->visit_id === null ? 'Ort wird erkannt' : 'Werk wird erkannt')) }}</p>
+            <div x-show="open">
             @if ($capture->place && ($capture->place->architect || $capture->place->built))
                 <p class="text-sm text-stone-600">{{ $capture->place->architect }}{{ $capture->place->architect && $capture->place->built ? ', ' : '' }}{{ $capture->place->built }}</p>
             @elseif ($capture->artwork?->artist)
@@ -18,6 +23,7 @@
                 @endif
                 <p class="inline-block rounded-full bg-accent-soft px-3 py-1 text-xs font-medium text-accent">{{ ($quick && $capture->isRunning() ? 'Vertiefend: ' : '').$capture->progressLabel() }}</p>
             </div>
+            </div>
             @if ($capture->error_message)
                 <p class="mt-2 text-sm text-red-700">{{ $capture->error_message }}</p>
             @endif
@@ -30,9 +36,9 @@
         </div>
         @if ($capture->photos->isNotEmpty())
             <div class="flex shrink-0 flex-col gap-1">
-                <button type="button" x-data x-on:click="$store.lightbox.open(@js($capture->photos->first()->url()))" aria-label="Foto groß anzeigen"><img src="{{ $capture->photos->first()->url() }}" alt="" class="h-24 w-24 rounded-xl object-cover"></button>
+                <button type="button" x-on:click="$store.lightbox.open(@js($capture->photos->first()->url()))" aria-label="Foto groß anzeigen"><img src="{{ $capture->photos->first()->url() }}" alt="" class="rounded-xl object-cover" :class="open ? 'h-24 w-24' : 'h-10 w-10'"></button>
                 @if ($capture->photos->count() > 1)
-                    <div class="flex gap-1">
+                    <div class="flex gap-1" x-show="open">
                         @foreach ($capture->photos->skip(1) as $photo)
                             <button type="button" x-data x-on:click="$store.lightbox.open(@js($photo->url()))" wire:key="thumb-{{ $photo->getKey() }}" aria-label="Foto groß anzeigen"><img src="{{ $photo->url() }}" alt="" class="h-11 w-11 rounded-lg object-cover"></button>
                         @endforeach
@@ -40,8 +46,11 @@
                 @endif
             </div>
         @elseif ($capture->place?->image_url)
-            <img src="{{ $capture->place->image_url }}" alt="" class="h-24 w-24 shrink-0 rounded-xl bg-stone-100 object-cover" title="{{ $capture->place->image_credit }}">
+            <img src="{{ $capture->place->image_url }}" alt="" class="shrink-0 rounded-xl bg-stone-100 object-cover" :class="open ? 'h-24 w-24' : 'h-10 w-10'" title="{{ $capture->place->image_credit }}">
         @endif
+        <button type="button" class="-mr-1 self-start p-1 text-stone-400" x-on:click="open = ! open; manual = true" :aria-label="open ? 'Titel einklappen' : 'Titel aufklappen'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5 transition-transform" :class="open ? 'rotate-180' : ''"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+        </button>
     </div>
 
     @if ($capture->needs_confirmation)
@@ -82,7 +91,7 @@
     @if ($guide)
         @if ($guide->hasAudio())
             {{-- Der Player liegt im Layout (@persist) und spielt ueber Seitenwechsel weiter; hier wird nur geladen --}}
-            <div wire:ignore wire:key="player-{{ $guide->getKey() }}" x-data x-init="$store.player.load({ src: @js($guide->url()), title: @js($capture->artwork?->title ?? 'Audioguide'), artist: @js($capture->artwork?->artist?->name ?? ''), duration: {{ (int) ($guide->duration_seconds ?? 0) }}, href: @js(route('aufnahme', $capture)), key: {{ $guide->getKey() }} })"></div>
+            <div wire:ignore wire:key="player-{{ $guide->getKey() }}" x-data x-init="$store.player.load({ src: @js($guide->url()), label: @js($guide->kind === 'full' ? 'Vertiefend' : 'Schnell'), title: @js($capture->artwork?->title ?? $capture->place?->name ?? 'Audioguide'), artist: @js($capture->artwork?->artist?->name ?? $capture->place?->architect ?? ''), duration: {{ (int) ($guide->duration_seconds ?? 0) }}, href: @js(route('aufnahme', $capture)), key: {{ $guide->getKey() }} })"></div>
         @elseif ($segments->isNotEmpty() && ! $capture->isRunning())
             {{-- Handy-Stimme als Rueckfall ohne MP3, fest am unteren Rand. wire:ignore: Livewire zeichnet ihn nie neu --}}
             <div class="fixed inset-x-0 z-10 border-t border-stone-200 bg-white/95 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur" style="bottom: calc(3.6rem + env(safe-area-inset-bottom))" wire:ignore wire:key="speech-{{ $guide->getKey() }}">
@@ -181,7 +190,7 @@
                     this.recognizer = r; this.listening = true; r.start();
                 },
             }"
-            x-on:play-answer.window="$store.player.load({ src: $event.detail.src, key: $event.detail.key, title: $event.detail.title, artist: @js($capture->artwork?->title ?? $capture->place?->name ?? ''), duration: $event.detail.duration, href: @js(route('aufnahme', $capture)) }).then(() => $store.player.el && $store.player.el.play().catch(() => {}))"
+            x-on:play-answer.window="$store.player.load({ src: $event.detail.src, label: 'Antwort', key: $event.detail.key, title: $event.detail.title, artist: @js($capture->artwork?->title ?? $capture->place?->name ?? ''), duration: $event.detail.duration, href: @js(route('aufnahme', $capture)) }).then(() => $store.player.el && $store.player.el.play().catch(() => {}))"
         >
             <h2 class="text-sm font-semibold text-stone-700">Frag nach</h2>
             @foreach ($capture->questions as $q)
@@ -189,7 +198,7 @@
                     <p class="text-sm font-semibold text-stone-800">{{ $q->question }}</p>
                     <p class="text-sm leading-relaxed text-stone-700">{{ $q->answer }}</p>
                     @if ($q->hasAudio())
-                        <button type="button" class="self-start text-sm font-medium text-accent" x-on:click="$store.player.load({ src: @js($q->url()), key: @js('q'.$q->getKey()), title: @js('Nachfrage: '.\Illuminate\Support\Str::limit($q->question, 60)), artist: @js($capture->artwork?->title ?? $capture->place?->name ?? ''), duration: {{ (int) $q->duration_seconds }}, href: @js(route('aufnahme', $capture)) }).then(() => $store.player.el && $store.player.el.play())">▶ Antwort anhören</button>
+                        <button type="button" class="self-start text-sm font-medium text-accent" x-on:click="$store.player.load({ src: @js($q->url()), label: 'Antwort', key: @js('q'.$q->getKey()), title: @js('Nachfrage: '.\Illuminate\Support\Str::limit($q->question, 60)), artist: @js($capture->artwork?->title ?? $capture->place?->name ?? ''), duration: {{ (int) $q->duration_seconds }}, href: @js(route('aufnahme', $capture)) }).then(() => $store.player.el && $store.player.el.play())">▶ Antwort anhören</button>
                     @endif
                 </div>
             @endforeach

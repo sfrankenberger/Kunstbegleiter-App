@@ -15,7 +15,7 @@ document.addEventListener('alpine:init', () => {
     });
 
     Alpine.store('player', {
-        el: null, src: '', key: null, title: '', artist: '', href: '', playing: false, rate: 1, position: 0, duration: 0, canRoute: false,
+        el: null, src: '', key: null, title: '', artist: '', href: '', label: '', playing: false, rate: 1, position: 0, duration: 0, canRoute: false,
         attach(el) {
             if (this.el === el) return;
             this.el = el;
@@ -34,10 +34,10 @@ document.addEventListener('alpine:init', () => {
         objectUrl: null,
         async load(guide) {
             if (this.key === guide.key && this.src) return;
-            this.key = guide.key; this.title = guide.title || 'Audioguide'; this.artist = guide.artist || ''; this.href = guide.href || '';
+            this.key = guide.key; this.label = guide.label || ''; this.title = guide.title || 'Audioguide'; this.artist = guide.artist || ''; this.href = guide.href || '';
             this.duration = guide.duration || 0; this.position = 0; this.playing = false;
             if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({ title: this.title, artist: this.artist, album: 'Kunstbegleiter' });
+                navigator.mediaSession.metadata = new MediaMetadata({ title: (this.label ? this.label + ': ' : '') + this.title, artist: this.artist, album: 'Kunstbegleiter' });
             }
             let src = guide.src;
             const cached = await this.cached(guide.key);
