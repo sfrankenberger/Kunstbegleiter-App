@@ -111,6 +111,6 @@ class Voice
      */
     public static function voiceFor(string $role): string
     {
-        return in_array($role, ['narrator', 'second', 'quote'], true) ? $role : 'narrator';
+        return in_array($role, ['narrator', 'second', 'quote', 'quote_male', 'quote_female'], true) ? $role : 'narrator';
     }
 }

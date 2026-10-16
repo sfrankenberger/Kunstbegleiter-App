@@ -365,7 +365,7 @@
             </button>
             <div class="mt-3 flex flex-col gap-3 text-sm leading-relaxed" x-show="open" x-cloak>
                     @foreach ($segments as $segment)
-                        <p class="{{ ($segment['role'] ?? 'narrator') === 'quote' ? 'border-l-2 border-accent pl-3 italic' : '' }}">{{ $segment['text'] }}</p>
+                        <p class="{{ str_starts_with(($segment['role'] ?? 'narrator'), 'quote') ? 'border-l-2 border-accent pl-3 italic' : '' }}">{{ $segment['text'] }}</p>
                     @endforeach
             </div>
         </div>

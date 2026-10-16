@@ -28,6 +28,7 @@ use App\Services\Pipeline\AudioMixer;
 use App\Services\Pipeline\MusicBed;
 use App\Services\Pipeline\Pipeline;
 use App\Services\Pipeline\Schemas;
+use App\Services\Pipeline\Voice;
 use App\Services\Tts\ElevenLabsTtsProvider;
 use App\Services\Tts\FakeTtsProvider;
 use App\Support\Secrets;
@@ -396,7 +397,7 @@ test('the full guide speaks every role with its own voice and mixes the pieces',
 
     (new SynthesizeAudio($capture->getKey()))->handle();
 
-    expect(array_column($recorder->many, 'voice'))->toBe(['narrator', 'quote', 'narrator'])
+    expect(array_column($recorder->many, 'voice'))->toBe(['narrator', 'quote_male', 'narrator'])
         ->and($guide->fresh()->tts_characters)->toBe(array_sum(array_map(fn ($s) => mb_strlen($s['text']), scriptJson()['segments'])))
         ->and($capture->fresh()->status)->toBe(CaptureStatus::Done);
     Storage::disk('local')->assertExists($guide->fresh()->audio_path);
@@ -621,4 +622,18 @@ test('a confirmed choice and the text read on the artwork photo reach the in-dep
     Livewire::actingAs($user)->test(Aufnahme::class, ['capture' => $capture])->call('confirm', 0);
 
     Http::assertSent(fn ($r) => str_contains((string) ($r['system'] ?? ''), 'Vom Nutzer vor dem Original bestätigt: Die Umarmung') && str_contains((string) $r['system'], 'Pinacoteca Nazionale') && isset($r['tools']));
+});
+
+test('quotes are spoken by Clay for men and Helen Winter for women', function () {
+    config()->set('museumguide.tts.elevenlabs_key', 'el-key');
+    Secrets::set('elevenlabs_key', 'el-key');
+    Http::fake(['api.elevenlabs.io/*' => Http::response('MP3', 200)]);
+
+    (new ElevenLabsTtsProvider)->synthesizeMany([
+        ['text' => 'Ein Satz.', 'voice' => Voice::voiceFor('quote_male')],
+        ['text' => 'Noch ein Satz.', 'voice' => Voice::voiceFor('quote_female')],
+    ]);
+
+    Http::assertSent(fn ($r) => str_contains($r->url(), '/text-to-speech/ed7QNPkbQjEAYxYSuzmM'));
+    Http::assertSent(fn ($r) => str_contains($r->url(), '/text-to-speech/AaU60TO60Iw35Wi3GCDF'));
 });

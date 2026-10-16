@@ -143,6 +143,8 @@ class ElevenLabsTtsProvider implements TtsProvider
             'narrator' => 'Erzählerin',
             'second' => 'Zweite Stimme',
             'quote' => 'Zitat-Stimme',
+            'quote_male' => 'Zitat, Mann (Clay)',
+            'quote_female' => 'Zitat, Frau (Helen Winter)',
         ];
     }
 

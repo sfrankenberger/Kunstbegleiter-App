@@ -33,6 +33,8 @@ class FakeTtsProvider implements TtsProvider
             'narrator' => 'Erzählerin (Fake)',
             'second' => 'Zweite Stimme (Fake)',
             'quote' => 'Zitat-Stimme (Fake)',
+            'quote_male' => 'Zitat Mann (Fake)',
+            'quote_female' => 'Zitat Frau (Fake)',
         ];
     }
 

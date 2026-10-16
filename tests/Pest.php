@@ -99,7 +99,7 @@ if (! function_exists('scriptJson')) {
         return [
             'segments' => [
                 ['role' => 'narrator', 'text' => 'Vor dir hängt das wohl bekannteste Bild Wiens.'],
-                ['role' => 'quote', 'text' => 'Alle Kunst ist erotisch.'],
+                ['role' => 'quote_male', 'text' => 'Alle Kunst ist erotisch.'],
                 ['role' => 'narrator', 'text' => 'Das Blattgold stammt aus der Werkstatt seines Vaters.'],
             ],
             'fact_sheet' => [

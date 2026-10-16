@@ -111,6 +111,9 @@ return [
                 'narrator' => env('ELEVENLABS_VOICE_NARRATOR', 'Yu7munSFUN8hbRW63pno'),
                 'second' => env('ELEVENLABS_VOICE_SECOND', 'Ny7r2ffG0v2p3DYyFvhb'),
                 'quote' => env('ELEVENLABS_VOICE_QUOTE', 'Ny7r2ffG0v2p3DYyFvhb'),
+                // Zitate (16.10.2026): Mann "Clay - Deep Thoughtful Storyteller", Frau "Helen Winter - Literary Narration"
+                'quote_male' => env('ELEVENLABS_VOICE_QUOTE_MALE', 'ed7QNPkbQjEAYxYSuzmM'),
+                'quote_female' => env('ELEVENLABS_VOICE_QUOTE_FEMALE', 'AaU60TO60Iw35Wi3GCDF'),
             ],
         ],
     ],

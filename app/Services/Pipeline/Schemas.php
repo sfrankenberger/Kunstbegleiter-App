@@ -196,7 +196,8 @@ class Schemas
     private static function segment(): array
     {
         return self::object([
-            'role' => ['type' => 'string', 'enum' => ['narrator', 'second', 'quote']],
+            // Zitate nach Geschlecht der zitierten Person (16.10.2026): quote_male Clay, quote_female Helen Winter
+            'role' => ['type' => 'string', 'enum' => ['narrator', 'second', 'quote_male', 'quote_female']],
             'text' => ['type' => 'string'],
         ]);
     }
