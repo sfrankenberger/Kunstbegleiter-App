@@ -109,7 +109,7 @@ test('the quick mode speaks with the studio voice when a real provider is bound'
         ->and($capture->audioGuide->audio_path)->not->toBeNull()
         ->and(AiCall::query()->where('purpose', AiPurpose::Tts)->where('succeeded', true)->exists())->toBeTrue();
     Storage::disk('local')->assertExists($capture->audioGuide->audio_path);
-    Http::assertSent(fn ($request) => str_contains($request->url(), '/text-to-speech/NBqeXKdZHweef6y0B67V'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/text-to-speech/Yu7munSFUN8hbRW63pno'));
 });
 
 test('the profile default and the switch on jetzt decide the mode', function () {

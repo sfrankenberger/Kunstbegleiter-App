@@ -82,6 +82,9 @@ return [
         'provider' => env('MUSEUMGUIDE_TTS', 'auto'),
         'elevenlabs_key' => env('ELEVENLABS_API_KEY'),
         'openai_key' => env('OPENAI_API_KEY'),
+        // Alle Sprechstuecke auf dieselbe Lautheit (LUFS, ffmpeg loudnorm); null = aus
+        'loudness_lufs' => env('MUSEUMGUIDE_LOUDNESS_LUFS', -18),
+
         'elevenlabs' => [
             // eleven_flash_v2_5 ist deutlich schneller als eleven_multilingual_v2 (Ziel: Guide in 45 Sekunden)
             'model' => env('ELEVENLABS_MODEL', 'eleven_flash_v2_5'),
@@ -102,10 +105,12 @@ return [
                     'style' => (float) env('ELEVENLABS_NARRATOR_STYLE', 0.45),
                 ],
             ],
+            // Seit 16.10.2026 (Sebastian): Mann "Mats Winter - Warm & Natural", Frau "Lola - Immersive Storytelling",
+            // beide aus seiner ElevenLabs-Bibliothek. Vorher Christian NBqeXKdZHweef6y0B67V und Sabrina cqPdIo76zSHFDcSZpFov.
             'voices' => [
-                'narrator' => env('ELEVENLABS_VOICE_NARRATOR', 'NBqeXKdZHweef6y0B67V'),
-                'second' => env('ELEVENLABS_VOICE_SECOND', 'cqPdIo76zSHFDcSZpFov'),
-                'quote' => env('ELEVENLABS_VOICE_QUOTE', 'cqPdIo76zSHFDcSZpFov'),
+                'narrator' => env('ELEVENLABS_VOICE_NARRATOR', 'Yu7munSFUN8hbRW63pno'),
+                'second' => env('ELEVENLABS_VOICE_SECOND', 'Ny7r2ffG0v2p3DYyFvhb'),
+                'quote' => env('ELEVENLABS_VOICE_QUOTE', 'Ny7r2ffG0v2p3DYyFvhb'),
             ],
         ],
     ],

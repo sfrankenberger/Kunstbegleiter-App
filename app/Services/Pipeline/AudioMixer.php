@@ -11,7 +11,8 @@ use Throwable;
 /**
  * Segmente (MP3-Bytes) zu einer Datei zusammensetzen, mit kurzer Pause dazwischen, und ein leises Musikbett
  * darunterlegen (docs/konzept.md Abschnitt 16): zwei Sekunden Musik vorweg, dann abgesenkt unter der Stimme,
- * am Ende drei Sekunden ausgeblendet. Braucht ffmpeg (am Server /usr/bin/ffmpeg); ohne ffmpeg oder bei einem
+ * am Ende drei Sekunden ausgeblendet. Jedes Segment wird vorher auf dieselbe Lautheit gebracht (EBU R128,
+ * `museumguide.tts.loudness_lufs`, Sebastian 16.10.2026: "von der Lautstaerke gleich"). Braucht ffmpeg (am Server /usr/bin/ffmpeg); ohne ffmpeg oder bei einem
  * Fehler werden die Segmente nur aneinandergehaengt (MP3-Frames lassen sich direkt verketten), ohne Musik.
  */
 class AudioMixer
@@ -28,7 +29,9 @@ class AudioMixer
 
         $ffmpeg = (string) config('museumguide.music.ffmpeg', 'ffmpeg');
 
-        if ((count($segments) === 1 && $musicPath === null) || ! $this->hasFfmpeg($ffmpeg)) {
+        $lufs = config('museumguide.tts.loudness_lufs');
+
+        if ((count($segments) === 1 && $musicPath === null && $lufs === null) || ! $this->hasFfmpeg($ffmpeg)) {
             return implode('', $segments);
         }
 
@@ -44,7 +47,9 @@ class AudioMixer
                 file_put_contents($dir.'/'.$i.'.mp3', $bytes);
                 $args[] = '-i';
                 $args[] = $dir.'/'.$i.'.mp3';
-                $filters[] = '['.$i.':a]apad=pad_dur='.(float) config('museumguide.music.gap_seconds', 0.5).'[s'.$i.']';
+                $norm = $lufs !== null ? 'loudnorm=I='.(float) $lufs.':TP=-1.5:LRA=11,aresample=44100,' : '';
+                $pad = count($segments) > 1 ? 'apad=pad_dur='.(float) config('museumguide.music.gap_seconds', 0.5) : 'anull';
+                $filters[] = '['.$i.':a]'.$norm.$pad.'[s'.$i.']';
                 $concat .= '[s'.$i.']';
             }
 

@@ -51,7 +51,8 @@ class Voice
                 $duration = array_sum(array_map(fn ($r) => (int) ($r->durationSeconds ?? 0), $results)) ?: null;
             } else {
                 $result = $this->provider->synthesize(implode("\n\n", array_column($segments, 'text')), 'narrator');
-                $audio = $result->audio;
+                // Gleiche Lautheit wie der vertiefende Guide (16.10.2026)
+                $audio = $this->mixer->mix([$result->audio]);
                 $duration = $result->durationSeconds;
             }
         } catch (Throwable $e) {
@@ -99,7 +100,7 @@ class Voice
             return null;
         }
 
-        Storage::disk(CaptureService::DISK)->put($path, $result->audio);
+        Storage::disk(CaptureService::DISK)->put($path, $this->mixer->mix([$result->audio]));
         AiCall::query()->create(['user_id' => $capture->user_id, 'capture_id' => $capture->getKey(), 'purpose' => AiPurpose::Tts, 'model' => $this->provider->name(), 'characters' => mb_strlen($spoken), 'cost_cents' => Pricing::ttsCents($this->provider->name(), mb_strlen($spoken)), 'succeeded' => true, 'duration_ms' => (int) ((hrtime(true) - $started) / 1_000_000)]);
 
         return ['path' => $path, 'duration' => $result->durationSeconds ?? (int) ceil(str_word_count($text) / 150 * 60)];
