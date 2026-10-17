@@ -22,8 +22,8 @@
         </button>
         <div wire:loading wire:target="locate" class="text-sm text-stone-600">Wikidata wird befragt ...</div>
         <div class="grid grid-cols-2 gap-2">
-            <button type="button" class="kb-button-secondary" wire:click="$set('showManual', true)">Ort eingeben</button>
-            <button type="button" class="kb-button-secondary" wire:click="$set('showPhoto', true)">Foto machen</button>
+            <button type="button" class="{{ $showManual ? 'kb-button' : 'kb-button-secondary' }}" wire:click="toggleManual">Ort eingeben</button>
+            <button type="button" class="{{ $showPhoto ? 'kb-button' : 'kb-button-secondary' }}" wire:click="togglePhoto">Foto machen</button>
         </div>
         <label class="flex items-center gap-2 text-sm text-stone-700">
             <input type="checkbox" wire:model="full" class="h-5 w-5 rounded border-stone-300">
@@ -31,35 +31,10 @@
         </label>
     </div>
 
-    @if ($locationError !== '')
-        <p class="text-sm text-red-700">{{ $locationError }}</p>
-    @endif
-
-    @if ($nearby !== [])
-        <div class="kb-card flex flex-col gap-2">
-            <p class="font-semibold">In der Nähe</p>
-            @foreach ($nearby as $place)
-                <button type="button" class="flex items-center gap-3 rounded-xl border border-stone-200 p-2 text-left active:bg-accent-soft" wire:click="choose('{{ \App\Services\Places\PlaceFinder::key($place) }}')" wire:loading.attr="disabled" wire:loading.class="opacity-40" wire:target="choose">
-                    @if ($place['image'])
-                        <img src="{{ $place['image'] }}" alt="" class="h-16 w-16 shrink-0 rounded-lg bg-stone-100 object-cover" loading="lazy">
-                    @else
-                        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-xs text-stone-400">{{ \App\Models\Place::KINDS[$place['kind']] ?? 'Ort' }}</div>
-                    @endif
-                    <span class="min-w-0 flex-1">
-                        <span class="block truncate font-medium">{{ $place['name'] }}</span>
-                        <span class="block truncate text-xs text-stone-500">{{ $place['distance_m'] }} m · {{ \App\Models\Place::KINDS[$place['kind']] ?? 'Ort' }}{{ $place['architect'] ? ' · '.$place['architect'] : '' }}{{ $place['built'] ? ' · '.$place['built'] : '' }}{{ ($place['source'] ?? '') === 'google' && $place['address'] ? ' · '.$place['address'] : '' }}</span>
-                        @if ($place['description'])<span class="block truncate text-xs text-stone-500">{{ $place['description'] }}</span>@endif
-                    </span>
-                </button>
-            @endforeach
-            <div wire:loading wire:target="choose" class="flex items-center gap-2 text-sm text-stone-600"><span class="inline-block h-3 w-3 animate-pulse rounded-full bg-accent"></span> Ort wird angelegt ...</div>
-        </div>
-    @endif
-
     @if ($showManual)
         <form wire:submit="chooseManual" class="kb-card flex flex-col gap-3">
             <p class="font-semibold">Welcher Ort?</p>
-            <input type="text" wire:model="manualName" class="kb-input" placeholder="z. B. Pestsäule, Palais Ferstel, Karlskirche" required>
+            <input type="text" wire:model="manualName" class="kb-input" x-data x-init="$el.focus(); $el.scrollIntoView({ block: 'center', behavior: 'smooth' })" placeholder="z. B. Pestsäule, Palais Ferstel, Karlskirche" required>
             @error('manualName') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
             <button type="submit" class="kb-button" wire:loading.attr="disabled">
                 <span wire:loading.remove wire:target="chooseManual">Guide erstellen</span>
@@ -67,7 +42,6 @@
             </button>
         </form>
     @endif
-
     @if ($showPhoto)
         <div
             class="kb-card flex flex-col gap-3"
@@ -117,6 +91,33 @@
             @endif
         </div>
     @endif
+
+    @if ($locationError !== '')
+        <p class="text-sm text-red-700">{{ $locationError }}</p>
+    @endif
+
+    @if ($nearby !== [])
+        <div class="kb-card flex flex-col gap-2">
+            <p class="font-semibold">In der Nähe</p>
+            @foreach ($nearby as $place)
+                <button type="button" class="flex items-center gap-3 rounded-xl border border-stone-200 p-2 text-left active:bg-accent-soft" wire:click="choose('{{ \App\Services\Places\PlaceFinder::key($place) }}')" wire:loading.attr="disabled" wire:loading.class="opacity-40" wire:target="choose">
+                    @if ($place['image'])
+                        <img src="{{ $place['image'] }}" alt="" class="h-16 w-16 shrink-0 rounded-lg bg-stone-100 object-cover" loading="lazy">
+                    @else
+                        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-xs text-stone-400">{{ \App\Models\Place::KINDS[$place['kind']] ?? 'Ort' }}</div>
+                    @endif
+                    <span class="min-w-0 flex-1">
+                        <span class="block truncate font-medium">{{ $place['name'] }}</span>
+                        <span class="block truncate text-xs text-stone-500">{{ $place['distance_m'] }} m · {{ \App\Models\Place::KINDS[$place['kind']] ?? 'Ort' }}{{ $place['architect'] ? ' · '.$place['architect'] : '' }}{{ $place['built'] ? ' · '.$place['built'] : '' }}{{ ($place['source'] ?? '') === 'google' && $place['address'] ? ' · '.$place['address'] : '' }}</span>
+                        @if ($place['description'])<span class="block truncate text-xs text-stone-500">{{ $place['description'] }}</span>@endif
+                    </span>
+                </button>
+            @endforeach
+            <div wire:loading wire:target="choose" class="flex items-center gap-2 text-sm text-stone-600"><span class="inline-block h-3 w-3 animate-pulse rounded-full bg-accent"></span> Ort wird angelegt ...</div>
+        </div>
+    @endif
+
+
 
     @if ($recent->isNotEmpty())
         <h2 class="mt-2 text-sm font-semibold text-stone-700">Zuletzt angesehen</h2>

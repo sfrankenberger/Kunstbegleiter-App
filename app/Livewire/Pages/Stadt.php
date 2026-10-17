@@ -76,6 +76,22 @@ class Stadt extends Component
         }
     }
 
+    /**
+     * Eingabe oder Foto direkt unter den Knoepfen auf- und zuklappen, immer nur eines (17.10.2026: nach der
+     * GPS-Suche lag das Feld unter der langen Liste und der Knopf wirkte tot).
+     */
+    public function toggleManual(): void
+    {
+        $this->showManual = ! $this->showManual;
+        $this->showPhoto = false;
+    }
+
+    public function togglePhoto(): void
+    {
+        $this->showPhoto = ! $this->showPhoto;
+        $this->showManual = false;
+    }
+
     public function locationFailed(string $message = ''): void
     {
         $this->searched = true;

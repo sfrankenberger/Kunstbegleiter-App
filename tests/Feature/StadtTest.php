@@ -179,3 +179,15 @@ test('an osm-only place gets its own record keyed by osm id and the city from ge
         ->and($place->wikidata_id)->toBeNull()
         ->and($place->city->country_code)->toBe('AT');
 });
+
+test('after a gps search the manual entry opens right below the buttons', function () {
+    Http::fake(osmFakes() + ['query.wikidata.org/*' => Http::response(sparqlNearby())]);
+
+    $html = Livewire::actingAs(User::factory()->create())->test(Stadt::class)
+        ->call('locate', 48.2089, 16.3698, 10)
+        ->call('toggleManual')
+        ->assertSet('showManual', true)
+        ->html();
+
+    expect(strpos($html, 'Welcher Ort?'))->toBeLessThan(strpos($html, 'In der Nähe'));
+});
