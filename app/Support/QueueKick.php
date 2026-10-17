@@ -27,7 +27,10 @@ class QueueKick
 
         $php = (string) config('museumguide.queue.php', 'php');
         $artisan = base_path('artisan');
-        $command = sprintf('nohup %s %s queue:work --stop-when-empty --max-time=600 --tries=1 > /dev/null 2>&1 &', escapeshellarg($php), escapeshellarg($artisan));
+        // setsid: eigene Sitzung, sonst beendet PHP-FPM den Worker mit dem Ende der Anfrage (17.10.2026: der
+        // ausfuehrliche Auftrag blieb reserviert liegen, bis Redis ihn nach retry_after freigab)
+        $setsid = is_executable('/usr/bin/setsid') ? '/usr/bin/setsid ' : '';
+        $command = sprintf('%snohup %s %s queue:work --stop-when-empty --max-time=600 --timeout=600 --tries=1 > /dev/null 2>&1 < /dev/null &', $setsid, escapeshellarg($php), escapeshellarg($artisan));
 
         try {
             exec($command);
