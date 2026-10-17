@@ -92,7 +92,7 @@
     @if ($guide)
         @if ($guide->hasAudio())
             {{-- Der Player liegt im Layout (@persist) und spielt ueber Seitenwechsel weiter; hier wird nur geladen --}}
-            <div wire:ignore wire:key="player-{{ $guide->getKey() }}" x-data x-init="$store.player.load({ src: @js($guide->url()), label: @js($guide->kind === 'full' ? 'Vertiefend' : 'Schnell'), title: @js($capture->artwork?->title ?? $capture->place?->name ?? 'Audioguide'), artist: @js($capture->artwork?->artist?->name ?? $capture->place?->architect ?? ''), duration: {{ (int) ($guide->duration_seconds ?? 0) }}, href: @js(route('aufnahme', $capture)), key: {{ $guide->getKey() }} })"></div>
+            <div wire:ignore wire:key="player-{{ $guide->getKey() }}" x-data x-init="$store.player.load({ src: @js($guide->url()), label: @js($guide->kind === 'full' ? 'Vertiefend' : 'Schnell'), title: @js($capture->artwork?->title ?? $capture->place?->name ?? 'Audioguide'), artist: @js($capture->artwork?->artist?->name ?? $capture->place?->architect ?? ''), duration: {{ (int) ($guide->duration_seconds ?? 0) }}, href: @js(route('aufnahme', $capture)), key: @js($guide->getKey().'-'.($guide->updated_at?->timestamp ?? 0)) })"></div>
         @elseif ($segments->isNotEmpty() && ! $capture->isRunning())
             {{-- Handy-Stimme als Rueckfall ohne MP3, fest am unteren Rand. wire:ignore: Livewire zeichnet ihn nie neu --}}
             <div class="fixed inset-x-0 z-10 border-t border-stone-200 bg-white/95 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur" style="bottom: calc(3.6rem + env(safe-area-inset-bottom))" wire:ignore wire:key="speech-{{ $guide->getKey() }}">
