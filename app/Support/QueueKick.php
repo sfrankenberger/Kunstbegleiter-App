@@ -29,8 +29,9 @@ class QueueKick
         $artisan = base_path('artisan');
         // setsid: eigene Sitzung, sonst beendet PHP-FPM den Worker mit dem Ende der Anfrage (17.10.2026: der
         // ausfuehrliche Auftrag blieb reserviert liegen, bis Redis ihn nach retry_after freigab)
-        $setsid = is_executable('/usr/bin/setsid') ? '/usr/bin/setsid ' : '';
-        $command = sprintf('%snohup %s %s queue:work --stop-when-empty --max-time=600 --timeout=600 --tries=1 > /dev/null 2>&1 < /dev/null &', $setsid, escapeshellarg($php), escapeshellarg($artisan));
+        // Ob setsid da ist, prueft die Shell: PHP darf /usr/bin wegen open_basedir nicht ansehen (18.10.2026)
+        $worker = sprintf('nohup %s %s queue:work --stop-when-empty --max-time=600 --timeout=600 --tries=1 > /dev/null 2>&1 < /dev/null &', escapeshellarg($php), escapeshellarg($artisan));
+        $command = 'if command -v setsid >/dev/null 2>&1; then setsid '.$worker.' else '.$worker.' fi';
 
         try {
             exec($command);
