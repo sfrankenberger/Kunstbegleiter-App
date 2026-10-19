@@ -222,6 +222,9 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **Fehler beim Anlegen (18.10.2026):** `QueueKick` prüfte `/usr/bin/setsid` mit `is_executable`; unter `open_basedir` am Server wirft das in der Webanfrage einen Fehler. Jetzt prüft die Shell (`command -v setsid`), alles innerhalb des try-Blocks. Am selben Tag war das ElevenLabs-Kontingent aufgebraucht (13 von 129.771 Credits übrig); ohne Credits liest das Handy vor.
 - **Player sagt, was läuft:** Der Knopf heißt "Schnell anhören", "Vertiefend anhören" oder "Antwort anhören", in der Zeile darüber steht dieselbe Kennzeichnung (`$store.player.label`).
 
+- **iPhone-Zoom und große Schrift (Clemens, 19.10.2026):** Player und Reiter stehen in einem gemeinsamen Block am unteren Rand und können sich nicht mehr überdecken; der Abstand unter dem Inhalt folgt ihrer echten Höhe (`--kb-bottom`). Player-Zeile, Bewertungsknöpfe und Werktext-Knopf brechen um statt die Seite seitlich zu verbreitern, `body` schneidet seitlichen Überstand ab. Geprüft bei 390, 320 (Anzeigezoom) und 260 px (Safari-Zoom 150 %).
+- **Abspielen:** Lehnt das Handy `play()` ab, lädt der Player die Datei direkt vom Server neu und versucht es noch einmal, sonst steht ein Hinweis im Player. Signierte Foto- und Audio-Adressen bleiben innerhalb einer Stunde gleich, sonst lud das Handy beim Warten das Werkfoto alle 2 Sekunden neu (700 KB je Abfrage).
+
 ## 8. Offen nach Etappe 3 (Stand 14.10.2026)
 
 - Optional DKIM-Signatur für Mails vom Server (Plesk), falls Gmail die Codes doch einmal in den Spam sortiert.

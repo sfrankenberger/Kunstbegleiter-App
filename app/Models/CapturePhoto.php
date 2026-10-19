@@ -34,10 +34,10 @@ class CapturePhoto extends Model
     }
 
     /**
-     * Signierte Adresse fuer das Bild (60 Minuten), Auslieferung ueber PhotoController.
+     * Signierte Adresse fuer das Bild (1 bis 2 Stunden, innerhalb einer Stunde gleich: sonst laedt das Handy das Foto bei jeder Aktualisierung neu), Auslieferung ueber PhotoController.
      */
     public function url(): string
     {
-        return URL::temporarySignedRoute('fotos.show', now()->addHour(), ['photo' => $this->getKey()]);
+        return URL::temporarySignedRoute('fotos.show', now()->startOfHour()->addHours(2), ['photo' => $this->getKey()]);
     }
 }

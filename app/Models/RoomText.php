@@ -79,6 +79,6 @@ class RoomText extends Model
             return null;
         }
 
-        return URL::temporarySignedRoute('raumtexte.foto', now()->addHour(), ['roomText' => $this->getKey()]);
+        return URL::temporarySignedRoute('raumtexte.foto', now()->startOfHour()->addHours(2), ['roomText' => $this->getKey()]);
     }
 }

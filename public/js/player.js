@@ -15,14 +15,16 @@ document.addEventListener('alpine:init', () => {
     });
 
     Alpine.store('player', {
-        el: null, src: '', key: null, title: '', artist: '', href: '', label: '', playing: false, rate: 1, position: 0, duration: 0, canRoute: false,
+        el: null, src: '', remote: '', error: '', key: null, title: '', artist: '', href: '', label: '', playing: false, rate: 1, position: 0, duration: 0, canRoute: false,
         attach(el) {
             if (this.el === el) return;
             this.el = el;
             this.canRoute = typeof el.webkitShowPlaybackTargetPicker === 'function';
             el.addEventListener('timeupdate', () => { this.position = el.currentTime });
             el.addEventListener('loadedmetadata', () => { if (isFinite(el.duration)) this.duration = el.duration });
-            el.addEventListener('play', () => { this.playing = true });
+            el.addEventListener('play', () => { this.playing = true; this.error = '' });
+            // Datei aus dem Handy-Speicher kaputt oder nicht lesbar: einmal direkt vom Server laden
+            el.addEventListener('error', () => { if (this.remote && el.src !== this.remote) { el.src = this.remote; el.load() } });
             el.addEventListener('pause', () => { this.playing = false });
             el.addEventListener('ended', () => { this.playing = false });
             if ('mediaSession' in navigator) {
@@ -35,7 +37,7 @@ document.addEventListener('alpine:init', () => {
         async load(guide) {
             if (this.key === guide.key && this.src) return;
             this.key = guide.key; this.label = guide.label || ''; this.title = guide.title || 'Audioguide'; this.artist = guide.artist || ''; this.href = guide.href || '';
-            this.duration = guide.duration || 0; this.position = 0; this.playing = false;
+            this.duration = guide.duration || 0; this.position = 0; this.playing = false; this.error = ''; this.remote = guide.src;
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({ title: (this.label ? this.label + ': ' : '') + this.title, artist: this.artist, album: 'Kunstbegleiter' });
             }
@@ -67,7 +69,17 @@ document.addEventListener('alpine:init', () => {
                 for (const old of keys.slice(0, Math.max(0, keys.length - 40))) await cache.delete(old);
             } catch (e) {}
         },
-        toggle() { if (! this.el) return; this.playing ? this.el.pause() : this.el.play() },
+        // Spielt nicht (iOS lehnt ab, Datei noch nicht bereit): neu laden und einmal nochmal, sonst Hinweis im Player
+        toggle() {
+            if (! this.el) return;
+            if (this.playing) { this.el.pause(); return; }
+            this.error = '';
+            this.el.play().catch(() => {
+                if (this.remote) this.el.src = this.remote;
+                this.el.load();
+                this.el.play().catch(() => { this.error = 'Abspielen hat nicht geklappt. Bitte nochmal tippen.' });
+            });
+        },
         back() { if (this.el) this.el.currentTime = Math.max(0, this.el.currentTime - 15) },
         speed() { const rates = [0.8, 1, 1.2, 1.5]; this.rate = rates[(rates.indexOf(this.rate) + 1) % rates.length]; if (this.el) this.el.playbackRate = this.rate },
         route() { try { this.el.webkitShowPlaybackTargetPicker() } catch (e) {} },

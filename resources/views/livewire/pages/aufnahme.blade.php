@@ -394,12 +394,12 @@
     @if ($guide)
         <div class="kb-card">
             <p class="mb-2 text-sm font-semibold text-stone-700">War der Guide gut?</p>
-            <div class="flex items-center justify-between gap-2 text-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
                 <div class="flex gap-2">
                     <button type="button" class="rounded-full px-3 py-1 {{ $guide->feedback === 'up' ? 'bg-accent text-white' : 'bg-stone-100' }}" wire:click="feedback('up')" aria-label="Gut">👍</button>
                     <button type="button" class="rounded-full px-3 py-1 {{ $guide->feedback === 'down' ? 'bg-accent text-white' : 'bg-stone-100' }}" wire:click="feedback('down')" aria-label="Nicht gut">👎</button>
                 </div>
-                <div class="flex gap-1 text-xs">
+                <div class="flex flex-wrap gap-1 text-xs">
                     @foreach (['too_easy' => 'Zu leicht', 'right' => 'Passt', 'too_hard' => 'Zu schwer'] as $value => $label)
                         <button type="button" class="rounded-full px-2 py-1 {{ $guide->difficulty_feedback === $value ? 'bg-accent text-white' : 'bg-stone-100' }}" wire:click="difficulty('{{ $value }}')">{{ $label }}</button>
                     @endforeach

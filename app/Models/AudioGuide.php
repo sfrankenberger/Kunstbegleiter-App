@@ -44,11 +44,11 @@ class AudioGuide extends Model
     }
 
     /**
-     * Signierte Adresse fuer die MP3 (60 Minuten), Auslieferung ueber AudioController.
+     * Signierte Adresse fuer die MP3 (1 bis 2 Stunden, innerhalb einer Stunde gleich, damit der Browser-Cache greift), Auslieferung ueber AudioController.
      */
     public function url(): ?string
     {
-        return $this->hasAudio() ? URL::temporarySignedRoute('audio.show', now()->addHour(), ['guide' => $this->getKey()]) : null;
+        return $this->hasAudio() ? URL::temporarySignedRoute('audio.show', now()->startOfHour()->addHours(2), ['guide' => $this->getKey()]) : null;
     }
 
     /**

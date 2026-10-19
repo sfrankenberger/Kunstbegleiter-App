@@ -8,14 +8,14 @@
         ['route' => 'profil', 'label' => 'Profil', 'icon' => 'M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z'],
     ];
 @endphp
-<nav class="print:hidden fixed inset-x-0 bottom-0 z-10 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label="Hauptnavigation">
+<nav class="border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label="Hauptnavigation">
     <ul class="mx-auto grid max-w-lg grid-cols-5">
         @foreach ($tabs as $tab)
             @php $active = request()->routeIs($tab['route'], $tab['route'].'.*'); @endphp
             <li>
                 <a href="{{ route($tab['route']) }}" wire:navigate @class(['flex flex-col items-center gap-1 py-2 text-xs font-medium', 'text-accent' => $active, 'text-stone-500' => ! $active]) @if ($active) aria-current="page" @endif>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $tab['icon'] }}" /></svg>
-                    <span>{{ $tab['label'] }}</span>
+                    <span class="max-w-full truncate px-0.5">{{ $tab['label'] }}</span>
                 </a>
             </li>
         @endforeach

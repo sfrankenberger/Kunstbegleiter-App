@@ -36,6 +36,6 @@ class CaptureQuestion extends Model
 
     public function url(): ?string
     {
-        return $this->hasAudio() ? URL::temporarySignedRoute('antwort.audio', now()->addHour(), ['question' => $this->getKey()]) : null;
+        return $this->hasAudio() ? URL::temporarySignedRoute('antwort.audio', now()->startOfHour()->addHours(2), ['question' => $this->getKey()]) : null;
     }
 }

@@ -161,7 +161,7 @@
                 </button>
                 <button type="button" class="kb-button-secondary justify-start gap-3" x-on:click="$refs.label.click()" x-bind:disabled="busy || blobs.length >= max">
                     <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-200 text-sm text-stone-700">2</span>
-                    <span class="text-left">Werktext fotografieren <span class="font-normal text-stone-500">(Schild mit Bildbeschreibung, optional)</span></span>
+                    <span class="min-w-0 break-words text-left hyphens-auto">Werktext fotografieren <span class="font-normal text-stone-500">(Schild mit Bildbeschreibung, optional)</span></span>
                 </button>
                 <button type="button" class="self-start text-sm font-medium text-accent" x-on:click="$refs.library.click()" x-bind:disabled="busy || blobs.length >= max">Oder aus Fotos wählen</button>
             </div>
