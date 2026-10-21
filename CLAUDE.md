@@ -26,6 +26,17 @@ Wenn eine Entscheidung fällt: `docs/konzept.md` im selben Commit aktualisieren.
 - Oberfläche deutsch, mobil zuerst (390 px), auf dem iPhone in Safari testen.
 - Am Ende jeder Etappe: kurze Zusammenfassung (gebaut, offen) und diese Datei aktualisieren.
 
+## Zusammenarbeit mit Claude (gilt in allen Repos von Sebastian)
+
+- Antworten immer auf Deutsch, auch nach langen Werkzeugläufen.
+- "go" (auch "go für alles", "ja zu allem") heisst: umsetzen, mergen und deployen, ohne weitere Rückfrage. Nachfragen nur bei Mails oder Benachrichtigungen an Dritte (Kundinnen, Teilnehmende, Guides, Partner), Migrationen, die Bestandsdaten ändern oder löschen, und endgültigem Löschen. Mehrere Entscheidungen nummeriert vorlegen, Sebastian antwortet mit "1 go, 2 warten".
+- Was schon erledigt ist (laut Repo oder Server), nicht wieder als Aufgabe für Sebastian melden. Behauptungen über den Server (Dienst aktiv, Modul installiert) erst prüfen, dann sagen.
+- Geheimnisse (`.env`, `settings`, Tokens, API-Schlüssel) nie roh ausgeben oder in Chat, Logs, Commits schreiben, nur maskiert (`abc1…` nur erste 4 Zeichen).
+- Ein Chat, ein Thema: Passt ein Auftrag nicht zu den Repos dieses Chats oder arbeitet ein anderer Chat gerade an derselben Stelle, zuerst kurz fragen, nichts ändern.
+- Nur ändern, worum gebeten wurde. Kein ungefragter Umbau von Layout oder Ablauf.
+- Zugänge: vor "kein Zugang" per ToolSearch nach dem Connector suchen. Landkarte mit Domain-IDs: `sfrankenberger/SRV-Plesk-Server`, `docs/06-CONNECTOREN.md`. Server-Befehle über `Anything_MCP_Plesk` (`post_domains_exec`); jeder Aufruf bricht nach 60 s ab und kann wiederholt werden, darum lange oder folgenreiche Befehle abgekoppelt starten (`bash -lc "setsid nohup nice -n 10 <befehl> > ~/logs/<name>.log 2>&1 < /dev/null & disown; echo gestartet"`) und das Log in einem zweiten Aufruf lesen.
+- Skills dafür: `pr-bis-live` (PR, Merge, Deploy), `website-audit`, `screenshots`, `wordpress-novamira-betrieb`.
+
 ## Stack
 
 - Laravel 13, PHP 8.5, MariaDB (Tests mit SQLite: Indexnamen höchstens 64 Zeichen, verschlüsselte Casts nie auf JSON-Spalten)
