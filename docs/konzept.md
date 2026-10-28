@@ -225,6 +225,11 @@ Stand: 04.10.2026. Das fachliche Grundgerüst steht in `docs/grundgeruest.md`, d
 - **iPhone-Zoom und große Schrift (Clemens, 19.10.2026):** Player und Reiter stehen in einem gemeinsamen Block am unteren Rand und können sich nicht mehr überdecken; der Abstand unter dem Inhalt folgt ihrer echten Höhe (`--kb-bottom`). Player-Zeile, Bewertungsknöpfe und Werktext-Knopf brechen um statt die Seite seitlich zu verbreitern, `body` schneidet seitlichen Überstand ab. Geprüft bei 390, 320 (Anzeigezoom) und 260 px (Safari-Zoom 150 %).
 - **Abspielen:** Lehnt das Handy `play()` ab, lädt der Player die Datei direkt vom Server neu und versucht es noch einmal, sonst steht ein Hinweis im Player. Signierte Foto- und Audio-Adressen bleiben innerhalb einer Stunde gleich, sonst lud das Handy beim Warten das Werkfoto alle 2 Sekunden neu (700 KB je Abfrage).
 
+## 27. Fehlermeldungen an Sebastian und Claude (Sebastian, 28.10.2026: "go für alles")
+
+- **Was:** Unerwartete Ausnahmen gehen per Mail an alle Admins (`is_admin`), wie die Betriebsmeldung in Tourtool und Coach Notebook: `App\Support\ErrorAlert` im Ausnahme-Handler (`bootstrap/app.php`), Mail `ErrorAlertMail` mit Meldung (300 Zeichen), Klasse, Ort und Adresse, höchstens eine Mail je Ort und Stunde. HTTP-Fehler (404, 403, 419) bleiben beim Log. Schalter `KUNST_ALERT_EXCEPTIONS` (Vorgabe an).
+- **Warum:** Eine geplante Claude-Aufgabe liest diese Mails in Sebastians Postfach, sucht die Ursache und behebt sie (Fehlerwache, beschrieben im Repo `SRV-Plesk-Server`, `docs/07-FEHLERWACHE.md`). Ohne Meldung sähe sie Fehler im Kunstbegleiter nicht.
+
 ## 8. Offen nach Etappe 3 (Stand 14.10.2026)
 
 - Optional DKIM-Signatur für Mails vom Server (Plesk), falls Gmail die Codes doch einmal in den Spam sortiert.

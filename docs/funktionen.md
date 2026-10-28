@@ -57,6 +57,7 @@ Welche Funktion wo liegt. Vor jeder Arbeit prüfen, ob es den Baustein schon gib
 |---|---|
 | Papierkorb mit Kindern | `App\Models\Concerns\CascadesSoftDeletes` (`$softCascades`) |
 | Änderungsprotokoll | `App\Models\Concerns\LogsChanges` (`changeLog()`), `activitylog:clean` in `routes/console.php` |
+| Fehlermeldung per Mail an die Admins (gedrosselt, je Ort und Stunde) | `App\Support\ErrorAlert`, `App\Mail\ErrorAlertMail`, Handler in `bootstrap/app.php`, Schalter `museumguide.alert_exceptions` |
 | Aktiver Besuch, verlängern | `User::activeVisit()`, `Visit::extend()`, `Visit::remainingMinutes()`, `Visit::scopeActive()` |
 | Besuch starten, Museum aus Places oder von Hand, beenden, Stadt aus Adresse | `App\Services\Visits\VisitService` |
 | Aufnahme anlegen (Fotos speichern, Besuch verlängern, Pipeline starten), endgültig entfernen | `App\Services\Captures\CaptureService` |

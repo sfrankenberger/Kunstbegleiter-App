@@ -14,6 +14,9 @@
 return [
     'name' => env('MUSEUMGUIDE_NAME', 'Kunstbegleiter'),
 
+    // Unerwartete Ausnahmen per Mail an die Admins (App\Support\ErrorAlert, docs/konzept.md Abschnitt 27)
+    'alert_exceptions' => (bool) env('KUNST_ALERT_EXCEPTIONS', true),
+
     // Modell je Aufgabe (App\Enums\AiPurpose)
     'models' => [
         'default' => env('MUSEUMGUIDE_MODEL_DEFAULT', 'claude-sonnet-5-5'),
