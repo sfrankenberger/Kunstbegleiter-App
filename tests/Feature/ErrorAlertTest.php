@@ -1,5 +1,6 @@
 <?php
 
+use App\Mail\ErrorAlertMail;
 use App\Models\User;
 use App\Support\ErrorAlert;
 use Illuminate\Support\Facades\Mail;
@@ -15,7 +16,7 @@ test('unexpected exceptions mail the admins once per place and hour', function (
         ->and(app(ErrorAlert::class)->report($error))->toBeFalse();
 
     Mail::assertSentCount(1);
-    Mail::assertSent(fn ($mail) => $mail->hasTo($admin->email));
+    Mail::assertSent(ErrorAlertMail::class, fn (ErrorAlertMail $mail) => $mail->hasTo($admin->email));
 });
 
 test('the switch turns alerts off', function () {
