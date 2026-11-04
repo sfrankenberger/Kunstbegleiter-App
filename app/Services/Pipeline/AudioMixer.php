@@ -72,7 +72,7 @@ class AudioMixer
                 $intro = (float) config('museumguide.music.intro_seconds', 2);
                 $outro = (float) config('museumguide.music.outro_seconds', 3);
                 $args = array_merge($args, ['-stream_loop', '-1', '-i', $musicPath, '-filter_complex', implode(';', [
-                    '[0:a]adelay='.(int) ($intro * 1000).':all=1,apad=pad_dur='.$outro.'[v]',
+                    '[0:a]aformat=channel_layouts=stereo,adelay='.(int) ($intro * 1000).':all=1,apad=pad_dur='.$outro.'[v]',
                     '[1:a]volume='.(float) config('museumguide.music.volume', 0.12).'[m]',
                     '[v][m]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,afade=t=out:st='.round($intro + $seconds, 3).':d='.$outro.'[mix]',
                 ]), '-map', '[mix]']);
