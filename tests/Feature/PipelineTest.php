@@ -403,7 +403,7 @@ test('the full guide speaks every role with its own voice and mixes the pieces',
     Storage::disk('local')->assertExists($guide->fresh()->audio_path);
 });
 
-test('the mixer joins segments with ffmpeg and lays music underneath, the bed is picked by epoch', function () {
+test('the mixer joins loudness-normalized segments with ffmpeg and lays audible music underneath, the bed is picked by epoch', function () {
     $mixer = app(AudioMixer::class);
 
     if (! $mixer->hasFfmpeg()) {
@@ -430,9 +430,15 @@ test('the mixer joins segments with ffmpeg and lays music underneath, the bed is
     $probe = new Process(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', "$dir/out.mp3"]);
     $probe->run();
 
+    // Nicht stumm (04.11.2026: loudnorm plus areverse ergab eine stille Datei)
+    $volume = new Process(['ffmpeg', '-nostdin', '-hide_banner', '-nostats', '-i', "$dir/out.mp3", '-af', 'volumedetect', '-f', 'null', '-']);
+    $volume->run();
+    preg_match('/mean_volume: (-?[\d.]+) dB/', $volume->getErrorOutput(), $mean);
+
     // 2 s Intro + 2 x (1 s Ton + 0,5 s Pause) + 3 s Ausklang = etwa 8 Sekunden
     expect(strlen($mixed))->toBeGreaterThan(1000)
-        ->and((float) trim($probe->getOutput()))->toBeGreaterThan(6.5)->toBeLessThan(9.5);
+        ->and((float) trim($probe->getOutput()))->toBeGreaterThan(6.5)->toBeLessThan(9.5)
+        ->and((float) ($mean[1] ?? -91))->toBeGreaterThan(-40);
 
     File::deleteDirectory($dir);
 });
